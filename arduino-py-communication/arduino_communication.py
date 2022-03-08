@@ -1,4 +1,3 @@
-  GNU nano 5.4                                                                  arduino_communication.py                                                                            
 import serial,time
 if __name__ == '__main__':
     print('Running. Press CTRL-C to exit.')
