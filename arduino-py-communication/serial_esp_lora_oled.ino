@@ -178,6 +178,8 @@ void loop()
     }
     case DEVICE_STATE_SEND:
     {
+      msg=Serial.parseInt();
+      Serial.println(msg);
       readSerialPort();
    
       LoRaWAN.displaySending();
