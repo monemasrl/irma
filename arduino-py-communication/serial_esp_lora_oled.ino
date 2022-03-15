@@ -107,7 +107,7 @@ uint8_t debugLevel = LoRaWAN_DEBUG_LEVEL;
 /*LoraWan region, select in arduino IDE tools*/
 LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;
 
-uint32_t msg=0;
+int msg=0;
 
 static void prepareTxFrame( uint8_t port )
 {
@@ -159,7 +159,7 @@ void setup()
 // The loop function is called in an endless loop
 void loop()
 {
-  readSerialPort();
+  
   switch( deviceState )
   {
     case DEVICE_STATE_INIT:
@@ -178,9 +178,8 @@ void loop()
     }
     case DEVICE_STATE_SEND:
     {
-      Serial.print("\n");
-      requestTransmission();
-      Serial.print("\n");
+      readSerialPort();
+   
       LoRaWAN.displaySending();
       prepareTxFrame( appPort );
       LoRaWAN.send(loraWanClass);
