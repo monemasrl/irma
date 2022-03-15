@@ -67,23 +67,28 @@ uint8_t debugLevel = LoRaWAN_DEBUG_LEVEL;
 /*LoraWan region, select in arduino IDE tools*/
 LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;
 
-
-static void prepareTxFrame( uint8_t port )
+int readSerial()
 {
-//reading from can
-  int can;
+    //reading from serial
+  int ser;
   if (Serial.available()) {
         while (Serial.available() > 0) {
-          can=Serial.parseInt();
-          Serial.println(can);
+          ser=Serial.parseInt();
+          Serial.println(ser);
         }
         Serial.flush();
       }
   
+}
+static void prepareTxFrame( uint8_t port )
+{
+//reading from can
+  int value = readSerial();
+  
     appDataSize = 2;//AppDataSize max value is 64
     // Format the data to bytes 
-    appData[0] = highByte(can);
-    appData[1] = lowByte(can);
+    appData[0] = highByte(value);
+    appData[1] = lowByte(value);
 
 
  
