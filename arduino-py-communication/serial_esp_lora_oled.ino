@@ -67,14 +67,18 @@ uint8_t debugLevel = LoRaWAN_DEBUG_LEVEL;
 /*LoraWan region, select in arduino IDE tools*/
 LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;
 
-int msg=0;
 
 static void prepareTxFrame( uint8_t port )
 {
-    // Prepare upstream data transmission at the next possible time.
-    uint32_t can = msg;
-    
-  
+//reading from can
+  int can;
+  if (Serial.available()) {
+        while (Serial.available() > 0) {
+          can=Serial.parseInt();
+          Serial.println(can);
+        }
+        Serial.flush();
+      }
   
     appDataSize = 2;//AppDataSize max value is 64
     // Format the data to bytes 
@@ -84,22 +88,6 @@ static void prepareTxFrame( uint8_t port )
 
  
   
-}
-
-void readSerialPort() {
-  if (Serial.available()) {
-    delay(10);
-    while (Serial.available() > 0) {
-      msg = Serial.read();
-      Serial.println(msg);
-    }
-    Serial.flush();
-  }
-}
-
-void requestTransmission() {
-  //sending a an interrupt to signal a required transmission
-  Serial.print("start");
 }
 
 // Add your initialization code here
@@ -138,9 +126,6 @@ void loop()
     }
     case DEVICE_STATE_SEND:
     {
-      msg=Serial.parseInt();
-      Serial.println(msg);
-      readSerialPort();
    
       LoRaWAN.displaySending();
       prepareTxFrame( appPort );
