@@ -67,10 +67,12 @@ uint8_t debugLevel = LoRaWAN_DEBUG_LEVEL;
 /*LoraWan region, select in arduino IDE tools*/
 LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;
 
-int readSerial()
+//initializing the value to transmit
+uint32_t ser;
+
+uint32_t readSerial()
 {
     //reading from serial
-  int ser;
   if (Serial.available()) {
         while (Serial.available() > 0) {
           ser=Serial.parseInt();
@@ -78,17 +80,17 @@ int readSerial()
         }
         Serial.flush();
       }
-  
+   return ser;
 }
-static void prepareTxFrame( uint8_t port )
+static void prepareTxFrame( uint8_t port ,uint32_t ser)
 {
-//reading from can
-  int value = readSerial();
   
+    Serial.println("value : ");
+    Serial.println(ser);
     appDataSize = 2;//AppDataSize max value is 64
     // Format the data to bytes 
-    appData[0] = highByte(value);
-    appData[1] = lowByte(value);
+    appData[0] = highByte(ser);
+    appData[1] = lowByte(ser);
 
 
  
@@ -98,7 +100,8 @@ static void prepareTxFrame( uint8_t port )
 // Add your initialization code here
 void setup()
 {
-  if(mcuStarted==0)
+  if(
+    mcuStarted==0)
   {
     LoRaWAN.displayMcuInit();
   }
@@ -112,7 +115,6 @@ void setup()
 // The loop function is called in an endless loop
 void loop()
 {
-  
   switch( deviceState )
   {
     case DEVICE_STATE_INIT:
@@ -120,6 +122,7 @@ void loop()
 #if(LORAWAN_DEVEUI_AUTO)
       LoRaWAN.generateDeveuiByChipID();
 #endif
+      ser=readSerial();
       LoRaWAN.init(loraWanClass,loraWanRegion);
       break;
     }
@@ -131,9 +134,8 @@ void loop()
     }
     case DEVICE_STATE_SEND:
     {
-   
       LoRaWAN.displaySending();
-      prepareTxFrame( appPort );
+      prepareTxFrame( appPort , ser);
       LoRaWAN.send(loraWanClass);
       deviceState = DEVICE_STATE_CYCLE;
       break;
