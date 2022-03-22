@@ -14,9 +14,14 @@ Per la lettura dei dati va scritto un decoder sul device profile selezionato per
 GATEWAY
 
 Per la connessione del gateway è stato utilizzato un HAT RAK2245 con relativa repository per l'installazione del service:
+  
   $ sudo apt update; sudo apt install git -y
+  
   $ git clone https://github.com/RAKWireless/rak_common_for_gateway.git ~/rak_common_for_gateway
+  
   $ cd ~/rak_common_for_gateway
+  
   $ sudo ./install.sh
+
 Dopo queste operazioni si può eseguire il comando gateway-config per configurare la connessione del proprio gateway al server.
 
