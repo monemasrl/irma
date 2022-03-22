@@ -69,18 +69,19 @@ LoRaMacRegion_t loraWanRegion = ACTIVE_REGION;
 
 //initializing the value to transmit
 uint32_t ser;
+uint32_t app;
 
 uint32_t readSerial()
 {
     //reading from serial
   if (Serial.available()) {
         while (Serial.available() > 0) {
-          ser=Serial.parseInt();
+          app=Serial.parseInt();
           Serial.println(ser);
         }
         Serial.flush();
       }
-   return ser;
+   return app;
 }
 static void prepareTxFrame( uint8_t port ,uint32_t ser)
 {
@@ -91,9 +92,6 @@ static void prepareTxFrame( uint8_t port ,uint32_t ser)
     // Format the data to bytes 
     appData[0] = highByte(ser);
     appData[1] = lowByte(ser);
-
-
- 
   
 }
 
@@ -112,6 +110,7 @@ void setup()
   deviceState = DEVICE_STATE_INIT;
 }
 
+
 // The loop function is called in an endless loop
 void loop()
 {
@@ -123,7 +122,9 @@ void loop()
       LoRaWAN.generateDeveuiByChipID();
 #endif
       ser=readSerial();
-      LoRaWAN.init(loraWanClass,loraWanRegion);
+      if(ser!=0){
+        LoRaWAN.init(loraWanClass,loraWanRegion);
+      }
       break;
     }
     case DEVICE_STATE_JOIN:
