@@ -49,3 +49,4 @@ class Handler(BaseHTTPRequestHandler):
 
 httpd = HTTPServer(('', 8090), Handler)
 httpd.serve_forever()
+run()
