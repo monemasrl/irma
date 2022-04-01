@@ -33,7 +33,7 @@ class Handler(BaseHTTPRequestHandler):
         
     def up(self, body):
         up = self.unmarshal(body, integration.UplinkEvent())
-        print("Uplink received from: %s with payload: %s" % (up.dev_eui.hex(), up.data.hex()))
+        print("Uplink received from: %s with payload: %s" % (up.dev_eui.hex(), int(up.data.hex())))
 
     def join(self, body):
         join = self.unmarshal(body, integration.JoinEvent())
