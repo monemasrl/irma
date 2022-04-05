@@ -41,7 +41,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def unmarshal(self, body, pl):
         if self.json:
-            print(body) 
+            print(body) #print of the JSON payload in the command line
             return Parse(body, pl)
 
         pl.ParseFromString(body)
