@@ -1,5 +1,5 @@
 
-mock script for the communication between two Raspberry pi devices trough can bus and script for the communication between a Raspberry pi and an ESP32 trough serial port of the data collected by the can bus
+Mock script for the communication between two Raspberry pi devices trough can bus and script for the communication between a Raspberry pi and an ESP32 trough serial port of the data collected by the can bus
 
 END-DEVICE
 
@@ -25,3 +25,6 @@ Per la connessione del gateway è stato utilizzato un HAT RAK2245 con relativa r
 
 Dopo queste operazioni si può eseguire il comando gateway-config per configurare la connessione del proprio gateway al server.
 
+WEB-SERVICE
+
+Sull'application server è stata attivata da interfaccia l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file mock.py si occupa della ricezione del POST e lo scrive su linea di comando tenendo aperto un canale di ricezione.
