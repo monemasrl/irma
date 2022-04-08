@@ -22,9 +22,27 @@ db.init_app(app)
 class Payload(db.Document):
     iD = db.StringField()
     time = db.StringField()
-    sensorData = db.DynamicField()
     latitude = db.FloatField()
     longitude = db.FloatField()
+    sensorData = db.DynamicField()
+    
+    data = {
+        'm2m:cin':{
+                    'con':{
+                        'metadata': {
+                            'sensorId': 'iD',
+                            'readingTimestamp': 'time',
+                            'latitude': 'latitude',
+                            'longitude': 'longitude'
+                            },
+                        'sensorData': 'sensorData'
+                        }
+                    }
+            }
+
+    
+
+
     def to_json(self):
         return {"m2m:cin":{
                     "con":{
