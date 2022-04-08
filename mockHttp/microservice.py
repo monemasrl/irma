@@ -47,9 +47,6 @@ def home():
 @app.route('/', methods=['POST'])
 def create_record():
     record = json.loads(request.data)
-    iD=record['applicationID']
-    time=record['publishedAt']
-    sensorData=record
     payload = Payload(iD=record['applicationID'],
                 time=record['publishedAt'],
                 latitude=record['rxInfo'][0]['location']['latitude'],
