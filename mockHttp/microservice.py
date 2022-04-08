@@ -20,11 +20,23 @@ db.init_app(app)
 
 
 class Payload(db.Document):
-    metadata = db.StringField()
-    sensorData = db.StringField()
+    iD = db.StringField()
+    time = db.StringField()
+    sensorData = db.DynamicField()
     def to_json(self):
-        return {"metadata": self.metadata,
-                "sensorData": self.sensorData}
+        return {"m2m:cin":{
+                    "con":{
+                        "metadata": {
+                            "sensorId": self.iD,
+                            "readingTimestamp": self.time,
+                            "latitude": 0,
+                            "longitude": 0,
+                            "heading": 0
+                            },
+                        "sensorData": self.sensorData
+                        }
+                    }
+                }
 
 @app.route('/', methods=['GET'])
 def home():
@@ -32,11 +44,12 @@ def home():
 
 
 @app.route('/', methods=['POST'])
-def update_record():
+def create_record():
     
     record = json.loads(request.data)
-    payload = Payload(metadata=record['applicationID'],
-                sensorData=record['applicationID'])
+    payload = Payload(iD=record['applicationID'],
+                time=record['publishedAt'],
+                sensorData=record)
     print(record['objectJSON'])
     payload.save()
     return jsonify(payload.to_json())
