@@ -26,23 +26,6 @@ class Payload(db.Document):
     longitude = db.FloatField()
     sensorData = db.DynamicField()
     
-    data = {
-        'm2m:cin':{
-                    'con':{
-                        'metadata': {
-                            'sensorId': 'iD',
-                            'readingTimestamp': 'time',
-                            'latitude': 'latitude',
-                            'longitude': 'longitude'
-                            },
-                        'sensorData': 'sensorData'
-                        }
-                    }
-            }
-
-    
-
-
     def to_json(self):
         return {"m2m:cin":{
                     "con":{
