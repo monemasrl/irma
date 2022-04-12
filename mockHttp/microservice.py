@@ -43,7 +43,7 @@ class Payload(db.Document):
 
 @app.route('/', methods=['GET'])
 def home():
-    return "<h1>Microservice</h1><p>This site is a prototype microservice for IRMA.</p>"
+    return jsonify(Payload.objects.order_by('-id').first())
 
 
 @app.route('/', methods=['POST'])
