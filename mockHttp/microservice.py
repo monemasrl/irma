@@ -25,10 +25,10 @@ class Payload(db.Document):
     latitude = db.FloatField()
     longitude = db.FloatField()
     sensorData = db.DynamicField()
-    m2mcin = db.DynamicField()
+    m2m_cin = db.DynamicField()
     
     def to_json(self):
-        return {"m2mcin":{
+        return {"m2m_cin":{
                     "con":{
                         "metadata": {
                             "sensorId": self.iD,
@@ -43,7 +43,11 @@ class Payload(db.Document):
 
 @app.route('/', methods=['GET'])
 def home():
-    return jsonify(Payload.objects.order_by('-id').first())
+    payload = Payload.objects().order_by('-id').first()
+    payload2 = json.dumps(payload.to_json())
+    payload3 = payload2.replace("_",":")
+    print(payload3)
+    return jsonify(payload)
 
 
 @app.route('/', methods=['POST'])
