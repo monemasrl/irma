@@ -25,18 +25,19 @@ class Payload(db.Document):
     latitude = db.FloatField()
     longitude = db.FloatField()
     sensorData = db.DynamicField()
+    m2mcin = db.DynamicField()
     
     def to_json(self):
-        return {"m2m:cin":{
+        return {"m2mcin":{
                     "con":{
                         "metadata": {
                             "sensorId": self.iD,
                             "readingTimestamp": self.time,
                             "latitude": self.latitude,
                             "longitude": self.longitude
-                            },
-                        "sensorData": self.sensorData
-                        }
+                            }
+                        },
+                    "sensorData":self.sensorData
                     }
                 }
 
@@ -54,8 +55,10 @@ def create_record():
                 longitude=record['rxInfo'][0]['location']['longitude'],
                 sensorData=record)
     print(record['objectJSON'])
-    payload.save()
+    data = payload.from_json(json.dumps(payload.to_json()))
+    data.save()
     return jsonify(payload.to_json())
+
 
 if __name__ == "__main__":
     app.run(debug = True)
