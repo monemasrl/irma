@@ -21,7 +21,7 @@ db.init_app(app)
 
 class Payload(db.DynamicDocument):  
     def to_json(self):
-        return {"m2m_cin":{
+        return {"m2m:cin":{
                     "con":{
                         "metadata": {
                             "sensorId": self.iD,
