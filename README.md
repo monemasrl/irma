@@ -30,4 +30,4 @@ Dopo queste operazioni si può eseguire il comando gateway-config per configurar
 
 ##### WEB-SERVICE
 
-Sull'application server è stata attivata da interfaccia l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file microservice.py si occupa della ricezione del POST e l'inserimento dei json in un database mongo.
+Sull'application server è stata attivata da interfaccia l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file [microservice.py](mockHttp/microservice.py) si occupa della ricezione del POST e l'inserimento dei json in un database mongo.
