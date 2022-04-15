@@ -4,7 +4,7 @@
 
 Rete di comunicazione a lunga gittata tramite protocollo LoRa per la trasmissione di dati raccolti da sensori verso il server che raccoglie e elabora i dati ritrasmettendoli tramite un web-service a una dashboard.
 
-##### END-DEVICE
+#### END-DEVICE
 
 Per connettere un nuovo end-device su lorawan è necessario sapere il Device EUI che viene fornito dalla scheda che si usa e bisogna fare il join tramite una delle due modalità **(OTAA o ABP)**.
 
@@ -14,7 +14,10 @@ Sull'end device nel file **.ino** vanno inseriti i dati relativi alle chiavi del
 
 Per la lettura dei dati va scritto un decoder sul device profile selezionato per la crezione del device sul server. 
 
-##### GATEWAY
+### ***ATTENZIONE!!!***
+*Il file **.ino** fornito nella repository è stato testato solo su un **Heltec ESP32** e non funzionerà su altri dispositivi non basati su ESP32*
+
+#### GATEWAY
 
 Per la connessione del gateway è stato utilizzato un **HAT RAK2245** con relativa repository per l'installazione del service:
   
@@ -28,6 +31,6 @@ Per la connessione del gateway è stato utilizzato un **HAT RAK2245** con relati
 
 Dopo queste operazioni si può eseguire il comando gateway-config per configurare la connessione del proprio gateway al server.
 
-##### WEB-SERVICE
+#### WEB-SERVICE
 
-Sull'application server è stata attivata da interfaccia l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file [microservice.py](mockHttp/microservice.py) si occupa della ricezione del POST e l'inserimento dei json in un database mongo.
+Sull'application server è stata attivata da interfaccia l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file [microservice.py](mockHttp/microservice.py) si occupa della ricezione del POST e l'inserimento dei json in un database mongo, dopo di che i dati dal database vengono presi e reinviati a un altro host dopo una richesta GET.
