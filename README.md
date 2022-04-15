@@ -19,7 +19,7 @@ Per la lettura dei dati va scritto un decoder sul device profile selezionato per
 
 #### GATEWAY
 
-Per la connessione del gateway è stato utilizzato un **HAT RAK2245** con relativa repository per l'installazione del service:
+Per la connessione del gateway è stato utilizzato un **HAT RAK2245** e un **Raspberry Pi 3B+** con relativa repository per l'installazione del service:
   
     $ sudo apt update; sudo apt install git -y
   
