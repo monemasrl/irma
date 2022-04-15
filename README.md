@@ -29,7 +29,7 @@ Per la connessione del gateway è stato utilizzato un **HAT RAK2245** e un **Ras
   
     $ sudo ./install.sh
 
-Dopo queste operazioni si può eseguire il comando gateway-config per configurare la connessione del proprio gateway al server.
+Dopo queste operazioni si può eseguire il comando `sudo gateway-config` per configurare la connessione del proprio gateway al server.
 
 #### WEB-SERVICE
 
