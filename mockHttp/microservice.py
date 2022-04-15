@@ -19,14 +19,7 @@ db = MongoEngine()
 db.init_app(app)
 
 
-class Payload(db.Document):
-    iD = db.StringField()
-    time = db.StringField()
-    latitude = db.FloatField()
-    longitude = db.FloatField()
-    sensorData = db.DynamicField()
-    m2m_cin = db.DynamicField()
-    
+class Payload(db.DynamicDocument):  
     def to_json(self):
         return {"m2m_cin":{
                     "con":{
@@ -43,10 +36,7 @@ class Payload(db.Document):
 
 @app.route('/', methods=['GET'])
 def home():
-    payload = Payload.objects().order_by('-id').first()
-    payload2 = json.dumps(payload.to_json())
-    payload3 = payload2.replace("_",":")
-    print(payload3)
+    payload = Payload.objects().order_by('-id').first()#restituisce l'ultimo payload nel database come oggetto di tipo Payload
     return jsonify(payload)
 
 
