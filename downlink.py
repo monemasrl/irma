@@ -31,7 +31,7 @@ if __name__ == "__main__":
   req.device_queue_item.confirmed = False
   req.device_queue_item.data = base64.b16encode(msg)
   req.device_queue_item.dev_eui = dev_eui.hex()
-  req.device_queue_item.f_port = 10
+  req.device_queue_item.f_port = 2
 
   resp = client.Enqueue(req, metadata=auth_token)
 
