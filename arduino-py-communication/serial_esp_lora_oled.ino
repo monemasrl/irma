@@ -1,6 +1,8 @@
 #include <ESP32_LoRaWAN.h>
 #include "Arduino.h"
 
+
+bool first=true;
 /*license for Heltec ESP32 LoRaWan, quary your ChipID relevant license: http://resource.heltec.cn/search */
 uint32_t  license[4] = {0xD5397DF0, 0x8573F814, 0x7A38C73D, 0x48E68607};
 /* OTAA para*/
@@ -17,7 +19,7 @@ uint32_t DevAddr =  ( uint32_t )0x007e6ae1;
 uint16_t userChannelsMask[6]={ 0x00FF,0x0000,0x0000,0x0000,0x0000,0x0000 };
 
 /*LoraWan Class, Class A and Class C are supported*/
-DeviceClass_t  loraWanClass = CLASS_A;
+DeviceClass_t  loraWanClass = CLASS_C;
 
 /*the application data transmission duty cycle.  value in [ms].*/
 uint32_t appTxDutyCycle = 15000;
@@ -95,11 +97,34 @@ static void prepareTxFrame( uint8_t port ,uint32_t ser)
   
 }
 
+String LoRa_data;
+String transmit="Start";
+uint16_t num=0;
+bool LoRaDownLink = false;
+uint32_t LoRadonwlinkTime;
+void downLinkDataHandle(McpsIndication_t *mcpsIndication)
+{
+  LoRa_data = ""; 
+  Serial.printf("+REV DATA:%s,RXSIZE %d,PORT %d\r\n",mcpsIndication->RxSlot?"RXWIN2":"RXWIN1",mcpsIndication->BufferSize,mcpsIndication->Port);
+  Serial.print("+REV DATA:");
+  for(uint8_t i=0;i<mcpsIndication->BufferSize;i++)
+  {
+    Serial.printf("%d",mcpsIndication->Buffer[i]);
+    LoRa_data = LoRa_data + (String)(char)mcpsIndication->Buffer[i];
+  }
+  LoRaDownLink = true;
+  LoRadonwlinkTime = millis();
+  num++;
+  Serial.println();
+  Serial.print(num);
+  Serial.print(":");
+  Serial.println(LoRa_data);
+}
+
 // Add your initialization code here
 void setup()
 {
-  if(
-    mcuStarted==0)
+  if(mcuStarted==0)
   {
     LoRaWAN.displayMcuInit();
   }
@@ -113,7 +138,7 @@ void setup()
 
 // The loop function is called in an endless loop
 void loop()
-{
+{ 
   switch( deviceState )
   {
     case DEVICE_STATE_INIT:
@@ -135,11 +160,15 @@ void loop()
     }
     case DEVICE_STATE_SEND:
     {
-      LoRaWAN.displaySending();
-      prepareTxFrame( appPort , ser);
-      LoRaWAN.send(loraWanClass);
-      deviceState = DEVICE_STATE_CYCLE;
-      break;
+      if(LoRa_data==transmit || first==true){
+        LoRaWAN.displaySending();
+        prepareTxFrame( appPort , ser);
+        LoRaWAN.send(loraWanClass);
+        deviceState = DEVICE_STATE_CYCLE;
+        first=false;
+        LoRa_data=" ";
+        }
+       break;
     }
     case DEVICE_STATE_CYCLE:
     {
@@ -160,5 +189,14 @@ void loop()
       deviceState = DEVICE_STATE_INIT;
       break;
     }
+  }
+  if(LoRaDownLink)
+  {
+    LoRaDownLink = false;
+    Serial.println("Arrived");
+  }
+  else if((millis()-LoRadonwlinkTime)> 1000)
+  {
+    
   }
 }
