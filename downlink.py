@@ -1,39 +1,49 @@
-import os
-import sys
-import base64
-import grpc
-from chirpstack_api.as_pb.external import api
+import random
+import time
 
-# Configuration.
+from paho.mqtt import client as mqtt_client
 
-# This must point to the API interface.
-server = "localhost:8080"
 
-# The DevEUI for which you want to enqueue the downlink.
-dev_eui = bytes([0x22, 0x32, 0x33, 0x00, 0x00, 0x88, 0x88, 0x02])
+broker = 'localhost'
+port = 1883
+topic = "application/5/device/2232330000888802/command/down"
+# generate client ID with pub prefix randomly
+client_id = f'python-mqtt-{random.randint(0, 1000)}'
+# username = 'emqx'
+# password = 'public'
 
-# The API token (retrieved using the web-interface).
-api_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5X2lkIjoiNWRkOThjZmYtYjJlOS00YTI5LTgwOWYtNmM4MjJjYjc1MDgwIiwiYXVkIjoiYXMiLCJpc3MiOiJhcyIsIm5iZiI6MTY1MDUzODA2Niwic3ViIjoiYXBpX2tleSJ9.2Qdm4GgZloFFFXiJvM55bAzNCWopHCrn2nLBgSNJ9qY"
+def connect_mqtt():
+    def on_connect(client, userdata, flags, rc):
+        if rc == 0:
+            print("Connected to MQTT Broker!")
+        else:
+            print("Failed to connect, return code %d\n", rc)
 
-if __name__ == "__main__":
-  # Connect without using TLS.
-  channel = grpc.insecure_channel(server)
+    client = mqtt_client.Client(client_id)
+    #client.username_pw_set(username, password)
+    client.on_connect = on_connect
+    client.connect(broker, port)
+    return client
 
-  # Device-queue API client.
-  client = api.DeviceQueueServiceStub(channel)
 
-  # Define the API key meta-data.
-  auth_token = [("authorization", "Bearer %s" % api_token)]
-  msg= bytes("Start", 'utf-8')
+def publish(client):
+    msg_count = 0
+    while True:
+        time.sleep(1)
+        result = client.publish(topic, "U3RvcA==")
+        # result: [0, 1]
+        status = result[0]
+        if status == 0:
+            print(f"Send  to topic `{topic}`")
+        else:
+            print(f"Failed to send message to topic {topic}")
 
-  # Construct request.
-  req = api.EnqueueDeviceQueueItemRequest()
-  req.device_queue_item.confirmed = False
-  req.device_queue_item.data = base64.b16encode(msg)
-  req.device_queue_item.dev_eui = dev_eui.hex()
-  req.device_queue_item.f_port = 2
 
-  resp = client.Enqueue(req, metadata=auth_token)
+def run():
+    client = connect_mqtt()
+    client.loop_start()
+    publish(client)
 
-  # Print the downlink frame-counter value.
-  print(resp.f_cnt)
+
+if __name__ == '__main__':
+    run()
