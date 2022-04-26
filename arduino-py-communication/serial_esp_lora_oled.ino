@@ -2,7 +2,6 @@
 #include "Arduino.h"
 
 
-bool first=true;
 /*license for Heltec ESP32 LoRaWan, quary your ChipID relevant license: http://resource.heltec.cn/search */
 uint32_t  license[4] = {0xD5397DF0, 0x8573F814, 0x7A38C73D, 0x48E68607};
 /* OTAA para*/
@@ -87,9 +86,6 @@ uint32_t readSerial()
 }
 static void prepareTxFrame( uint8_t port ,uint32_t ser)
 {
-  
-    Serial.println("value : ");
-    Serial.println(ser);
     appDataSize = 2;//AppDataSize max value is 64
     // Format the data to bytes 
     appData[0] = highByte(ser);
@@ -119,6 +115,7 @@ void downLinkDataHandle(McpsIndication_t *mcpsIndication)
   Serial.print(num);
   Serial.print(":");
   Serial.println(LoRa_data);
+
 }
 
 // Add your initialization code here
@@ -133,70 +130,62 @@ void setup()
   SPI.begin(SCK,MISO,MOSI,SS);
   Mcu.init(SS,RST_LoRa,DIO0,DIO1,license);
   deviceState = DEVICE_STATE_INIT;
+  LoRa_data="Start";
 }
 
 
 // The loop function is called in an endless loop
 void loop()
 { 
-  switch( deviceState )
-  {
-    case DEVICE_STATE_INIT:
+    switch( deviceState )
     {
-#if(LORAWAN_DEVEUI_AUTO)
-      LoRaWAN.generateDeveuiByChipID();
-#endif
-      ser=readSerial();
-      if(ser!=0){
-        LoRaWAN.init(loraWanClass,loraWanRegion);
-      }
-      break;
-    }
-    case DEVICE_STATE_JOIN:
-    {
-      LoRaWAN.displayJoining();
-      LoRaWAN.join();
-      break;
-    }
-    case DEVICE_STATE_SEND:
-    {
-      if(LoRa_data==transmit || first==true){
-        LoRaWAN.displaySending();
-        prepareTxFrame( appPort , ser);
-        LoRaWAN.send(loraWanClass);
-        deviceState = DEVICE_STATE_CYCLE;
-        first=false;
-        LoRa_data=" ";
+      case DEVICE_STATE_INIT:
+      {
+  #if(LORAWAN_DEVEUI_AUTO)
+        LoRaWAN.generateDeveuiByChipID();
+  #endif
+        ser=readSerial();
+        if(ser!=0){
+          LoRaWAN.init(loraWanClass,loraWanRegion);
         }
-       break;
+        break;
+      }
+      case DEVICE_STATE_JOIN:
+      {
+        LoRaWAN.displayJoining();
+        LoRaWAN.join();
+        break;
+      }
+      case DEVICE_STATE_SEND:
+      {
+        if(LoRa_data==transmit){
+          LoRaWAN.displaySending();
+          prepareTxFrame( appPort , ser);
+          LoRaWAN.send(loraWanClass);
+         }
+         deviceState = DEVICE_STATE_CYCLE;
+         break;
+      }
+      case DEVICE_STATE_CYCLE:
+      {
+        // Schedule next packet transmission
+        txDutyCycleTime = appTxDutyCycle + randr( -APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND );
+        LoRaWAN.cycle(txDutyCycleTime);
+        deviceState = DEVICE_STATE_SLEEP;
+        break;
+      }
+      case DEVICE_STATE_SLEEP:
+      {
+        LoRaWAN.displayAck();
+        LoRaWAN.sleep(loraWanClass,debugLevel);
+        
+        break;
+      }
+      default:
+      {
+        deviceState = DEVICE_STATE_INIT;
+        break;
+      }
     }
-    case DEVICE_STATE_CYCLE:
-    {
-      // Schedule next packet transmission
-      txDutyCycleTime = appTxDutyCycle + randr( -APP_TX_DUTYCYCLE_RND, APP_TX_DUTYCYCLE_RND );
-      LoRaWAN.cycle(txDutyCycleTime);
-      deviceState = DEVICE_STATE_SLEEP;
-      break;
-    }
-    case DEVICE_STATE_SLEEP:
-    {
-      LoRaWAN.displayAck();
-      LoRaWAN.sleep(loraWanClass,debugLevel);
-      break;
-    }
-    default:
-    {
-      deviceState = DEVICE_STATE_INIT;
-      break;
-    }
-  }
-  if(LoRaDownLink)
-  {
-    LoRaDownLink = false;
-    Serial.println("Arrived");
-  }
-  else if((millis()-LoRadonwlinkTime)> 1000)
-  {
-    
-  }
+}
 }
