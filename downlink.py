@@ -1,5 +1,6 @@
 import random
 import time
+import json
 
 from paho.mqtt import client as mqtt_client
 
@@ -30,7 +31,14 @@ def publish(client):
     msg_count = 0
     while True:
         time.sleep(1)  
-        result = client.publish(topic, '{"confirmed": false, "fPort": 2, "data": "U3RvcA=="}')#Stops the reading process of the end-device
+        data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RhcnQ='})#Start command for end-device
+        print("(1) Stop ")
+        choice=input("(2) Start ")
+        if choice=="1":
+            print(data)
+            data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RvcA=='})#Stop command for end-device
+        
+        result = client.publish(topic, data)
         # result: [0, 1]
         status = result[0]
         if status == 0:
