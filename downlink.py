@@ -35,7 +35,6 @@ def publish(client):
         print("(1) Stop ")
         choice=input("(2) Start ")
         if choice=="1":
-            print(data)
             data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RvcA=='})#Stop command for end-device
         
         result = client.publish(topic, data)
