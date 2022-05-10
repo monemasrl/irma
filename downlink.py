@@ -33,7 +33,8 @@ def publish(client):
         time.sleep(1)  
         data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RhcnQ='})#Start command for end-device
         print("(1) Stop ")
-        choice=input("(2) Start ")
+        print("(2) Start ")
+        choice=input("Your choice : ")
         if choice=="1":
             data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RvcA=='})#Stop command for end-device
         
