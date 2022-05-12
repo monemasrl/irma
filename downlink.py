@@ -35,7 +35,7 @@ def publish(client):
         print("(1) Stop ")
         print("(2) Start ")
         choice=input("Your choice : ")
-        if choice=="1":
+        if choice=="1":#If choice is equal to 1 the command will be Stop and in any other case il will be Start
             data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RvcA=='})#Stop command for end-device
         
         result = client.publish(topic, data)
