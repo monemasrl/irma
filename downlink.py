@@ -7,7 +7,7 @@ from paho.mqtt import client as mqtt_client
 
 broker = 'localhost'
 port = 1883
-topic = "application/5/device/2232330000888802/command/down"
+topic = "application/5/device/2232330000888802/command/down"  #default topic to schedule a downlink trought MQTT
 # generate client ID with pub prefix randomly
 client_id = f'python-mqtt-{random.randint(0, 1000)}'
 #username = 'irma'
@@ -35,7 +35,7 @@ def publish(client):
         print("(1) Stop ")
         print("(2) Start ")
         choice=input("Your choice : ")
-        if choice=="1":#If choice is equal to 1 the command will be Stop and in any other case il will be Start
+        if choice=="1":   #If choice is equal to 1 the command will be Stop and in any other case il will be Start
             data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RvcA=='})#Stop command for end-device
         
         result = client.publish(topic, data)
