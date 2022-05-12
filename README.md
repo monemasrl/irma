@@ -84,7 +84,7 @@ Per la lettura dei dati va scritto un decoder sul device profile selezionato per
 ### ***ATTENZIONE!!!***
 *Il file **.ino** fornito nella repository è stato testato solo su un **Heltec ESP32** e non funzionerà su altri dispositivi non basati su ESP32*
 
-<img src="assets\esp.png" alt="drawing" width="200" height="200"/>
+<img src="assets\esp.png" width="100" height="100"/>
 
 #### WEB-SERVICE
 
