@@ -58,7 +58,9 @@ Il setup del network server in locale su Ubuntu contiene pochi passi essenziali:
 
 #### GATEWAY
 
-Per la connessione del gateway è stato utilizzato un **HAT RAK2245** e un **Raspberry Pi 3B+** con relativa repository per l'installazione del service:
+<img src="assets\raspi4.jpeg" width="100" height="100"/>
+
+Per la connessione del gateway è stato utilizzato un **HAT RAK2245** e un **Raspberry Pi 4B+** con relativa repository per l'installazione del service:
   
     $ sudo apt update; sudo apt install git -y
   
