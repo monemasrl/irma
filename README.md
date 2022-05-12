@@ -84,6 +84,8 @@ Per la lettura dei dati va scritto un decoder sul device profile selezionato per
 ### ***ATTENZIONE!!!***
 *Il file **.ino** fornito nella repository è stato testato solo su un **Heltec ESP32** e non funzionerà su altri dispositivi non basati su ESP32*
 
+<img src="assets\esp.png" alt="drawing" width="200" height="200"/>
+
 #### WEB-SERVICE
 
 Sull'application server è stata attivata da interfaccia l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file [microservice.py](mockHttp/microservice.py) si occupa della ricezione del POST e l'inserimento dei json in un database mongo, dopo di che i dati dal database vengono presi e reinviati a un altro host dopo una richesta GET.
