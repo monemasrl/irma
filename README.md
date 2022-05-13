@@ -92,9 +92,9 @@ Per aggiungere la lettura dei dati dai sensori è stato utilizzato il protocollo
 
 <img src="assets\raspi2.png" width="120" height="120"/>
 
-#### WEB-SERVICE
+#### WEB-SERVICE E SALVATAGGIO DEI DATI
 
-Sull'application server è stata attivata da interfaccia l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file [microservice.py](mockHttp/microservice.py) si occupa della ricezione del POST e l'inserimento dei json in un database mongo, dopo di che i dati dal database vengono presi e reinviati a un altro host dopo una richesta GET.
+Sull'application server è stata attivata da interfaccia l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file [microservice.py](mockHttp/microservice.py) si occupa della ricezione del POST e l'inserimento dei json in un database Mongo, dopo di che i dati dal database vengono presi e reinviati a un altro host dopo una richesta GET.
 
 #### COMANDI
 
