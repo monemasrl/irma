@@ -90,7 +90,7 @@ Per la lettura dei dati va scritto un decoder su misura per i dati che verranno 
 
 Per aggiungere la lettura dei dati dai sensori è stato utilizzato il protocollo CAN con l'aggiunta di un **Raspberry Pi 2B** in modo da ricevere i dati sulla interfaccia seriale 
 
-<img src="assets\raspi2.png" width="100" height="100"/>
+<img src="assets\raspi2.png" width="120" height="120"/>
 
 #### WEB-SERVICE
 
