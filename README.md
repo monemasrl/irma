@@ -81,12 +81,16 @@ Il device va registrato sul server tramite l'interfaccia web Applications > [Nom
 
 Sull'end device nel file **.ino** vanno inseriti i dati relativi alle chiavi della rete che si trovano all'interno del menu del device creato in precedenza sul server.
 
-Per la lettura dei dati va scritto un decoder sul device profile selezionato per la crezione del device sul server. 
+Per la lettura dei dati va scritto un decoder su misura per i dati che verranno ricevuti sul device profile selezionato per la crezione del device sull'application server. 
 
 ### ***ATTENZIONE!!!***
 *Il file **.ino** fornito nella repository è stato testato solo su un **Heltec ESP32** e non funzionerà su altri dispositivi non basati su ESP32*
 
 <img src="assets\esp.png" width="100" height="100"/>
+
+Per aggiungere la lettura dei dati dai sensori è stato utilizzato il protocollo CAN con l'aggiunta di un **Raspberry Pi 2B** in modo da ricevere i dati sulla interfaccia seriale 
+
+<img src="assets\raspi2.png" width="100" height="100"/>
 
 #### WEB-SERVICE
 
