@@ -102,3 +102,17 @@ Il server chirpstack non mantiene i dati trasmessi dagli end-device in nessun mo
 #### COMANDI
 
 Il file [downlink.py](downlink.py) si occupa dell'invio dei comandi di Start e Stop all'application server tramite MQTT, il quale a sua volta invierà un messaggio di downlink verso l'end-device con il comando ricevuto il quale fermerà o avvierà la lettura dei dati dai sensori.
+
+
+#### TESTING IN LOCALE
+
+Al fine di eseguire dei test in locale per mancanza di una rete LoRaWAN da utilizzare sono stati utilizzati due script:
+
+1. [auto_can.py](auto_can.py) - 
+    Questo script eseguito (solo per test) sul gateway invia tramite interfaccia CAN due messaggi a intervalli regolari.
+    
+2. [arduino_communication.py](arduino-py-communication/arduino_communication.py) - 
+    Questo script eseguito su un Rapberry Pi connesso all'ESP32 riceve tramite interfaccia CAN i messaggi che successivamente ritrasmetterà tramite intefaccia seriale all'end-device.
+
+
+Questo sistema sotituisce la necessità di una rete e di sensori funzionanti per fare test sul funzionameto della infrastruttura di rete.
