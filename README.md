@@ -4,6 +4,7 @@
 
 Rete di comunicazione a lunga gittata tramite protocollo LoRa per la trasmissione di dati raccolti da sensori verso il server che raccoglie e elabora i dati ritrasmettendoli tramite un web-service a una dashboard.
 
+
 #### APPLICATION SERVER
 
 Il setup dell' application server in locale su Ubuntu contiene pochi passi essenziali:
@@ -31,7 +32,8 @@ Il setup dell' application server in locale su Ubuntu contiene pochi passi essen
 ##### 3-Installazione dell'application server
 
     sudo apt-get install chirpstack-application-server
-    
+
+
 #### NETWORK SERVER
 
 Il setup del network server in locale su Ubuntu contiene pochi passi essenziali:
@@ -55,6 +57,7 @@ Il setup del network server in locale su Ubuntu contiene pochi passi essenziali:
 ##### 3-Installazione dell'application server
 
     sudo apt install chirpstack-network-server
+
 
 #### GATEWAY
 
@@ -94,7 +97,7 @@ Per aggiungere la lettura dei dati dai sensori è stato utilizzato il protocollo
 
 #### WEB-SERVICE E SALVATAGGIO DEI DATI
 
-Sull'application server è stata attivata da interfaccia l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file [microservice.py](mockHttp/microservice.py) si occupa della ricezione del POST e l'inserimento dei JSON in un database Mongo, dopo di che i dati dal database vengono presi e reinviati a un altro host dopo una richesta GET.
+Il server chirpstack non mantiene i dati trasmessi dagli end-device in nessun modo permanente, perciò sull'application server è stata attivata da interfaccia web l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file [microservice.py](mockHttp/microservice.py) si occupa della ricezione del POST e l'inserimento dei JSON in un database Mongo, dopo di che i dati dal database vengono presi e reinviati a un altro host dopo una richesta GET.
 
 #### COMANDI
 
