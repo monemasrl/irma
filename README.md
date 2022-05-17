@@ -84,7 +84,7 @@ Sull'end device nel file [serial_esp_lora_oled.ino](arduino-py-communication/ser
 Per la lettura dei dati va scritto un decoder su misura per i dati che verranno ricevuti sul device profile selezionato per la crezione del device sull'application server. 
 
 ### ***ATTENZIONE!!!***
-*Il file **.ino** fornito nella repository è stato testato solo su un **Heltec ESP32** e non funzionerà su altri dispositivi non basati su ESP32*
+*Il file **.ino** fornito nella repository è stato testato solo su un **Heltec ESP32** e non è garantito il funzionamento su altri dispositivi non basati su ESP32*
 
 <img src="assets\esp.png" width="100" height="100"/>
 
