@@ -18,7 +18,7 @@ app.config['MONGODB_SETTINGS'] = {
 db = MongoEngine()
 db.init_app(app)
 
-
+#definizione della struttura del documento inserito in mongo
 class Payload(db.DynamicDocument):  
     def to_json(self):
         return {"m2m:cin":{
