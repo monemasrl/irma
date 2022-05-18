@@ -62,7 +62,10 @@ class SentDocument(db.DynamicDocument):
 def home():
     payload = Payload.objects().order_by('-id').first()#restituisce l'ultimo payload nel database come oggetto di tipo Payload
     #aggiungere creazione di un json che restituisce gli stati, l'ID e i dati degli stacker nel formato fornito da paolo
-
+    
+    print(payload['m2m:cin']['sensorData']['objectJSON']['sensorData'])
+    
+    #toSend = SentDocument(code=payload['sensorId'],)
     return jsonify(payload)
 
 
@@ -74,7 +77,7 @@ def create_record():
                 latitude=record['rxInfo'][0]['location']['latitude'],
                 longitude=record['rxInfo'][0]['location']['longitude'],
                 sensorData=record)
-    print(record['objectJSON'])
+    #print(record['objectJSON'])
     data = payload.from_json(json.dumps(payload.to_json()))
     data.save()
     return jsonify(payload.to_json())
