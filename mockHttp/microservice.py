@@ -34,9 +34,35 @@ class Payload(db.DynamicDocument):
                     }
                 }
 
+class SentDocument(db.DynamicDocument):
+    def to_jsonSent(self):
+        return {"data":[
+            {
+                "state": self.status,
+                "code": self.code,
+                "datiInterni": [
+                    {
+                        "titolo": self.titolo1,
+                        "dato": self.dato1
+                    },
+                    {
+                        "titolo": self.titolo2,
+                        "dato": self.dato2
+                    },
+                    {
+                        "titolo": self.titolo3,
+                        "dato": self.dato3
+                    },
+                ]
+            }
+        ]
+        }
+
 @app.route('/', methods=['GET'])
 def home():
     payload = Payload.objects().order_by('-id').first()#restituisce l'ultimo payload nel database come oggetto di tipo Payload
+    #aggiungere creazione di un json che restituisce gli stati, l'ID e i dati degli stacker nel formato fornito da paolo
+
     return jsonify(payload)
 
 
