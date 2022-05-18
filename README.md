@@ -112,7 +112,7 @@ Al fine di eseguire dei test in locale per mancanza di una rete LoRaWAN da utili
     Questo script eseguito (solo per test) sul gateway invia tramite interfaccia CAN due messaggi a intervalli regolari.
     
 2. [arduino_communication.py](arduino-py-communication/arduino_communication.py) - 
-    Questo script eseguito su un Rapberry Pi connesso all'ESP32 riceve tramite interfaccia CAN i messaggi che successivamente ritrasmetterà tramite intefaccia seriale all'end-device.
+    Questo script eseguito su un Rapberry Pi connesso all'ESP32 riceve tramite interfaccia CAN i messaggi che successivamente ritrasmetterà attraverso intefaccia seriale all'end-device.
 
 
 Questo sistema sotituisce la necessità di una rete e di sensori funzionanti per fare test sul funzionameto della infrastruttura di rete.
