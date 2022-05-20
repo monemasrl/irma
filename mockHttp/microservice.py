@@ -60,51 +60,53 @@ class SentDocument(db.DynamicDocument):
         ]
         }
 
-@app.route('/', methods=['GET'])
-def home():
-    payload = Payload.objects().order_by('-id').first()#restituisce l'ultimo payload nel database come oggetto di tipo Payload
-    #aggiungere creazione di un json che restituisce gli stati, l'ID e i dati degli stacker nel formato fornito da paolo
-    id=payload['m2m:cin']['con']['metadata']['sensorId']
-    dato=(payload['m2m:cin']['sensorData']['objectJSON'])
-    dato=dato.replace("{\"sensorData\":","")
-    dato=dato.replace("}","")#ora la stringa contiene solo il valore numerico del campo sensorData
-    dato=int(dato)#conversione a dato numerico per confronto con soglie preimpostate
-    #print(dato)
-    if(dato<15):
-        state="ok"
-    else:
-        state="alert"
-    
-    collect=Payload.objects().order_by('-id')
+def prepare_json(n,collect,currentMonth):
     sum=0
     sumM=0
     count=0
     countM=0
     totAverage=0
     monthlyAverage=0
-    currentMonth = datetime.now().month
-    while payload['m2m:cin']['con']['metadata']['sensorId']=='5': #da modificare perche' scorra tutti gli id
-        for x in collect:
+    for x in collect:
+        id=x['m2m:cin']['con']['metadata']['sensorId']
+        dato=x['m2m:cin']['sensorData']['objectJSON']                                       #ultimo dato prelevato dalle letture per definire uno status
+        dato=dato.replace("{\"sensorData\":","")
+        dato=dato.replace("}","")                                                           #ora la stringa contiene solo il valore numerico del campo sensorData
+        dato=int(dato)                                                                      #conversione a dato numerico per confronto con soglie preimpostate
+        if(dato<15):
+            state="ok"
+        else:
+            state="alert"
+
+        while x['m2m:cin']['con']['metadata']['sensorId']=='5':
             app=x['m2m:cin']['sensorData']['objectJSON']
             app=app.replace("{\"sensorData\":","")
             app=app.replace("}","")
-            app=int(app)
-
+            app=int(app)                                                                    #dato da sommare per le statistiche
             appM=x['m2m:cin']['con']['metadata']['readingTimestamp']
             appM=appM[5:7]
-            appM=int(appM)
+            appM=int(appM)                                                                  #mese della lettura per le statistiche mensili
             if(appM==currentMonth):
                 sumM=sumM+app
                 countM=countM+1
+                sum=sum+app
+                count=count+1
 
-            sum=sum+app
-            count=count+1
+            totAverage=sum/count
+            monthlyAverage=sumM/countM
+            
+    return jsonify(SentDocument(code=id,status=state,titolo1="Media Letture Totali",dato1=totAverage,titolo2="Media Letture Mensili",dato2=monthlyAverage,titolo3="app",dato3="app").to_jsonSent())
 
-        totAverage=sum/count
-        monthlyAverage=sumM/countM
 
-    toSend = SentDocument(code=id,status=state,titolo1="Media Letture Totali",dato1=totAverage,titolo2="Media Letture Mensili",dato2=monthlyAverage,titolo3="app",dato3="app")
-    return jsonify(toSend.to_jsonSent())
+
+@app.route('/', methods=['GET'])
+def home():    
+    n='5'
+    collect=Payload.objects().order_by('m2m:cin.con.metadata.sensorId','-m2m:cin.con.metadata.readingTimestamp')
+    currentMonth = datetime.now().month
+    send=json.dumps(prepare_json(n,collect,currentMonth))
+    toSend=toSend.update(send)
+    return {}
 
 
 @app.route('/', methods=['POST'])
