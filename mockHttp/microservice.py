@@ -113,11 +113,11 @@ def getData(n):
             totAverage=totSum/count
             monthlyAverage=monthlySum/mCount
 
+    send=json.dumps(SentDocument(code=n,status=status,titolo1="Media Letture Totali",dato1=totAverage,titolo2="Media Letture Mensili",dato2=monthlyAverage,titolo3="Letture eseguite nel mese",dato3=totSum).to_jsonSent())
     count=0
     mCount=0
     totSum=0
     monthlySum=0
-    send=json.dumps(SentDocument(code=n,status=status,titolo1="Media Letture Totali",dato1=totAverage,titolo2="Media Letture Mensili",dato2=monthlyAverage,titolo3="app",dato3="app").to_jsonSent())
     return send
     
 
@@ -137,16 +137,19 @@ def home():
 @app.route('/', methods=['POST'])
 def create_record():
     record = json.loads(request.data)
-    payload = Payload(iD=record['applicationID'],
-                time=record['publishedAt'],
-                latitude=record['rxInfo'][0]['location']['latitude'],
-                longitude=record['rxInfo'][0]['location']['longitude'],
-                sensorData=record
-                )
-    data = payload.from_json(json.dumps(payload.to_json()))
-    data.save()
-    return jsonify(payload.to_json())
-
+    if "confirmedUplink" in record:
+        payload = Payload(iD=record['applicationID'],
+                    time=record['publishedAt'],
+                    latitude=record['rxInfo'][0]['location']['latitude'],
+                    longitude=record['rxInfo'][0]['location']['longitude'],
+                    sensorData=record
+                    )
+        data = payload.from_json(json.dumps(payload.to_json()))
+        data.save()
+        return jsonify(payload.to_json())
+    else:
+        print("Received message different than Uplink")
+        return {}
 
 if __name__ == "__main__":
     app.run(debug = True)
