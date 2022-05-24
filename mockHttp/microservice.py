@@ -66,7 +66,9 @@ def mSum(data,readTime,currentMonth):
     return 0
 
 def prepare_status(dato):                           
-    if(dato<15):
+    if(dato==0):
+        state="off"
+    elif(dato<15):
         state="ok"
     else:
         state="alert"
@@ -88,7 +90,10 @@ def getData(n):
     monthlySum=0
     count=0
     mCount=0
+    status="off"
     currentMonth = datetime.now().month
+    totAverage=0
+    monthlyAverage=0
     collect=Payload.objects().order_by('m2m:cin.con.metadata.sensorId','-m2m:cin.con.metadata.readingTimestamp').only('m2m:cin.con.metadata.sensorId','m2m:cin.con.metadata.readingTimestamp','m2m:cin.sensorData.objectJSON')
     
     for x in collect:
@@ -98,28 +103,35 @@ def getData(n):
             appData=prepareData(appData)
             appReadTime=x['m2m:cin']['con']['metadata']['readingTimestamp']
             appReadTime=prepare_month(appReadTime)
-            if(appID==n):
-                status=prepare_status(appData)
-                totSum=totSum+appData
-                count=count+1
-                checkMonth=mSum(appData,appReadTime,currentMonth)
-                if(checkMonth!=0):
-                    mCount=mCount+1
-                    monthlySum=monthlySum+checkMonth
-    totAverage=totSum/count
-    monthlyAverage=monthlySum/mCount
+            status=prepare_status(appData)
+            totSum=totSum+appData
+            count=count+1
+            checkMonth=mSum(appData,appReadTime,currentMonth)
+            if(checkMonth!=0):
+                mCount=mCount+1
+                monthlySum=monthlySum+checkMonth
+            totAverage=totSum/count
+            monthlyAverage=monthlySum/mCount
+
     count=0
     mCount=0
     totSum=0
     monthlySum=0
-    send=json.dumps(SentDocument(code=appID,status=status,titolo1="Media Letture Totali",dato1=totAverage,titolo2="Media Letture Mensili",dato2=monthlyAverage,titolo3="app",dato3="app").to_jsonSent())
+    send=json.dumps(SentDocument(code=n,status=status,titolo1="Media Letture Totali",dato1=totAverage,titolo2="Media Letture Mensili",dato2=monthlyAverage,titolo3="app",dato3="app").to_jsonSent())
     return send
+    
 
 @app.route('/', methods=['GET'])
 def home():    
-    n='5'
-    send=getData('5')
-    return jsonify(send)
+    n=0
+    send=''
+    while(n<18):
+        n=n+1
+        n=str(n)
+        appSend=getData(n)
+        send=send+appSend
+        n=int(n)
+    return send
 
 
 @app.route('/', methods=['POST'])
