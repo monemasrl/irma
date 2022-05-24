@@ -60,53 +60,66 @@ class SentDocument(db.DynamicDocument):
         ]
         }
 
-def prepare_json(n,collect,currentMonth):
-    sum=0
-    sumM=0
+def mSum(data,readTime,currentMonth):
+    if(readTime==currentMonth):                                                                                             
+        return data
+    return 0
+
+def prepare_status(dato):                           
+    if(dato<15):
+        state="ok"
+    else:
+        state="alert"
+    return state
+
+def prepareData(appData):
+    appData=appData.replace("{\"sensorData\":","")
+    appData=appData.replace("}","")                                                           #ora la stringa contiene solo il valore numerico del campo sensorData
+    appData=int(appData)   
+    return appData     
+
+def prepare_month(readTime):
+    readTime=readTime[5:7]
+    readTime=int(readTime)  
+    return readTime
+
+def getData(n):
+    totSum=0
+    monthlySum=0
     count=0
-    countM=0
-    totAverage=0
-    monthlyAverage=0
+    mCount=0
+    currentMonth = datetime.now().month
+    collect=Payload.objects().order_by('m2m:cin.con.metadata.sensorId','-m2m:cin.con.metadata.readingTimestamp').only('m2m:cin.con.metadata.sensorId','m2m:cin.con.metadata.readingTimestamp','m2m:cin.sensorData.objectJSON')
+    
     for x in collect:
-        id=x['m2m:cin']['con']['metadata']['sensorId']
-        dato=x['m2m:cin']['sensorData']['objectJSON']                                       #ultimo dato prelevato dalle letture per definire uno status
-        dato=dato.replace("{\"sensorData\":","")
-        dato=dato.replace("}","")                                                           #ora la stringa contiene solo il valore numerico del campo sensorData
-        dato=int(dato)                                                                      #conversione a dato numerico per confronto con soglie preimpostate
-        if(dato<15):
-            state="ok"
-        else:
-            state="alert"
-
-        while x['m2m:cin']['con']['metadata']['sensorId']=='5':
-            app=x['m2m:cin']['sensorData']['objectJSON']
-            app=app.replace("{\"sensorData\":","")
-            app=app.replace("}","")
-            app=int(app)                                                                    #dato da sommare per le statistiche
-            appM=x['m2m:cin']['con']['metadata']['readingTimestamp']
-            appM=appM[5:7]
-            appM=int(appM)                                                                  #mese della lettura per le statistiche mensili
-            if(appM==currentMonth):
-                sumM=sumM+app
-                countM=countM+1
-                sum=sum+app
+        appID=x['m2m:cin']['con']['metadata']['sensorId']
+        if(appID==n):
+            appData=x['m2m:cin']['sensorData']['objectJSON']
+            appData=prepareData(appData)
+            appReadTime=x['m2m:cin']['con']['metadata']['readingTimestamp']
+            appReadTime=prepare_month(appReadTime)
+            if(appID==n):
+                status=prepare_status(appData)
+                totSum=totSum+appData
                 count=count+1
-
-            totAverage=sum/count
-            monthlyAverage=sumM/countM
-            
-    return jsonify(SentDocument(code=id,status=state,titolo1="Media Letture Totali",dato1=totAverage,titolo2="Media Letture Mensili",dato2=monthlyAverage,titolo3="app",dato3="app").to_jsonSent())
-
-
+                checkMonth=mSum(appData,appReadTime,currentMonth)
+                if(checkMonth!=0):
+                    mCount=mCount+1
+                    monthlySum=monthlySum+checkMonth
+    totAverage=totSum/count
+    monthlyAverage=monthlySum/mCount
+    count=0
+    mCount=0
+    totSum=0
+    monthlySum=0
+    send=json.dumps(SentDocument(code=appID,status=status,titolo1="Media Letture Totali",dato1=totAverage,titolo2="Media Letture Mensili",dato2=monthlyAverage,titolo3="app",dato3="app").to_jsonSent())
+    return send
 
 @app.route('/', methods=['GET'])
 def home():    
     n='5'
-    collect=Payload.objects().order_by('m2m:cin.con.metadata.sensorId','-m2m:cin.con.metadata.readingTimestamp')
-    currentMonth = datetime.now().month
-    send=json.dumps(prepare_json(n,collect,currentMonth))
-    toSend=toSend.update(send)
-    return {}
+    send=getData('5')
+    return jsonify(send)
 
 
 @app.route('/', methods=['POST'])
