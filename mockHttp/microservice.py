@@ -1,7 +1,6 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
-from chirpstack_api.as_pb import integration
 from google.protobuf.json_format import Parse
 
 import json
@@ -12,6 +11,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 
+#configurazione dei dati relativi al database per la connessione
 app.config['MONGODB_SETTINGS'] = {
     'db': 'irma',
     'host': 'localhost',
@@ -36,6 +36,7 @@ class Payload(db.DynamicDocument):
                     }
                 }
 
+#definizione struttura del documento da reinviare alla richiesta GET
 class SentDocument(db.DynamicDocument):
     def to_jsonSent(self):
         return {"data":[
@@ -54,7 +55,7 @@ class SentDocument(db.DynamicDocument):
                     {
                         "titolo": self.titolo3,
                         "dato": self.dato3
-                    },
+                    }
                 ]
             }
         ]
@@ -91,9 +92,10 @@ def getData(n):
     count=0
     mCount=0
     status="off"
-    currentMonth = datetime.now().month
+    currentMonth = datetime.now().month #salvataggio del valore attuale del mese per il confronto
     totAverage=0
     monthlyAverage=0
+    #questa query prende dal database solo i campi sensorId,ReadinTimestamp e objectJSON da tutti i documenti ordinati prima per sensorId e poi readingTimestamp
     collect=Payload.objects().order_by('m2m:cin.con.metadata.sensorId','-m2m:cin.con.metadata.readingTimestamp').only('m2m:cin.con.metadata.sensorId','m2m:cin.con.metadata.readingTimestamp','m2m:cin.sensorData.objectJSON')
     
     for x in collect:
@@ -125,7 +127,7 @@ def getData(n):
 def home():    
     n=0
     send=''
-    while(n<18):
+    while(n<18):                                                              #valore teorico del quantitativo di dispositivi separati per cui cercare gli id nel database
         n=n+1
         n=str(n)
         appSend=getData(n)
@@ -137,7 +139,7 @@ def home():
 @app.route('/', methods=['POST'])
 def create_record():
     record = json.loads(request.data)
-    if "confirmedUplink" in record:
+    if "confirmedUplink" in record:                                            #filtraggio degli eventi mandati dall'application server in modo da non inserire nel database valori irrilevanti
         payload = Payload(iD=record['applicationID'],
                     time=record['publishedAt'],
                     latitude=record['rxInfo'][0]['location']['latitude'],
