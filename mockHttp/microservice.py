@@ -10,8 +10,9 @@ from flask_mongoengine import MongoEngine
 from datetime import datetime
 
 app = Flask(__name__)
-
-#configurazione dei dati relativi al database per la connessione
+#########################################################################
+#####configurazione dei dati relativi al database per la connessione#####
+#########################################################################
 app.config['MONGODB_SETTINGS'] = {
     'db': 'irma',
     'host': 'localhost',
@@ -19,8 +20,9 @@ app.config['MONGODB_SETTINGS'] = {
 }
 db = MongoEngine()
 db.init_app(app)
-
-#definizione della struttura del documento inserito in mongo
+#####################################################################
+#####definizione della struttura del documento inserito in mongo#####
+#####################################################################
 class Payload(db.DynamicDocument):  
     def to_json(self):
         return {"m2m:cin":{
@@ -35,8 +37,9 @@ class Payload(db.DynamicDocument):
                     "sensorData":self.sensorData
                     }
                 }
-
-#definizione struttura del documento da reinviare alla richiesta GET
+#############################################################################
+#####definizione struttura del documento da reinviare alla richiesta GET#####
+#############################################################################
 class SentDocument(db.DynamicDocument):
     def to_jsonSent(self):
         return {"data":[
