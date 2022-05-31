@@ -4,7 +4,7 @@ from urllib.parse import urlparse, parse_qs
 from google.protobuf.json_format import Parse
 
 import json
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_mongoengine import MongoEngine
 
 from datetime import datetime
@@ -42,8 +42,8 @@ class Payload(db.DynamicDocument):
 #############################################################################
 class SentDocument(db.DynamicDocument):
     def to_jsonSent(self):
-        return {"data":[
-            {
+        return {
+            
                 "state": self.status,
                 "code": self.code,
                 "datiInterni": [
@@ -60,8 +60,8 @@ class SentDocument(db.DynamicDocument):
                         "dato": self.dato3
                     }
                 ]
-            }
-        ]
+            
+        
         }
 
 def mSum(data,readTime,currentMonth):
@@ -129,13 +129,17 @@ def getData(n):
 @app.route('/', methods=['GET'])
 def home():    
     n=0
-    send=''
+    send='{\"data\":['
     while(n<18):                                                              #valore teorico del quantitativo di dispositivi separati per cui cercare gli id nel database
         n=n+1
         n=str(n)
         appSend=getData(n)
-        send=send+appSend
+        send=send+appSend+","
         n=int(n)
+    send = f"{send[0: -1]}"
+    send=send+"]}"
+    send=jsonify(json.loads(send))
+    print(type(send))
     return send
 
 
