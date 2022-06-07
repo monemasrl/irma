@@ -6,10 +6,20 @@ from google.protobuf.json_format import Parse
 import json
 from flask import Flask, request, jsonify, Response
 from flask_mongoengine import MongoEngine
+from flask_cors import CORS, cross_origin
 
 from datetime import datetime
 
 app = Flask(__name__)
+
+###########################################################################################
+#####configurazione dei dati relativi al cors per la connessione da una pagina esterna#####
+###########################################################################################
+app.config['CORS_SETTINGS']= {
+    'Content-Type':'application/json',
+    'Access-Control-Allow-Origin': 'http://localhost:3000',
+    'Access-Control-Allow-Credentials': 'true'
+}
 #########################################################################
 #####configurazione dei dati relativi al database per la connessione#####
 #########################################################################
@@ -69,10 +79,10 @@ def mSum(data,readTime,currentMonth):
         return data
     return 0
 
-def prepare_status(dato):                           
+def prepare_status(dato):                         
     if(dato==0):
         state="off"
-    elif(dato<15):
+    elif(dato<8):
         state="ok"
     else:
         state="alert"
@@ -116,9 +126,10 @@ def getData(n):
                 mCount=mCount+1
                 monthlySum=monthlySum+checkMonth
             totAverage=totSum/count
-            monthlyAverage=monthlySum/mCount
+            if(mCount!=0):
+                monthlyAverage=monthlySum/mCount
 
-    send=json.dumps(SentDocument(code=n,status=status,titolo1="Media Letture Totali",dato1=totAverage,titolo2="Media Letture Mensili",dato2=monthlyAverage,titolo3="Letture eseguite nel mese",dato3=totSum).to_jsonSent())
+    send=json.dumps(SentDocument(code=n,status=status,titolo1="Media Letture Totali",dato1=float("{0:.3f}".format(totAverage)),titolo2="Media Letture Mensili",dato2=float("{0:.3f}".format(monthlyAverage)),titolo3="Letture eseguite nel mese",dato3=mCount).to_jsonSent())
     count=0
     mCount=0
     totSum=0
@@ -127,6 +138,7 @@ def getData(n):
     
 
 @app.route('/', methods=['GET'])
+@cross_origin()
 def home():    
     n=0
     send='{\"data\":['
@@ -139,7 +151,6 @@ def home():
     send = f"{send[0: -1]}"
     send=send+"]}"
     send=jsonify(json.loads(send))
-    print(type(send))
     return send
 
 
