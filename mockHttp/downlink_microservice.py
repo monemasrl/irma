@@ -1,4 +1,5 @@
 
+
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -35,13 +36,15 @@ def home():
 
 @app.route('/', methods=['POST'])
 def sendMqtt(): # alla ricezione di un post pubblica un messaggio sul topic
-    option=request.data
-    if option == 1:
+    received=json.loads(request.data)
+    appNum=received['appNum']
+    if received['operation'] == 1:
         data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RhcnQ='})
     else:
         data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RvcA=='})
-    mqtt.publish('application/5/device/2232330000888802/command/down', data)
-    return option
+    topic='application/'+appNum+'/device/2232330000888802/command/down'
+    mqtt.publish(topic, data)
+    return received
 
 if __name__ == "__main__":
     app.run(port = 5001,debug = True)
