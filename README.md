@@ -102,7 +102,8 @@ Il server chirpstack non mantiene i dati trasmessi dagli end-device in nessun mo
 #### COMANDI
 
 Il file [downlink.py](downlink.py) si occupa dell'invio dei comandi di Start e Stop all'application server tramite MQTT, il quale a sua volta invierà un messaggio di downlink verso l'end-device con il comando ricevuto il quale fermerà o avvierà la lettura dei dati dai sensori. Questo script serve per il test dei comandi senza dashboard.
-Per l'utilizzo degli stessi comandi ma da dashboard in remoto si usa il file .[downlink_microservice.py](mockHttp/downlink_microservice.py) che riceve un post dalla dashboard con un valore numerico che definisce il messaggio da inviare tramite MQTT(Start o Stop) e lo pubblica sul topic dell'application server.
+
+Per l'utilizzo degli stessi comandi ma da dashboard in remoto si usa il file [downlink_microservice.py](mockHttp/downlink_microservice.py) che riceve un post dalla dashboard con un valore numerico che definisce il messaggio da inviare tramite MQTT(Start o Stop) e lo pubblica sul topic dell'application server.
 
 
 #### TESTING IN LOCALE
