@@ -30,7 +30,7 @@ def handle_mqtt_message(client, userdata, message):
 
 @app.route('/', methods=['GET'])
 def home():
-    return "<html><head><title>Benvenuto</title></head><body><div>Hello World!</div></body></html>"
+    return "<html><head><title>downlink_microservice</title></head><body><div>Script di invio messaggi MQTT per l'avvio dei comandi Start e Stop degli end-device</div></body></html>"
 
 
 @app.route('/', methods=['POST'])
