@@ -1,9 +1,6 @@
-Possibili soluzioni per l'avvio e la fermata della lettura da dashboard:
-- post allo script con flask che avvia mqtt
-- javascript che esegue mqtt direttamente da browser https://www.emqx.com/en/blog/how-to-use-mqtt-in-react
 
 
-Prati mancanti:
+
+mancanti:
 - gestione dello stato off dei sensori
-- modificare flowcart di microservice.py
 
