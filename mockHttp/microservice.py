@@ -10,6 +10,8 @@ from flask_cors import CORS, cross_origin
 
 from datetime import datetime
 
+import base64
+
 app = Flask(__name__)
 
 ###########################################################################################
@@ -53,7 +55,7 @@ class Payload(db.DynamicDocument):
 class SentDocument(db.DynamicDocument):
     def to_jsonSent(self):
         return {
-            
+                "devEUI":self.eui,
                 "state": self.status,
                 "code": self.code,
                 "datiInterni": [
@@ -82,7 +84,7 @@ def mSum(data,readTime,currentMonth):
 def prepare_status(dato):                         
     if(dato==0):
         state="off"
-    elif(dato<8):
+    elif(dato<20):
         state="ok"
     else:
         state="alert"
@@ -109,7 +111,7 @@ def getData(n):
     totAverage=0
     monthlyAverage=0
     #questa query prende dal database solo i campi sensorId,ReadinTimestamp e objectJSON da tutti i documenti ordinati prima per sensorId e poi readingTimestamp
-    collect=Payload.objects().order_by('m2m:cin.con.metadata.sensorId','-m2m:cin.con.metadata.readingTimestamp').only('m2m:cin.con.metadata.sensorId','m2m:cin.con.metadata.readingTimestamp','m2m:cin.sensorData.objectJSON')
+    collect=Payload.objects().order_by('m2m:cin.con.metadata.sensorId','-m2m:cin.con.metadata.readingTimestamp').only('m2m:cin.con.metadata.sensorId','m2m:cin.con.metadata.readingTimestamp','m2m:cin.sensorData.objectJSON','m2m:cin.sensorData.devEUI')
     
     for x in collect:
         appID=x['m2m:cin']['con']['metadata']['sensorId']
@@ -128,8 +130,11 @@ def getData(n):
             totAverage=totSum/count
             if(mCount!=0):
                 monthlyAverage=monthlySum/mCount
-
-    send=json.dumps(SentDocument(code=n,status=status,titolo1="Media Letture Totali",dato1=float("{0:.3f}".format(totAverage)),titolo2="Media Letture Mensili",dato2=float("{0:.3f}".format(monthlyAverage)),titolo3="Letture eseguite nel mese",dato3=mCount).to_jsonSent())
+    if(status=="ok"):
+        eui=x['m2m:cin']['sensorData']['devEUI']
+    else:
+        eui=0
+    send=json.dumps(SentDocument(eui=eui,code=n,status=status,titolo1="Media Letture Totali",dato1=float("{0:.3f}".format(totAverage)),titolo2="Media Letture Mensili",dato2=float("{0:.3f}".format(monthlyAverage)),titolo3="Letture eseguite nel mese",dato3=mCount).to_jsonSent())
     count=0
     mCount=0
     totSum=0
@@ -158,6 +163,7 @@ def home():
 def create_record():
     record = json.loads(request.data)
     if "confirmedUplink" in record:                                            #filtraggio degli eventi mandati dall'application server in modo da non inserire nel database valori irrilevanti
+        record['devEUI']=base64.b64decode(record['devEUI']).hex()
         payload = Payload(iD=record['applicationID'],
                     time=record['publishedAt'],
                     latitude=record['rxInfo'][0]['location']['latitude'],
