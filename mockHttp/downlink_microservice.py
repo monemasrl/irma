@@ -1,5 +1,6 @@
 
 
+
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -9,13 +10,21 @@ import json
 from flask import Flask, request, jsonify, Response
 from flask_mqtt import Mqtt
 
+from flask_cors import CORS, cross_origin
+
 app = Flask(__name__)
+
+app.config['CORS_SETTINGS']= {
+    'Content-Type':'application/json',
+    'Access-Control-Allow-Origin': 'http://localhost:3000',
+    'Access-Control-Allow-Credentials': 'true'
+}
 
 app.config['MQTT_BROKER_URL'] = 'localhost'
 app.config['MQTT_BROKER_PORT'] = 1883
 app.config['MQTT_TLS_ENABLED'] = False
 
-
+CORS(app)
 mqtt = Mqtt(app)
 
 @mqtt.on_connect() # connessione al topic mqtt
@@ -37,13 +46,15 @@ def home():
 @app.route('/', methods=['POST'])
 def sendMqtt(): # alla ricezione di un post pubblica un messaggio sul topic
     received=json.loads(request.data)
-    appNum=received['appNum']
-    if received['operation'] == 1:
-        data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RhcnQ='})
+    appNum=str(received['app']['code']) # application ID ricevuto per identificare le varie app sull'application server
+    devEUI=str(received['app']['eui']) # devEUI rivuto per identificare i dipositivi nelle varie app
+    if received['statoStaker'] == 1: 
+        data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RhcnQ='}) # comando Start
     else:
-        data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RvcA=='})
-    topic='application/'+appNum+'/device/2232330000888802/command/down'
+        data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RvcA=='}) # comando Stop
+    topic='application/'+appNum+'/device/'+devEUI+'/command/down'
     mqtt.publish(topic, data)
+    print(received)
     return received
 
 if __name__ == "__main__":
