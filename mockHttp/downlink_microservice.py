@@ -1,6 +1,4 @@
 
-
-
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -29,7 +27,7 @@ mqtt = Mqtt(app)
 
 @mqtt.on_connect() # connessione al topic mqtt
 def handle_connect(client, userdata, flags, rc):
-    mqtt.subscribe('application/5/device/2232330000888802/command/down')
+    mqtt.subscribe('application')
 
 @mqtt.on_message() # preparazione del messaggio da pubblicare sul topic
 def handle_mqtt_message(client, userdata, message):
