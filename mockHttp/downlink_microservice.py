@@ -12,12 +12,18 @@ from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
 
+###########################################################################################
+#####configurazione dei dati relativi al cors per la connessione da una pagina esterna#####
+###########################################################################################
 app.config['CORS_SETTINGS']= {
     'Content-Type':'application/json',
     'Access-Control-Allow-Origin': 'http://localhost:3000',
     'Access-Control-Allow-Credentials': 'true'
 }
 
+################################################################
+#####configurazione dei dati relativi alla connessione MQTT#####
+################################################################
 app.config['MQTT_BROKER_URL'] = 'localhost'
 app.config['MQTT_BROKER_PORT'] = 1883
 app.config['MQTT_TLS_ENABLED'] = False
