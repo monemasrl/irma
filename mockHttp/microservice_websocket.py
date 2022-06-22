@@ -20,6 +20,8 @@ rec=""
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app,cors_allowed_origins="*")
 
+MAX_TRESHOLD = 20
+
 ###########################################################################################
 #####configurazione dei dati relativi al cors per la connessione da una pagina esterna#####
 ###########################################################################################
@@ -93,17 +95,16 @@ def mSum(data,readTime,currentMonth):
 def prepare_status(dato):                         
     if(dato==0):
         state="off"
-    elif(dato<20):
+    elif(dato<MAX_TRESHOLD):
         state="ok"
     else:
         state="alert"
     return state
 
-def prepareData(appData):
-    appData=appData.replace("{\"sensorData\":","")
-    appData=appData.replace("}","")                                                           #ora la stringa contiene solo il valore numerico del campo sensorData
-    appData=int(appData)   
-    return appData     
+def prepareData(rawData):
+    data = json.loads(rawData)['sensorData']
+    data=int(data)
+    return data
 
 def prepare_month(readTime):
     readTime=readTime[5:7]
