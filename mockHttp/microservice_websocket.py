@@ -82,9 +82,6 @@ class SentDocument(db.DynamicDocument):
         
         }
 
-def get_rec():
-      return rec
-
 def mSum(data,readTime,currentMonth):
     if(readTime==currentMonth):                                                                                             
         return data
@@ -110,7 +107,7 @@ def prepare_month(readTime):
     readTime=int(readTime)  
     return readTime
 
-def getData(n):
+def getData(n,rec):
     totSum=0
     monthlySum=0
     count=0
@@ -128,7 +125,7 @@ def getData(n):
             appData=prepareData(appData)
             appReadTime=x['m2m:cin']['con']['metadata']['readingTimestamp']
             appReadTime=prepare_month(appReadTime)
-            if(get_rec()==appID):
+            if(rec==appID):
                 status="rec"
             else:
                 status=prepare_status(appData)
@@ -161,13 +158,12 @@ def home():
     while(n<18):                                                              #valore teorico del quantitativo di dispositivi separati per cui cercare gli id nel database
         n=n+1
         n=str(n)
-        appSend=getData(n)
+        appSend=getData(n,rec)
         send=send+appSend+","
         n=int(n)
     send = f"{send[0: -1]}"
     send=send+"]}"
     send=jsonify(json.loads(send))
-    #socketio.send(send)
     return send
 
 
