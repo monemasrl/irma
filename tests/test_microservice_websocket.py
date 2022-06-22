@@ -1,4 +1,3 @@
-from multiprocessing.sharedctypes import Value
 from mockHttp import microservice_websocket
 import pytest
 
@@ -102,7 +101,6 @@ class TestDBDocs:
 
         assert payload.to_json() == payload_dict, "Error in `Payload.to_json`: output mismatch"
 
-
     def test_SentDocument_to_jsonSent(self):
         sentDocument = microservice_websocket.SentDocument(
             eui=123,
@@ -137,6 +135,30 @@ class TestDBDocs:
         }
 
         assert sentDocument.to_jsonSent() == sentDocument_dict, "Error in `SentDocument.to_jsonSent()`: output mismatch"
+
+
+class TestFlaskApp:
+
+    @pytest.fixture()
+    def app(self, payload: microservice_websocket.Payload):
+        app = microservice_websocket.app
+        app.config.update({
+            "TESTING": True,
+        })
+        app.config['MONGODB_CONNECT'] = False
+        # set up
+        yield app
+        # clean up
+ 
+    @pytest.fixture()
+    def client(self, app):
+        return app.test_client()
+
+    def test_main_route_get(self, client):
+        assert False
+        response = client.get("/")
+        print(response.data)
+        assert False
 
 
 def test_prepareData():
@@ -198,3 +220,8 @@ def test_prepareData_absent_key():
     data = '{"foo": "bar"}'
     with pytest.raises(KeyError):
         microservice_websocket.prepareData(data)
+
+
+def test_getData():
+    pass # TODO!
+
