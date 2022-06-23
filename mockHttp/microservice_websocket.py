@@ -156,7 +156,6 @@ def create_app():
         send = f"{send[0: -1]}"
         send=send+"]}"
         send=jsonify(json.loads(send))
-        #socketio.send(send)
         return send
 
     @app.route('/', methods=['POST'])
