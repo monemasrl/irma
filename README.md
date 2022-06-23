@@ -97,7 +97,7 @@ Per aggiungere la lettura dei dati dai sensori è stato utilizzato il protocollo
 
 #### WEB-SERVICE E SALVATAGGIO DEI DATI
 
-Il server chirpstack non mantiene i dati trasmessi dagli end-device in nessun modo permanente, perciò sull'application server è stata attivata da interfaccia web l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file [microservice_websocket.py](mockHttp/microservice_websocket.py) si occupa della ricezione del POST e l'inserimento dei JSON in un database Mongo, dopo di che i dati dal database vengono rielaborati e ritrasmessi sempre in formato JSON alla dashboard tramite WebSocket per il display dei valori in tempo reale. L'avvio di quest'ultimo script si fa con 'python3 -m mockHttp.microservice_websocket'.
+Il server chirpstack non mantiene i dati trasmessi dagli end-device in nessun modo permanente, perciò sull'application server è stata attivata da interfaccia web l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file [microservice_websocket.py](mockHttp/microservice_websocket.py) si occupa della ricezione del POST e l'inserimento dei JSON in un database Mongo, dopo di che i dati dal database vengono rielaborati e ritrasmessi sempre in formato JSON alla dashboard tramite WebSocket per il display dei valori in tempo reale. L'avvio di quest'ultimo script si fa con `python3 -m mockHttp.microservice_websocket`.
 
 #### COMANDI
 
