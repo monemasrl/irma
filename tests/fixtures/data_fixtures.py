@@ -42,7 +42,7 @@ def longitude() -> float:
 
 
 @pytest.fixture()
-def sensorData(iD, time, latitude, longitude) -> dict:
+def sensorData_noUplink(iD, time, latitude, longitude) -> dict:
     return {
         "applicationID": iD,
         "applicationName": "temperature-sensor",

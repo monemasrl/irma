@@ -90,6 +90,14 @@ class TestFlaskApp:
         devices = decoded_json["data"]
         assert len(devices) == microservice_websocket.N_DEVICES, "Invalid number of devices in json from '/' route"
 
+    def test_main_route_post_Uplink(self, client):
+        # TODO
+        pass
+    
+    def test_main_route_post_noUplink(self, client, sensorData_noUplink):
+        response = client.post("/", json=sensorData_noUplink)
+        decoded_json = json.loads(response.data.decode())
+        assert not decoded_json, "Wrong response from get request: should be empty but it's not"
 
 def test_mSum_rightMonth():
     assert microservice_websocket.mSum(10, 4, 4) == 10, "Error in `mSum(): output mismatch"

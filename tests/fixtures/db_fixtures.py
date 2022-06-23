@@ -8,11 +8,11 @@ from mockHttp.microservice_websocket import Payload, SentDocument
 
 
 @pytest.fixture()
-def payload(iD, time, latitude, longitude, sensorData):
+def payload(iD, time, latitude, longitude, sensorData_noUplink):
     return Payload(
         iD=iD,
         time=time,
         latitude=latitude,
         longitude=longitude,
-        sensorData=sensorData,
+        sensorData=sensorData_noUplink,
     )
