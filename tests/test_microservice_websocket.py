@@ -63,11 +63,17 @@ class TestFlaskApp:
 
     @pytest.fixture()
     def app(self):
-        app = microservice_websocket.app
+        app, _ = microservice_websocket.create_app()
         app.config.update({
             "TESTING": True,
         })
         app.config['MONGODB_CONNECT'] = False
+        app.config['MONGODB_SETTINGS'] = {
+            'db': 'mongoenginetest',
+            'host': 'mongomock://localhost',
+            'port': 27017
+        }
+        db = microservice_websocket.init_db(app)
         # set up
         yield app
         # clean up
@@ -77,7 +83,6 @@ class TestFlaskApp:
         return app.test_client()
 
     def test_main_route_get(self, client):
-        assert False
         response = client.get("/")
         print(response.data)
         assert False

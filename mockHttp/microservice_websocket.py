@@ -5,7 +5,6 @@ from google.protobuf.json_format import Parse
 
 import json
 from flask import Flask, request, jsonify, Response
-from flask_mongoengine import MongoEngine
 from flask_cors import CORS, cross_origin
 from flask_socketio import send,emit, SocketIO
 
@@ -13,84 +12,21 @@ from datetime import datetime
 
 import base64
 
-app = Flask(__name__)
+from mockHttp.microservice_db import Payload, SentDocument, init_db
 
 rec=""
-
-app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app,cors_allowed_origins="*")
-
 MAX_TRESHOLD = 20
 
-###########################################################################################
-#####configurazione dei dati relativi al cors per la connessione da una pagina esterna#####
-###########################################################################################
-app.config['CORS_SETTINGS']= {
-    'Content-Type':'application/json',
-    'Access-Control-Allow-Origin': 'http://localhost:3000',
-    'Access-Control-Allow-Credentials': 'true'
-}
-#########################################################################
-#####configurazione dei dati relativi al database per la connessione#####
-#########################################################################
-app.config['MONGODB_SETTINGS'] = {
-    'db': 'irma',
-    'host': 'localhost',
-    'port': 27017
-}
-db = MongoEngine()
-db.init_app(app)
-#####################################################################
-#####definizione della struttura del documento inserito in mongo#####
-#####################################################################
-class Payload(db.DynamicDocument):  
-    def to_json(self):
-        return {"m2m:cin":{
-                    "con":{
-                        "metadata": {
-                            "sensorId": self.iD,
-                            "readingTimestamp": self.time,
-                            "latitude": self.latitude,
-                            "longitude": self.longitude
-                            }
-                        },
-                    "sensorData":self.sensorData
-                    }
-                }
-#############################################################################
-#####definizione struttura del documento da reinviare alla richiesta GET#####
-#############################################################################
-class SentDocument(db.DynamicDocument):
-    def to_jsonSent(self):
-        return {
-                "devEUI":self.eui,
-                "state": self.status,
-                "code": self.code,
-                "datiInterni": [
-                    {
-                        "titolo": self.titolo1,
-                        "dato": self.dato1
-                    },
-                    {
-                        "titolo": self.titolo2,
-                        "dato": self.dato2
-                    },
-                    {
-                        "titolo": self.titolo3,
-                        "dato": self.dato3
-                    }
-                ]
-            
-        
-        }
 
 def get_rec():
-      return rec
+    return rec
+
 
 def mSum(data,readTime,currentMonth):
     if(readTime==currentMonth):                                                                                             
         return data
     return 0
+
 
 def prepare_status(dato):                         
     if(dato==0):
@@ -101,15 +37,18 @@ def prepare_status(dato):
         state="alert"
     return state
 
+
 def prepareData(rawData):
     data = json.loads(rawData)['sensorData']
     data=int(data)
     return data
 
+
 def prepare_month(readTime):
     readTime=readTime[5:7]
     readTime=int(readTime)  
     return readTime
+
 
 def getData(n):
     totSum=0
@@ -152,75 +91,108 @@ def getData(n):
     totSum=0
     monthlySum=0
     return send
-    
-
-@app.route('/', methods=['GET'])
-@cross_origin()
-def home():    
-    n=0
-    send='{\"data\":['
-    while(n<18):                                                              #valore teorico del quantitativo di dispositivi separati per cui cercare gli id nel database
-        n=n+1
-        n=str(n)
-        appSend=getData(n)
-        send=send+appSend+","
-        n=int(n)
-    send = f"{send[0: -1]}"
-    send=send+"]}"
-    send=jsonify(json.loads(send))
-    #socketio.send(send)
-    return send
 
 
-@app.route('/', methods=['POST'])
-def create_record():
-    global rec
-    record = json.loads(request.data)
-    if "confirmedUplink" in record:                                            #filtraggio degli eventi mandati dall'application server in modo da non inserire nel database valori irrilevanti
-        record['devEUI']=base64.b64decode(record['devEUI']).hex()
-        payload = Payload(iD=record['applicationID'],
-                    time=record['publishedAt'],
-                    latitude=record['rxInfo'][0]['location']['latitude'],
-                    longitude=record['rxInfo'][0]['location']['longitude'],
-                    sensorData=record
-                    )
-        data = payload.from_json(json.dumps(payload.to_json()))
-        data.save()
-        if rec==record['applicationID']:
-            rec=""
-        socketio.emit('change')
-        print("1")
-        return jsonify(payload.to_json())
-    else:
-        print("Received message different than Uplink")
-        rec=record['applicationID']
-        socketio.emit('change')
-        print("2")
-        return {}
+def create_socketio(app):
+    socketio = SocketIO(app,cors_allowed_origins="*")
 
-@socketio.on('connect')
-def connected():
-    print('Connected')
+    @socketio.on('connect')
+    def connected():
+        print('Connected')
 
-@socketio.on('disconnect')
-def disconnected():
-    print('Disconnected')
+    @socketio.on('disconnect')
+    def disconnected():
+        print('Disconnected')
 
-@socketio.on('change')
-def onChange():
-    print('Changed')
-    n=0
-    send='{\"data\":['
-    while(n<18):                                                              #valore teorico del quantitativo di dispositivi separati per cui cercare gli id nel database
-        n=n+1
-        n=str(n)
-        appSend=getData(n)
-        send=send+appSend+","
-        n=int(n)
-    send = f"{send[0: -1]}"
-    send=send+"]}"
-    send=jsonify(json.loads(send))
-    socketio.send(send)
+    @socketio.on('change')
+    def onChange():
+        print('Changed')
+        n=0
+        send='{\"data\":['
+        while(n<18):                                                              #valore teorico del quantitativo di dispositivi separati per cui cercare gli id nel database
+            n=n+1
+            n=str(n)
+            appSend=getData(n)
+            send=send+appSend+","
+            n=int(n)
+        send = f"{send[0: -1]}"
+        send=send+"]}"
+        send=jsonify(json.loads(send))
+        socketio.send(send)
+
+    return socketio
+
+
+def create_app():
+    app = Flask(__name__)
+    socketio = create_socketio(app)
+
+    app.config['SECRET_KEY'] = 'secret!'
+
+    ###########################################################################################
+    #####configurazione dei dati relativi al cors per la connessione da una pagina esterna#####
+    ###########################################################################################
+    app.config['CORS_SETTINGS']= {
+        'Content-Type':'application/json',
+        'Access-Control-Allow-Origin': 'http://localhost:3000',
+        'Access-Control-Allow-Credentials': 'true'
+    }
+    #########################################################################
+    #####configurazione dei dati relativi al database per la connessione#####
+    #########################################################################
+    app.config['MONGODB_SETTINGS'] = {
+        'db': 'irma',
+        'host': 'localhost',
+        'port': 27017
+    }
+
+    @app.route('/', methods=['GET'])
+    @cross_origin()
+    def home():
+        n=0
+        send='{\"data\":['
+        while(n<18):                                                              #valore teorico del quantitativo di dispositivi separati per cui cercare gli id nel database
+            n=n+1
+            n=str(n)
+            appSend=getData(n)
+            send=send+appSend+","
+            n=int(n)
+        send = f"{send[0: -1]}"
+        send=send+"]}"
+        send=jsonify(json.loads(send))
+        #socketio.send(send)
+        return send
+
+    @app.route('/', methods=['POST'])
+    def create_record():
+        global rec
+        record = json.loads(request.data)
+        if "confirmedUplink" in record:                                            #filtraggio degli eventi mandati dall'application server in modo da non inserire nel database valori irrilevanti
+            record['devEUI']=base64.b64decode(record['devEUI']).hex()
+            payload = Payload(iD=record['applicationID'],
+                        time=record['publishedAt'],
+                        latitude=record['rxInfo'][0]['location']['latitude'],
+                        longitude=record['rxInfo'][0]['location']['longitude'],
+                        sensorData=record
+                        )
+            data = payload.from_json(json.dumps(payload.to_json()))
+            data.save()
+            if rec==record['applicationID']:
+                rec=""
+            socketio.emit('change')
+            print("1")
+            return jsonify(payload.to_json())
+        else:
+            print("Received message different than Uplink")
+            rec=record['applicationID']
+            socketio.emit('change')
+            print("2")
+            return {}
+
+    return app, socketio
+
 
 if __name__ == "__main__":
+    app, socketio = create_app()
+    db = init_db(app)
     socketio.run(app, debug=True)
