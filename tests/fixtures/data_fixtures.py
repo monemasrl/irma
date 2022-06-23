@@ -89,3 +89,58 @@ def sensorData_noUplink(iD, time, latitude, longitude) -> dict:
             "key": "value"
         }
     }
+
+@pytest.fixture()
+def sensorData_Uplink(iD, time, latitude, longitude) -> dict:
+    return {
+        "applicationID": iD,
+        "applicationName": "test_esp",
+        "deviceName": "esp32",
+        "devEUI": "IjIzAACIiAI=",
+        "rxInfo": [
+            {
+                "gatewayID": "5F8B//59p6g=",
+                "time": time,
+                "timeSinceGPSEpoch": None,
+                "rssi": -10,
+                "loRaSNR": 8.5,
+                "channel": 4,
+                "rfChain": 0,
+                "board": 0,
+                "antenna": 0,
+                "location": {
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "altitude": 0,
+                    "source": "UNKNOWN",
+                    "accuracy": 0
+                },
+                "fineTimestampType": "NONE",
+                "context": "Ki0a3A==",
+                "uplinkID": "wPR+sie0RG2x6bz5t4+G3Q==",
+                "crcStatus": "CRC_OK"
+            }
+        ],
+        "txInfo": {
+            "frequency": 867300000,
+            "modulation": "LORA",
+            "loRaModulationInfo": {
+                "bandwidth": 125,
+                "spreadingFactor": 12,
+                "codeRate": "4/5",
+                "polarizationInversion": False
+            }
+        },
+        "adr": True,
+        "dr": 0,
+        "fCnt": 579,
+        "fPort": 2,
+        "data": "AAE=",
+        "objectJSON": "{\"sensorData\":1}",
+        "tags": {},
+        "confirmedUplink": True,
+        "devAddr": "AS6zcQ==",
+        "publishedAt": "2022-06-23T13:32:08.564170948Z",
+        "deviceProfileID": "fc9a26f4-58fe-47b0-bfe9-2cb7711f1de1",
+        "deviceProfileName": "testOTAA"
+    }
