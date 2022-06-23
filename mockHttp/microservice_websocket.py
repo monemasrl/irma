@@ -108,7 +108,7 @@ def create_socketio(app):
         while(n<N_DEVICES):                                                              
             n=n+1
             n=str(n)
-            appSend=getData(n)
+            appSend=getData(n, rec)
             send=send+appSend+","
             n=int(n)
         send = f"{send[0: -1]}"
@@ -150,7 +150,7 @@ def create_app():
         while(n<18):                                                              #valore teorico del quantitativo di dispositivi separati per cui cercare gli id nel database
             n=n+1
             n=str(n)
-            appSend=getData(n)
+            appSend=getData(n, rec)
             send=send+appSend+","
             n=int(n)
         send = f"{send[0: -1]}"
