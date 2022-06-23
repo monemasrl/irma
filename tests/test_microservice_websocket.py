@@ -1,5 +1,6 @@
 from mockHttp import microservice_websocket
 import pytest
+import json
 from fixtures.data_fixtures import *
 from fixtures.db_fixtures import *
 
@@ -84,8 +85,10 @@ class TestFlaskApp:
 
     def test_main_route_get(self, client):
         response = client.get("/")
-        print(response.data)
-        assert False
+        decoded_json = json.loads(response.data.decode())
+        assert "data" in decoded_json, "Invalid json from '/' route"
+        devices = decoded_json["data"]
+        assert len(devices) == microservice_websocket.N_DEVICES, "Invalid number of devices in json from '/' route"
 
 
 def test_mSum_rightMonth():

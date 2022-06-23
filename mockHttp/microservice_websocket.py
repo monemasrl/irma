@@ -15,7 +15,8 @@ import base64
 from mockHttp.microservice_db import Payload, SentDocument, init_db
 
 rec=""
-MAX_TRESHOLD = 20
+MAX_TRESHOLD = 20   # valore teorico della soglia di pericolo del sensore
+N_DEVICES = 18      # valore teorico del quantitativo di dispositivi separati per cui cercare gli id nel database
 
 
 def get_rec():
@@ -109,7 +110,7 @@ def create_socketio(app):
         print('Changed')
         n=0
         send='{\"data\":['
-        while(n<18):                                                              #valore teorico del quantitativo di dispositivi separati per cui cercare gli id nel database
+        while(n<N_DEVICES):                                                              
             n=n+1
             n=str(n)
             appSend=getData(n)
