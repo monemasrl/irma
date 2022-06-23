@@ -12,7 +12,7 @@ from datetime import datetime
 
 import base64
 
-from mockHttp.ttpmicroservice_db import Payload, SentDocument, init_db
+from mockHttp.microservice_db import Payload, SentDocument, init_db
 
 rec=""
 MAX_TRESHOLD = 20   # valore teorico della soglia di pericolo del sensore
