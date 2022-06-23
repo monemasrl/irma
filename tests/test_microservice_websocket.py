@@ -1,89 +1,11 @@
 from mockHttp import microservice_websocket
 import pytest
-
-@pytest.fixture()
-def iD():
-    return "123"
-
-@pytest.fixture()
-def time():
-    return "2013-03-31T16:21:17.528002Z"
-
-@pytest.fixture()
-def latitude():
-    return 45.7
-
-@pytest.fixture()
-def longitude():
-    return 34.8
-
-@pytest.fixture()
-def sensorData(iD, time, latitude, longitude):
-    return {
-        "applicationID": iD,
-        "applicationName": "temperature-sensor",
-        "deviceName": "garden-sensor",
-        "devEUI": "AgICAgICAgI=",
-        "rxInfo": [
-            {
-                "gatewayID": "AwMDAwMDAwM=",
-                "time": time,
-                "timeSinceGPSEpoch": None,
-                "rssi": -48,
-                "loRaSNR": 9,
-                "channel": 5,
-                "rfChain": 0,
-                "board": 0,
-                "antenna": 0,
-                "location": {
-                    "latitude": latitude,
-                    "longitude": longitude,
-                    "altitude": 10.5
-                },
-                "fineTimestampType": "NONE",
-                "context": "9u/uvA==",
-                "uplinkID": "jhMh8Gq6RAOChSKbi83RHQ=="
-            }
-        ],
-        "txInfo": {
-            "frequency": 868100000,
-            "modulation": "LORA",
-            "loRaModulationInfo": {
-                "bandwidth": 125,
-                "spreadingFactor": 11,
-                "codeRate": "4/5",
-                "polarizationInversion": False
-            }
-        },
-        "adr": True,
-        "dr": 1,
-        "fCnt": 10,
-        "fPort": 5,
-        "data": "...",
-        "objectJSON": "{\"temperatureSensor\":25,\"humiditySensor\":32}",
-        "tags": {
-            "key": "value"
-        }
-    }
+from fixtures.data_fixtures import *
+from fixtures.db_fixtures import *
 
 
 class TestDBDocs:
 
-    # def setup_method(self):
-    #     self.app = microservice_websocket.app
-    #     self.app.config['TESTING'] = True
-    #     self.app.test_client()
-
-    @pytest.fixture()
-    def payload(self, iD, time, latitude, longitude, sensorData):
-        return microservice_websocket.Payload(
-            iD=iD,
-            time=time,
-            latitude=latitude,
-            longitude=longitude,
-            sensorData=sensorData,
-        )
-        
     def test_Payload_to_json(self, payload):
         payload_dict = {
             "m2m:cin": {
@@ -140,7 +62,7 @@ class TestDBDocs:
 class TestFlaskApp:
 
     @pytest.fixture()
-    def app(self, payload: microservice_websocket.Payload):
+    def app(self):
         app = microservice_websocket.app
         app.config.update({
             "TESTING": True,
@@ -159,12 +81,6 @@ class TestFlaskApp:
         response = client.get("/")
         print(response.data)
         assert False
-
-
-def test_prepareData():
-    data = """{"sensorData": 123}"""
-
-    assert microservice_websocket.prepareData(data) == 123, "Error in `prepareData()`: output mismatch"
 
 
 def test_mSum_rightMonth():
