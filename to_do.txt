@@ -1,6 +1,0 @@
-
-
-
-mancanti:
-- gestione dello stato off dei sensori
-
