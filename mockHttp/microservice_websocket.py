@@ -11,6 +11,7 @@ from flask_socketio import send,emit, SocketIO
 from datetime import datetime
 
 import base64
+import iso8601
 
 from mockHttp.microservice_db import Payload, SentDocument, init_db
 
@@ -41,10 +42,9 @@ def prepareData(rawData):
     return data
 
 
-def prepare_month(readTime):
-    readTime=readTime[5:7]
-    readTime=int(readTime)  
-    return readTime
+def prepare_month(rawDateTime):
+    month = iso8601.parse_date(rawDateTime).month
+    return month
 
 def getData(n,rec):
     totSum=0
@@ -103,16 +103,11 @@ def create_socketio(app):
     @socketio.on('change')
     def onChange():
         print('Changed')
-        n=0
         send='{\"data\":['
-        while(n<N_DEVICES):                                                              
-            n=n+1
-            n=str(n)
-            appSend=getData(n, rec)
+        for n in range(1, N_DEVICES+1):
+            appSend=getData(str(n), rec)
             send=send+appSend+","
-            n=int(n)
-        send = f"{send[0: -1]}"
-        send=send+"]}"
+        send = f"{send[0: -1]}]}}"
         send=jsonify(json.loads(send))
         socketio.send(send)
 
@@ -145,16 +140,11 @@ def create_app():
     @app.route('/', methods=['GET'])
     @cross_origin()
     def home():
-        n=0
         send='{\"data\":['
-        while(n<18):                                                              #valore teorico del quantitativo di dispositivi separati per cui cercare gli id nel database
-            n=n+1
-            n=str(n)
-            appSend=getData(n, rec)
-            send=send+appSend+","
-            n=int(n)
-        send = f"{send[0: -1]}"
-        send=send+"]}"
+        for n in range(1, N_DEVICES+1):
+            appSend=getData(str(n), rec)
+            send+=appSend+","
+        send = f"{send[0: -1]}]}}"
         send=jsonify(json.loads(send))
         return send
 
