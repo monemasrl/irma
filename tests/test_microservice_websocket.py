@@ -65,11 +65,23 @@ class TestFlaskApp:
         decoded_json = json.loads(response.data)
         assert not decoded_json, "Wrong response from post request: should be empty, but it's not"
 
-    # def test_socketio_on_change(self, app_client: FlaskClient, socketio_client: SocketIOTestClient, sensorData_noUplink):
-    #     app_client.post("/", json=sensorData_noUplink)
-    #     received = socketio_client.get_received()
-    #     print(received)
-    #     assert False
+    def test_socketio_emits_on_change(self, app_client: FlaskClient, socketio_client: SocketIOTestClient, sensorData_Uplink):
+        app_client.post("/", json=sensorData_Uplink)
+        received = socketio_client.get_received()
+        assert received[0]['name'] == 'change'
+    
+    # This test is the last of the class
+    def test_db_holds_payloads(self, sensorData_Uplink):
+        payload = microservice_db.Payload(
+            iD=sensorData_Uplink['applicationID'],
+            time=sensorData_Uplink['publishedAt'],
+            latitude=sensorData_Uplink['rxInfo'][0]['location']['latitude'],
+            longitude=sensorData_Uplink['rxInfo'][0]['location']['longitude'],
+            sensorData=sensorData_Uplink
+        )
+        payload.save()
+        payloads = microservice_db.Payload.objects()
+        assert payload.to_json() == payloads[len(payloads)-1].to_json()
 
 def test_mSum():
     assert microservice_websocket.mSum(10, 4, 4) == 10, "Error in `mSum(): output mismatch with right month"
