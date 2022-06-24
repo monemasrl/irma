@@ -1,3 +1,6 @@
+from flask_socketio import SocketIO, SocketIOTestClient
+from flask import Flask
+from flask.testing import FlaskClient
 from mockHttp import microservice_websocket, microservice_db
 import pytest
 import json
@@ -8,8 +11,8 @@ from fixtures.data_fixtures import *
 class TestFlaskApp:
 
     @pytest.fixture()
-    def app(self):
-        app, _ = microservice_websocket.create_app()
+    def app_socketio(self) -> tuple[Flask, SocketIO]:
+        app, socketio = microservice_websocket.create_app()
         app.config.update({
             "TESTING": True,
         })
@@ -21,22 +24,28 @@ class TestFlaskApp:
         }
         db = microservice_websocket.init_db(app)
         # set up
-        yield app
+        yield app, socketio
         # clean up
- 
+
     @pytest.fixture()
-    def client(self, app):
+    def app_client(self, app_socketio: tuple[Flask, SocketIO]) -> FlaskClient:
+        app, _ = app_socketio
         return app.test_client()
 
-    def test_main_route_get(self, client):
-        response = client.get("/")
+    @pytest.fixture()
+    def socketio_client(self, app_socketio: tuple[Flask, SocketIO], app_client) -> SocketIOTestClient:
+        app, socketio = app_socketio
+        return socketio.test_client(app, flask_test_client=app_client)
+
+    def test_main_route_get(self, app_client):
+        response = app_client.get("/")
         decoded_json = json.loads(response.data)
         assert "data" in decoded_json, "Invalid json from '/' route"
         devices = decoded_json["data"]
         assert len(devices) == microservice_websocket.N_DEVICES, "Invalid number of devices in json from '/' route"
 
-    def test_main_route_post_Uplink(self, client, sensorData_Uplink, sensorData_noUplink):
-        response = client.post("/", json=sensorData_Uplink)
+    def test_main_route_post_Uplink(self, app_client, sensorData_Uplink, sensorData_noUplink):
+        response = app_client.post("/", json=sensorData_Uplink)
         decoded_json = json.loads(response.data)
         sensorData_Uplink['devEUI']=base64.b64decode(sensorData_Uplink['devEUI']).hex()
         payload = microservice_db.Payload(
@@ -52,10 +61,15 @@ class TestFlaskApp:
         assert len(payloads) > 0, "Payload not saved in database"
         assert payloads[0].to_json() == payload.to_json(), "Payload inserted with wrong fields in database"
 
-        response = client.post("/", json=sensorData_noUplink)
+        response = app_client.post("/", json=sensorData_noUplink)
         decoded_json = json.loads(response.data)
         assert not decoded_json, "Wrong response from post request: should be empty, but it's not"
 
+    # def test_socketio_on_change(self, app_client: FlaskClient, socketio_client: SocketIOTestClient, sensorData_noUplink):
+    #     app_client.post("/", json=sensorData_noUplink)
+    #     received = socketio_client.get_received()
+    #     print(received)
+    #     assert False
 
 def test_mSum():
     assert microservice_websocket.mSum(10, 4, 4) == 10, "Error in `mSum(): output mismatch with right month"
