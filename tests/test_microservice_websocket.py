@@ -1,6 +1,7 @@
-from mockHttp import microservice_websocket
+from mockHttp import microservice_websocket, microservice_db
 import pytest
 import json
+import base64
 from fixtures.data_fixtures import *
 
 
@@ -29,21 +30,27 @@ class TestFlaskApp:
 
     def test_main_route_get(self, client):
         response = client.get("/")
-        decoded_json = json.loads(response.data.decode())
+        decoded_json = json.loads(response.data)
         assert "data" in decoded_json, "Invalid json from '/' route"
         devices = decoded_json["data"]
         assert len(devices) == microservice_websocket.N_DEVICES, "Invalid number of devices in json from '/' route"
 
-    def test_main_route_post_Uplink(self, client, sensorData_Uplink):
+    def test_main_route_post_Uplink(self, client, sensorData_Uplink, sensorData_noUplink):
         response = client.post("/", json=sensorData_Uplink)
-        decoded_json = json.loads(response.data.decode())
-        assert "m2m:cin" in decoded_json, "Invalid JSON format"
-    
-    def test_main_route_post_noUplink(self, client, sensorData_noUplink):
+        decoded_json = json.loads(response.data)
+        sensorData_Uplink['devEUI']=base64.b64decode(sensorData_Uplink['devEUI']).hex()
+        payload = microservice_db.Payload(
+            iD=sensorData_Uplink['applicationID'],
+            time=sensorData_Uplink['publishedAt'],
+            latitude=sensorData_Uplink['rxInfo'][0]['location']['latitude'],
+            longitude=sensorData_Uplink['rxInfo'][0]['location']['longitude'],
+            sensorData=sensorData_Uplink
+        )
+        assert decoded_json == payload.to_json(), "Output mismatch when posting valida data"
+
         response = client.post("/", json=sensorData_noUplink)
-        decoded_json = json.loads(response.data.decode())
-        assert not decoded_json, "Wrong response from get request: should be empty but it's not"
-        # TODO: checkdb
+        decoded_json = json.loads(response.data)
+        assert not decoded_json, "Wrong response from post request: should be empty, but it's not"
 
 
 def test_mSum():
