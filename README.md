@@ -1,4 +1,4 @@
-# PROGETTO IRMA
+# PROGETTO IRMA ![testing on branch master](https://github.com/monemasrl/irma/actions/workflows/irma-ci.yml/badge.svg?branch=master)
 
 #### DESCRIZIONE PROGETTO
 
@@ -99,6 +99,10 @@ Per aggiungere la lettura dei dati dai sensori è stato utilizzato il protocollo
 
 Il server chirpstack non mantiene i dati trasmessi dagli end-device in nessun modo permanente, perciò sull'application server è stata attivata da interfaccia web l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file [microservice_websocket.py](mockHttp/microservice_websocket.py) si occupa della ricezione del POST e l'inserimento dei JSON in un database Mongo la cui connessione è definita in [microservice_db.py](mockHttp/microservice_db.py), dopo di che i dati dal database vengono rielaborati e ritrasmessi sempre in formato JSON alla dashboard tramite WebSocket per il display dei valori in tempo reale. L'avvio del webservice si fa con :
 `python3 -m mockHttp.microservice_websocket`.
+
+Per scaricare le **dipendenze** relative al web-service è possibile eseguire:
+
+    pip3 install -r requirements.txt
 
 #### COMANDI
 
