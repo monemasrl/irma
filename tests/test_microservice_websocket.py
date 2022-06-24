@@ -48,6 +48,10 @@ class TestFlaskApp:
         )
         assert decoded_json == payload.to_json(), "Output mismatch when posting valida data"
 
+        payloads = microservice_db.Payload.objects()
+        assert len(payloads) > 0, "Payload not saved in database"
+        assert payloads[0].to_json() == payload.to_json(), "Payload inserted with wrong fields in database"
+
         response = client.post("/", json=sensorData_noUplink)
         decoded_json = json.loads(response.data)
         assert not decoded_json, "Wrong response from post request: should be empty, but it's not"
