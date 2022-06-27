@@ -96,10 +96,6 @@ class TestFlaskApp:
         print(payloads[len(payloads)-1])
         assert payload.to_json() == payloads[len(payloads)-1].to_json(), "Payload data isn't consistent in the database. Check stdout log."
 
-def test_mSum():
-    assert microservice_websocket.mSum(10, 4, 4) == 10, "Error in `mSum(): output mismatch with right month"
-    assert microservice_websocket.mSum(10, 4, 7) == 0, "Error in `mSum(): output mismatch with different month"
-
 
 def test_prepare_status():
     dato = 0
