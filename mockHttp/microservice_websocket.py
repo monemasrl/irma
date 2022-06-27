@@ -20,12 +20,6 @@ MAX_TRESHOLD = 20   # valore teorico della soglia di pericolo del sensore
 N_DEVICES = 18      # valore teorico del quantitativo di dispositivi separati per cui cercare gli id nel database
 
 
-def mSum(data,readTime,currentMonth):
-    if(readTime==currentMonth):                                                                                             
-        return data
-    return 0
-
-
 def prepare_status(dato):                         
     if(dato==0):
         state="off"
@@ -63,14 +57,14 @@ def getData(n,rec):
             appData=x['m2m:cin']['sensorData']['objectJSON']
             appData=prepareData(appData)
             appReadTime=x['m2m:cin']['con']['metadata']['readingTimestamp']
-            appReadTime=prepare_month(appReadTime)
+            appReadMonth=prepare_month(appReadTime)
             if(rec==appID):
                 status="rec"
             else:
                 status=prepare_status(appData)
             totSum=totSum+appData
             count=count+1
-            checkMonth=mSum(appData,appReadTime,currentMonth)
+            checkMonth = appData if appReadMonth == currentMonth else 0
             if(checkMonth!=0):
                 mCount=mCount+1
                 monthlySum=monthlySum+checkMonth
