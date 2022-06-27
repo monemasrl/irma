@@ -28,7 +28,7 @@ class Payload(DynamicDocument):
                 }
 
     @classmethod
-    def from_json(self, s: str) -> Payload:
+    def from_json(cls, s: str) -> Payload:
         s_dict = json.loads(s)
         new_p = Payload()
         new_p.iD = s_dict["m2m:cin"]["con"]["metadata"]["sensorId"]
