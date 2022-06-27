@@ -55,7 +55,12 @@ class TestFlaskApp:
             longitude=sensorData_Uplink['rxInfo'][0]['location']['longitude'],
             sensorData=sensorData_Uplink
         )
-        assert decoded_json == payload.to_json(), "Output mismatch when posting valida data"
+        print("[DEBUG] Original data: ")
+        print(payload.to_json())
+        print("===========================")
+        print("[DEBUG] Data received back from post request: ")
+        print(decoded_json)
+        assert decoded_json == payload.to_json(), "Output mismatch when posting valida data. Check stdout log."
 
         payloads = microservice_db.Payload.objects()
         assert len(payloads) > 0, "Payload not saved in database"
@@ -70,8 +75,10 @@ class TestFlaskApp:
         received = socketio_client.get_received()
         assert received[0]['name'] == 'change'
     
-    # This test is the last of the class
     def test_db_holds_payloads(self, sensorData_Uplink):
+        """
+        This test is meant to check if data stored as Payload in database is consistent
+        """
         payload = microservice_db.Payload(
             iD=sensorData_Uplink['applicationID'],
             time=sensorData_Uplink['publishedAt'],
@@ -81,7 +88,13 @@ class TestFlaskApp:
         )
         payload.save()
         payloads = microservice_db.Payload.objects()
-        assert payload.to_json() == payloads[len(payloads)-1].to_json()
+        assert len(payloads) > 0, "Payloads aren't saved in the database"
+        print("[DEBUG] Original payload: ")
+        print(payload)
+        print("===========================")
+        print("[DEBUG] Last inserted payload in the database: ")
+        print(payloads[len(payloads)-1])
+        assert payload.to_json() == payloads[len(payloads)-1].to_json(), "Payload data isn't consistent in the database. Check stdout log."
 
 def test_mSum():
     assert microservice_websocket.mSum(10, 4, 4) == 10, "Error in `mSum(): output mismatch with right month"
