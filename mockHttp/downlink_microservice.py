@@ -1,9 +1,3 @@
-
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
-
-from google.protobuf.json_format import Parse
-
 import json
 from flask import Flask, request, jsonify, Response
 from flask_mqtt import Mqtt
