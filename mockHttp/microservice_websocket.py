@@ -45,29 +45,27 @@ def getData(n,rec):
     totAverage=0
     monthlyAverage=0
     #questa query prende dal database solo i campi sensorId,ReadinTimestamp e objectJSON da tutti i documenti ordinati prima per sensorId e poi readingTimestamp
-    collect=Payload.objects().order_by('sensorId','-readingTimestamp').only('sensorId','readingTimestamp','sensorData.objectJSON','sensorData.devEUI')
+    collect=Payload.objects(sensorId=n).order_by('sensorId','-readingTimestamp').only('sensorId','readingTimestamp','sensorData.objectJSON','sensorData.devEUI')
     for x in collect:
-        appID=x['m2m:cin']['con']['metadata']['sensorId']
-        if(appID==n):
-            appData=x['m2m:cin']['sensorData']['objectJSON']
-            appData=prepareData(appData)
-            appReadTime=x['m2m:cin']['con']['metadata']['readingTimestamp']
-            appReadMonth=prepare_month(appReadTime)
-            if(rec==appID):
-                status="rec"
-            else:
-                status=prepare_status(appData)
-            totSum=totSum+appData
-            count=count+1
-            checkMonth = appData if appReadMonth == currentMonth else 0
-            if(checkMonth!=0):
-                mCount=mCount+1
-                monthlySum=monthlySum+checkMonth
-            totAverage=totSum/count
-            if(mCount!=0):
-                monthlyAverage=monthlySum/mCount
+        appData=x['sensorData']['objectJSON']
+        appData=prepareData(appData)
+        appReadTime=x['readingTimestamp']
+        appReadMonth=prepare_month(appReadTime)
+        if(rec==n):
+            status="rec"
+        else:
+            status=prepare_status(appData)
+        totSum=totSum+appData
+        count=count+1
+        checkMonth = appData if appReadMonth == currentMonth else 0
+        if(checkMonth!=0):
+            mCount=mCount+1
+            monthlySum=monthlySum+checkMonth
+        totAverage=totSum/count
+        if(mCount!=0):
+            monthlyAverage=monthlySum/mCount
     if(status=="ok" or status=="rec") and len(collect) > 0:
-        eui=collect[len(collect)-1]['m2m:cin']['sensorData']['devEUI']
+        eui=collect[len(collect)-1]['sensorData']['devEUI']
     else:
         eui=0
     send=json.dumps(SentDocument(eui=eui,code=n,status=status,titolo1="Media Letture Totali",dato1=float("{0:.3f}".format(totAverage)),titolo2="Media Letture Mensili",dato2=float("{0:.3f}".format(monthlyAverage)),titolo3="Letture eseguite nel mese",dato3=mCount).to_jsonSent())
@@ -150,11 +148,6 @@ def create_app():
                         sensorData=record
                         )
             data = payload.from_json(json.dumps(payload.to_json()))
-            print("==============")
-            print(data)
-            print("==============")
-            print(vars(data))
-            print("==============")
             data.save()
             if rec==record['applicationID']:
                 rec=""
