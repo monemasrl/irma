@@ -66,8 +66,8 @@ def getData(n,rec):
             totAverage=totSum/count
             if(mCount!=0):
                 monthlyAverage=monthlySum/mCount
-    if(status=="ok" or status=="rec"):
-        eui=x['m2m:cin']['sensorData']['devEUI']
+    if(status=="ok" or status=="rec") and len(collect) > 0:
+        eui=collect[len(collect)-1]['m2m:cin']['sensorData']['devEUI']
     else:
         eui=0
     send=json.dumps(SentDocument(eui=eui,code=n,status=status,titolo1="Media Letture Totali",dato1=float("{0:.3f}".format(totAverage)),titolo2="Media Letture Mensili",dato2=float("{0:.3f}".format(monthlyAverage)),titolo3="Letture eseguite nel mese",dato3=mCount).to_jsonSent())
