@@ -7,8 +7,8 @@ def test_Payload_to_json(payload):
         "m2m:cin": {
             "con": {
                 "metadata": {
-                    "sensorId": payload.iD,
-                    "readingTimestamp": payload.time,
+                    "sensorId": payload.sensorId,
+                    "readingTimestamp": payload.readingTimestamp,
                     "latitude": payload.latitude,
                     "longitude": payload.longitude,
                 }

@@ -1,5 +1,6 @@
 from __future__ import annotations
-from flask_mongoengine import MongoEngine, DynamicDocument
+from flask_mongoengine import MongoEngine, Document, DynamicDocument
+from mongoengine.fields import DictField, EmbeddedDocument, StringField, FloatField
 from flask import Flask
 import json
 
@@ -12,13 +13,19 @@ def init_db(app: Flask) -> MongoEngine:
 #####################################################################
 #####definizione della struttura del documento inserito in mongo#####
 #####################################################################
-class Payload(DynamicDocument):  
+class Payload(Document):
+    sensorId = StringField(max_length=100, required=True)
+    readingTimestamp = StringField(max_length=100, required=True)
+    latitude = FloatField(required=True)
+    longitude = FloatField(required=True)
+    sensorData = DictField(required=True)
+
     def to_json(self):
         return {"m2m:cin":{
                     "con":{
                         "metadata": {
-                            "sensorId": self.iD,
-                            "readingTimestamp": self.time,
+                            "sensorId": self.sensorId,
+                            "readingTimestamp": self.readingTimestamp,
                             "latitude": self.latitude,
                             "longitude": self.longitude
                             }
@@ -31,8 +38,8 @@ class Payload(DynamicDocument):
     def from_json(cls, s: str) -> Payload:
         s_dict = json.loads(s)
         new_p = Payload()
-        new_p.iD = s_dict["m2m:cin"]["con"]["metadata"]["sensorId"]
-        new_p.time = s_dict["m2m:cin"]["con"]["metadata"]["readingTimestamp"]
+        new_p.sensorId = s_dict["m2m:cin"]["con"]["metadata"]["sensorId"]
+        new_p.readingTimestamp = s_dict["m2m:cin"]["con"]["metadata"]["readingTimestamp"]
         new_p.latitude = s_dict["m2m:cin"]["con"]["metadata"]["latitude"]
         new_p.longitude = s_dict["m2m:cin"]["con"]["metadata"]["longitude"]
         new_p.sensorData = s_dict["m2m:cin"]["sensorData"]

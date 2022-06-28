@@ -49,8 +49,8 @@ class TestFlaskApp:
         decoded_json = json.loads(response.data)
         sensorData_Uplink['devEUI']=base64.b64decode(sensorData_Uplink['devEUI']).hex()
         payload = microservice_db.Payload(
-            iD=sensorData_Uplink['applicationID'],
-            time=sensorData_Uplink['publishedAt'],
+            sensorId=sensorData_Uplink['applicationID'],
+            readingTimestamp=sensorData_Uplink['publishedAt'],
             latitude=sensorData_Uplink['rxInfo'][0]['location']['latitude'],
             longitude=sensorData_Uplink['rxInfo'][0]['location']['longitude'],
             sensorData=sensorData_Uplink
@@ -80,8 +80,8 @@ class TestFlaskApp:
         This test is meant to check if data stored as Payload in database is consistent
         """
         payload = microservice_db.Payload(
-            iD=sensorData_Uplink['applicationID'],
-            time=sensorData_Uplink['publishedAt'],
+            sensorId=sensorData_Uplink['applicationID'],
+            readingTimestamp=sensorData_Uplink['publishedAt'],
             latitude=sensorData_Uplink['rxInfo'][0]['location']['latitude'],
             longitude=sensorData_Uplink['rxInfo'][0]['location']['longitude'],
             sensorData=sensorData_Uplink
@@ -112,8 +112,8 @@ def test_prepare_status():
         microservice_websocket.prepare_status(dato)
 
 
-def test_prepare_month(time):
-    assert microservice_websocket.prepare_month(time) == 3, "Error in `prepare_month()`: output mismatch when providin ISO8601 datetime"
+def test_prepare_month(readingTimestamp):
+    assert microservice_websocket.prepare_month(readingTimestamp) == 3, "Error in `prepare_month()`: output mismatch when providin ISO8601 datetime"
 
     with pytest.raises(ValueError):
         microservice_websocket.prepare_month("1-0")

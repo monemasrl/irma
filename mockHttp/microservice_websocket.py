@@ -45,7 +45,7 @@ def getData(n,rec):
     totAverage=0
     monthlyAverage=0
     #questa query prende dal database solo i campi sensorId,ReadinTimestamp e objectJSON da tutti i documenti ordinati prima per sensorId e poi readingTimestamp
-    collect=Payload.objects().order_by('m2m:cin.con.metadata.sensorId','-m2m:cin.con.metadata.readingTimestamp').only('m2m:cin.con.metadata.sensorId','m2m:cin.con.metadata.readingTimestamp','m2m:cin.sensorData.objectJSON','m2m:cin.sensorData.devEUI')
+    collect=Payload.objects().order_by('sensorId','-readingTimestamp').only('sensorId','readingTimestamp','sensorData.objectJSON','sensorData.devEUI')
     for x in collect:
         appID=x['m2m:cin']['con']['metadata']['sensorId']
         if(appID==n):
@@ -143,13 +143,18 @@ def create_app():
         record = json.loads(request.data)
         if "confirmedUplink" in record:                                            #filtraggio degli eventi mandati dall'application server in modo da non inserire nel database valori irrilevanti
             record['devEUI']=base64.b64decode(record['devEUI']).hex()
-            payload = Payload(iD=record['applicationID'],
-                        time=record['publishedAt'],
+            payload = Payload(sensorId=record['applicationID'],
+                        readingTimestamp=record['publishedAt'],
                         latitude=record['rxInfo'][0]['location']['latitude'],
                         longitude=record['rxInfo'][0]['location']['longitude'],
                         sensorData=record
                         )
             data = payload.from_json(json.dumps(payload.to_json()))
+            print("==============")
+            print(data)
+            print("==============")
+            print(vars(data))
+            print("==============")
             data.save()
             if rec==record['applicationID']:
                 rec=""

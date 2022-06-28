@@ -6,7 +6,7 @@ import pytest
 
 
 @pytest.fixture()
-def iD() -> str:
+def sensorId() -> str:
     """
     Basic applicationID received from chirpstack.
     It's a string composed of a sequence of numbers.
@@ -15,7 +15,7 @@ def iD() -> str:
 
 
 @pytest.fixture()
-def time() -> str:
+def readingTimestamp() -> str:
     """
     Time format received from chirpstack.
     It does follow the ISO8601 standard.
@@ -42,16 +42,16 @@ def longitude() -> float:
 
 
 @pytest.fixture()
-def sensorData_noUplink(iD, time, latitude, longitude) -> dict:
+def sensorData_noUplink(sensorId, readingTimestamp, latitude, longitude) -> dict:
     return {
-        "applicationID": iD,
+        "applicationID": sensorId,
         "applicationName": "temperature-sensor",
         "deviceName": "garden-sensor",
         "devEUI": "AgICAgICAgI=",
         "rxInfo": [
             {
                 "gatewayID": "AwMDAwMDAwM=",
-                "time": time,
+                "time": readingTimestamp,
                 "timeSinceGPSEpoch": None,
                 "rssi": -48,
                 "loRaSNR": 9,
@@ -91,16 +91,16 @@ def sensorData_noUplink(iD, time, latitude, longitude) -> dict:
     }
 
 @pytest.fixture()
-def sensorData_Uplink(iD, time, latitude, longitude) -> dict:
+def sensorData_Uplink(sensorId, readingTimestamp, latitude, longitude) -> dict:
     return {
-        "applicationID": iD,
+        "applicationID": sensorId,
         "applicationName": "test_esp",
         "deviceName": "esp32",
         "devEUI": "IjIzAACIiAI=",
         "rxInfo": [
             {
                 "gatewayID": "5F8B//59p6g=",
-                "time": time,
+                "time": readingTimestamp,
                 "timeSinceGPSEpoch": None,
                 "rssi": -10,
                 "loRaSNR": 8.5,
