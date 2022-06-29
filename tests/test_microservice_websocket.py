@@ -96,6 +96,14 @@ class TestFlaskApp:
         print(payloads[len(payloads)-1])
         assert payload.to_json() == payloads[len(payloads)-1].to_json(), "Payload data isn't consistent in the database. Check stdout log."
 
+    def test_getData(self):
+        s = microservice_websocket.getData("123", "123")
+        assert isinstance(s, str), "Invalid return type of function `getData()`"
+        s_dict = json.loads(s)
+        print(f"{s_dict=}")
+        assert all(key in s_dict for key in ["devEUI", "state", "code", "datiInterni"]) and len(s_dict["datiInterni"]) == 3, "Invalid structure of returned json: doesn't match `to_jsonSent()` function, in `microservice_db.py`. Check stdout log."
+
+
 
 def test_prepare_status():
     dato = 0
@@ -131,7 +139,4 @@ def test_prepareData():
     with pytest.raises(KeyError):
         microservice_websocket.prepareData(data)
 
-
-def test_getData():
-    pass # TODO:!
 
