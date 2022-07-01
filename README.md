@@ -80,7 +80,10 @@ Dopo queste operazioni si può eseguire il comando `sudo gateway-config` per con
 
 Per connettere un nuovo end-device su lorawan è necessario sapere il Device EUI che viene fornito dalla scheda che si usa e bisogna fare il join tramite una delle due modalità **(OTAA o ABP)**.
 
-Il device va registrato sul server tramite l'interfaccia web Applications > [Nome applicazione_da_utilizzare] > Create
+Bisogna creare una applicazione sul server tramite interfaccia web Applications > Create.
+
+Successivamente va registrato il device Applications > [Nome applicazione_da_utilizzare] > Create.
+Bisogna inserire il device EUI durante la registrazione, esso viene fornito dal produttore nella sua documentazione.
 
 Sull'end device nel file [serial_esp_lora_oled.ino](arduino-py-communication/serial_esp_lora_oled.ino) vanno inseriti i dati relativi alle chiavi della rete che si trovano all'interno del menu del device creato in precedenza sul server.
 
@@ -108,7 +111,7 @@ Per scaricare le **dipendenze** relative al web-service è possibile eseguire:
 
 Il file [downlink.py](downlink.py) si occupa dell'invio dei comandi di Start e Stop all'application server tramite MQTT, il quale a sua volta invierà un messaggio di downlink verso l'end-device con il comando ricevuto il quale fermerà o avvierà la lettura dei dati dai sensori. Questo script serve per il test dei comandi senza dashboard.
 
-Per l'utilizzo degli stessi comandi ma da dashboard in remoto si usa il file [downlink_microservice.py](mockHttp/downlink_microservice.py) che riceve un post dalla dashboard con un valore numerico che definisce il messaggio da inviare tramite MQTT(Start o Stop) e due valori che rappresentano gli id dell'applicazione e del dispositivo ce servono per pubblicare sul topic dell'application server.
+Per l'utilizzo degli stessi comandi ma da dashboard in remoto si usa il file [downlink_microservice.py](mockHttp/downlink_microservice.py) che riceve un post dalla dashboard con un valore numerico che definisce il messaggio da inviare tramite MQTT(Start o Stop) e due valori che rappresentano gli id dell'applicazione e del dispositivo che servono per pubblicare sul topic dell'application server.
 
 
 #### TESTING IN LOCALE
