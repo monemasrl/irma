@@ -21,6 +21,7 @@ def test_Payload_to_json(payload: microservice_db.Payload):
     "Error in `Payload.to_json`: output mismatch"
 
 
+# TODO: migrate sentDocument to fixture
 def test_SentDocument_to_jsonSent():
     sentDocument = microservice_db.SentDocument(
         eui=123,
