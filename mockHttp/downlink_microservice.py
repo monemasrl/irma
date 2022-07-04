@@ -1,8 +1,8 @@
 import json
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request
 from flask_mqtt import Mqtt
 
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 
 
 def create_mqtt(app: Flask) -> Mqtt:
@@ -23,7 +23,7 @@ def create_mqtt(app: Flask) -> Mqtt:
 
 
 def create_app():
-    app = Flask(__name__)
+    app: Flask = Flask(__name__)
 
     ###########################################################################################
     #####configurazione dei dati relativi al cors per la connessione da una pagina esterna#####
@@ -43,23 +43,41 @@ def create_app():
 
     CORS(app)
 
-    mqtt = create_mqtt(app)
+    mqtt: Mqtt = create_mqtt(app)
 
     @app.route('/', methods=['GET'])
     def home():
-        return "<html><head><title>downlink_microservice</title></head><body><div>Script di invio messaggi MQTT per l'avvio dei comandi Start e Stop degli end-device</div></body></html>"
+        return """
+            <html>
+                <head>
+                    <title>downlink_microservice</title>
+                </head>
+                <body>
+                    <div>Script di invio messaggi MQTT per l'avvio dei comandi Start e Stop degli end-device</div>
+                </body>
+            </html>
+        """
 
     @app.route('/', methods=['POST'])
     def sendMqtt(): # alla ricezione di un post pubblica un messaggio sul topic
-        received=json.loads(request.data)
-        appNum=str(received['app']['code']) # application ID ricevuto per identificare le varie app sull'application server
-        devEUI=str(received['app']['eui']) # devEUI rivuto per identificare i dipositivi nelle varie app
-        if received['statoStaker'] == 1: 
-            data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RhcnQ='}) # comando Start
-        else:
-            data=json.dumps({'confirmed': False, 'fPort': 2, 'data': 'U3RvcA=='}) # comando Stop
-        topic='application/'+appNum+'/device/'+devEUI+'/command/down'
-        mqtt.publish(topic, data)
+        received: dict = json.loads(request.data)
+
+        # application ID ricevuto per identificare le varie app sull'application server
+        appNum: str = str(received['app']['code'])
+        # devEUI rivuto per identificare i dipositivi nelle varie app
+        devEUI: str = str(received['app']['eui'])
+        topic: str = 'application/'+appNum+'/device/'+devEUI+'/command/down'
+
+        start: str = 'U3RhcnQ='
+        stop: str = 'U3RvcA=='
+
+        data: str = json.dumps({
+            'confirmed': False,
+            'fPort': 2,
+            'data': start if received['statoStaker'] == 1 else stop
+        })
+
+        mqtt.publish(topic, data.encode())
         print(received)
         return received
     
@@ -67,4 +85,4 @@ def create_app():
 
 
 if __name__ == "__main__":
-    create_app().run(port = 5001,debug = True)
+    create_app().run(port=5001, debug=True)

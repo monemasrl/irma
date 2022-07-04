@@ -2,7 +2,7 @@ from mockHttp import microservice_db
 from fixtures.db_fixtures import *
 
 
-def test_Payload_to_json(payload):
+def test_Payload_to_json(payload: microservice_db.Payload):
     payload_dict = {
         "m2m:cin": {
             "con": {
@@ -17,9 +17,11 @@ def test_Payload_to_json(payload):
         }
     }
 
-    assert payload.to_json() == payload_dict, "Error in `Payload.to_json`: output mismatch"
+    assert payload.to_json() == payload_dict, \
+    "Error in `Payload.to_json`: output mismatch"
 
 
+# TODO: migrate sentDocument to fixture
 def test_SentDocument_to_jsonSent():
     sentDocument = microservice_db.SentDocument(
         eui=123,
@@ -53,4 +55,5 @@ def test_SentDocument_to_jsonSent():
         ]
     }
 
-    assert sentDocument.to_jsonSent() == sentDocument_dict, "Error in `SentDocument.to_jsonSent()`: output mismatch"
+    assert sentDocument.to_json() == sentDocument_dict, \
+    "Error in `SentDocument.to_jsonSent()`: output mismatch"

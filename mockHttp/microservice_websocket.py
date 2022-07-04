@@ -1,7 +1,8 @@
 import json
-from flask import Flask, request, jsonify, Response
-from flask_cors import CORS, cross_origin
-from flask_socketio import send,emit, SocketIO
+from flask import Flask, request, jsonify
+from flask_cors import cross_origin
+from flask_socketio import SocketIO
+from enum import Enum, auto
 
 from datetime import datetime
 
@@ -11,73 +12,110 @@ import iso8601
 from mockHttp.microservice_db import Payload, SentDocument, init_db
 
 rec=""
-MAX_TRESHOLD = 20   # valore teorico della soglia di pericolo del sensore
-N_DEVICES = 18      # valore teorico del quantitativo di dispositivi separati per cui cercare gli id nel database
+
+# valore teorico della soglia di pericolo del sensore
+MAX_TRESHOLD = 20
+
+# valore teorico del quantitativo di dispositivi diversi
+# per cui cercare gli id nel database
+N_DEVICES = 18
 
 
-def prepare_status(dato):                         
-    if(dato==0):
-        state="off"
-    elif(dato<MAX_TRESHOLD):
-        state="ok"
-    else:
-        state="alert"
-    return state
+class State(Enum):
+    OFF=auto()
+    OK=auto()
+    REC=auto()
+    ALERT=auto()
 
 
-def prepareData(rawData):
-    data = json.loads(rawData)['sensorData']
-    data=int(data)
-    return data
+def get_state(dato: int) -> State:
+    if dato == 0:
+        return State.OFF
+    elif dato < MAX_TRESHOLD:
+        return State.OK
+    return State.ALERT
 
 
-def prepare_month(rawDateTime):
+def get_sensorData(rawData: str) -> int:
+    sensorData = json.loads(rawData)['sensorData']
+    sensorData = int(sensorData)
+    return sensorData
+
+
+def get_month(rawDateTime: str) -> int:
     month = iso8601.parse_date(rawDateTime).month
     return month
 
-def getData(n,rec):
-    totSum=0
-    monthlySum=0
-    count=0
-    mCount=0
-    status="off"
-    currentMonth = datetime.now().month #salvataggio del valore attuale del mese per il confronto
-    totAverage=0
-    monthlyAverage=0
-    #questa query prende dal database solo i campi sensorId,ReadinTimestamp e objectJSON da tutti i documenti ordinati prima per sensorId e poi readingTimestamp
-    collect=Payload.objects(sensorId=n).order_by('sensorId','-readingTimestamp').only('sensorId','readingTimestamp','sensorData.objectJSON','sensorData.devEUI')
+
+def get_data(sensor_id: str, rec: str) -> str:
+    total_sum: int = 0
+    monthly_sum: int = 0
+
+    total_count: int = 0
+    monthly_count: int = 0
+
+    total_average: float = 0.0
+    monthly_average: float = 0.0
+
+    state: State = State.OFF
+    #salvataggio del valore attuale del mese per il confronto
+    current_month: int = datetime.now().month 
+
+    # questa query prende dal database solo i campi sensorId,
+    # ReadinTimestamp e objectJSON da tutti i documenti ordinati 
+    # prima per sensorId e poi readingTimestamp
+    collect = (
+        Payload.objects(sensorId=sensor_id) # type: ignore
+        .order_by('sensorId','-readingTimestamp')
+        .only('sensorId',
+              'readingTimestamp',
+              'sensorData.objectJSON',
+              'sensorData.devEUI'
+        )
+    )
+
     for x in collect:
-        appData=x['sensorData']['objectJSON']
-        appData=prepareData(appData)
-        appReadTime=x['readingTimestamp']
-        appReadMonth=prepare_month(appReadTime)
-        if(rec==n):
-            status="rec"
-        else:
-            status=prepare_status(appData)
-        totSum=totSum+appData
-        count=count+1
-        checkMonth = appData if appReadMonth == currentMonth else 0
-        if(checkMonth!=0):
-            mCount=mCount+1
-            monthlySum=monthlySum+checkMonth
-        totAverage=totSum/count
-        if(mCount!=0):
-            monthlyAverage=monthlySum/mCount
-    if(status=="ok" or status=="rec") and len(collect) > 0:
-        eui=collect[len(collect)-1]['sensorData']['devEUI']
+        sensor_data: int = get_sensorData(x['sensorData']['objectJSON'])
+        read_time: str = x['readingTimestamp']
+        read_month: int = get_month(read_time)
+
+        state = State.REC if rec == sensor_id else get_state(sensor_data)
+
+        total_sum += sensor_data
+        total_count += 1
+
+        if read_month == current_month:
+            monthly_sum += sensor_data
+            monthly_count += 1
+
+        total_average = total_sum / total_count
+
+        if monthly_count != 0:
+            monthly_average = monthly_sum / monthly_count
+
+    if state in [State.OK, State.REC] and len(collect) > 0:
+        eui: str = collect[len(collect)-1]['sensorData']['devEUI']
     else:
-        eui=0
-    send=json.dumps(SentDocument(eui=eui,code=n,status=status,titolo1="Media Letture Totali",dato1=float("{0:.3f}".format(totAverage)),titolo2="Media Letture Mensili",dato2=float("{0:.3f}".format(monthlyAverage)),titolo3="Letture eseguite nel mese",dato3=mCount).to_jsonSent())
-    count=0
-    mCount=0
-    totSum=0
-    monthlySum=0
-    return send
+        eui: str = ""
+
+    send = SentDocument(
+        eui=eui,
+        code=sensor_id,
+        status=state.name,
+        titolo1="Media Letture Totali",
+        dato1=round(total_average, 3),
+        titolo2="Media Letture Mensili",
+        dato2=round(monthly_average, 3),
+        titolo3="Letture eseguite nel mese",
+        dato3=monthly_count
+    ).to_json()
+
+    return json.dumps(send)
 
 
-def create_socketio(app):
-    socketio = SocketIO(app,cors_allowed_origins="*")
+def create_socketio(app: Flask):
+    # TODO: remove wildcard
+    socketio: SocketIO = SocketIO(app, cors_allowed_origins="*")
 
     @socketio.on('connect')
     def connected():
@@ -90,13 +128,9 @@ def create_socketio(app):
     @socketio.on('change')
     def onChange():
         print('Changed')
-        send='{\"data\":['
-        for n in range(1, N_DEVICES+1):
-            appSend=getData(str(n), rec)
-            send=send+appSend+","
-        send = f"{send[0: -1]}]}}"
-        send=jsonify(json.loads(send))
-        socketio.send(send)
+
+        data: list[str] = [get_data(str(n), rec) for n in range(1, N_DEVICES+1)]
+        socketio.send(jsonify(data=data))
 
     return socketio
 
@@ -105,12 +139,13 @@ def create_app():
     app = Flask(__name__)
     socketio = create_socketio(app)
 
+    # TODO: randomize key gen
     app.config['SECRET_KEY'] = 'secret!'
 
     ###########################################################################################
     #####configurazione dei dati relativi al cors per la connessione da una pagina esterna#####
     ###########################################################################################
-    app.config['CORS_SETTINGS']= {
+    app.config['CORS_SETTINGS'] = {
         'Content-Type':'application/json',
         'Access-Control-Allow-Origin': 'http://localhost:3000',
         'Access-Control-Allow-Credentials': 'true'
@@ -127,39 +162,39 @@ def create_app():
     @app.route('/', methods=['GET'])
     @cross_origin()
     def home():
-        send='{\"data\":['
-        for n in range(1, N_DEVICES+1):
-            appSend=getData(str(n), rec)
-            send+=appSend+","
-        send = f"{send[0: -1]}]}}"
-        send=jsonify(json.loads(send))
-        return send
+        data: list[str] = [get_data(str(n), rec) for n in range(1, N_DEVICES+1)]
+        return jsonify(data=data)
 
     @app.route('/', methods=['POST'])
     def create_record():
         global rec
-        record = json.loads(request.data)
-        if "confirmedUplink" in record:                                            #filtraggio degli eventi mandati dall'application server in modo da non inserire nel database valori irrilevanti
-            record['devEUI']=base64.b64decode(record['devEUI']).hex()
-            payload = Payload(sensorId=record['applicationID'],
-                        readingTimestamp=record['publishedAt'],
-                        latitude=record['rxInfo'][0]['location']['latitude'],
-                        longitude=record['rxInfo'][0]['location']['longitude'],
-                        sensorData=record
-                        )
-            data = payload.from_json(json.dumps(payload.to_json()))
-            data.save()
-            if rec==record['applicationID']:
-                rec=""
+        record: dict = json.loads(request.data)
+
+        # filtraggio degli eventi mandati dall'application server 
+        # in modo da non inserire nel database valori irrilevanti
+        if "confirmedUplink" in record:                                            
+            record['devEUI'] = base64.b64decode(record['devEUI']).hex()
+            payload: Payload = Payload(
+                sensorId=record['applicationID'],
+                readingTimestamp=record['publishedAt'],
+                latitude=record['rxInfo'][0]['location']['latitude'],
+                longitude=record['rxInfo'][0]['location']['longitude'],
+                sensorData=record
+            )
+            payload.save()
+
+            if rec == record['applicationID']:
+                rec = ""
+
             socketio.emit('change')
             print("1")
             return jsonify(payload.to_json())
-        else:
-            print("Received message different than Uplink")
-            rec=record['applicationID']
-            socketio.emit('change')
-            print("2")
-            return {}
+
+        print("Received message different than Uplink")
+        rec = record['applicationID']
+        socketio.emit('change')
+        print("2")
+        return {}
 
     return app, socketio
 

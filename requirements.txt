@@ -10,6 +10,7 @@ flask-mongoengine==1.0.0
 Flask-MQTT==1.1.1
 Flask-SocketIO==5.2.0
 Flask-WTF==1.0.1
+future==0.18.2
 hypothesis==6.47.5
 idna==3.3
 iniconfig==1.1.1
@@ -31,11 +32,11 @@ python-can==4.0.0
 python-engineio==4.3.2
 python-socketio==5.6.0
 pytz==2022.1
+PyYAML==6.0
 sentinels==1.0.0
+serial==0.0.97
 six==1.16.0
 sortedcontainers==2.4.0
-tomli==2.0.1
-typing_extensions==4.2.0
 Werkzeug==2.1.2
 wrapt==1.14.1
 WTForms==3.0.1
