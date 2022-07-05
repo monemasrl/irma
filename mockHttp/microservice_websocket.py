@@ -47,6 +47,11 @@ def get_month(rawDateTime: str) -> int:
     return month
 
 
+def decode_devEUI(encoded_devEUI: str) -> str:
+    decoded_devEUI: str = base64.b64decode(encoded_devEUI).hex()
+    return decoded_devEUI
+
+
 def get_data(sensor_id: str, rec: str) -> str:
     total_sum: int = 0
     monthly_sum: int = 0
@@ -101,7 +106,7 @@ def get_data(sensor_id: str, rec: str) -> str:
     send = SentDocument(
         eui=eui,
         code=sensor_id,
-        status=state.name,
+        state=state.name,
         titolo1="Media Letture Totali",
         dato1=round(total_average, 3),
         titolo2="Media Letture Mensili",
@@ -173,7 +178,7 @@ def create_app():
         # filtraggio degli eventi mandati dall'application server 
         # in modo da non inserire nel database valori irrilevanti
         if "confirmedUplink" in record:                                            
-            record['devEUI'] = base64.b64decode(record['devEUI']).hex()
+            record['devEUI'] = decode_devEUI(record['devEUI'])
             payload: Payload = Payload(
                 sensorId=record['applicationID'],
                 readingTimestamp=record['publishedAt'],

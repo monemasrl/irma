@@ -21,36 +21,23 @@ def test_Payload_to_json(payload: microservice_db.Payload):
     "Error in `Payload.to_json`: output mismatch"
 
 
-# TODO: migrate sentDocument to fixture
-def test_SentDocument_to_jsonSent():
-    sentDocument = microservice_db.SentDocument(
-        eui=123,
-        status="rec",
-        code=456,
-        titolo1="Titolo 1",
-        dato1=7.89,
-        titolo2="",
-        dato2=-2,
-        titolo3="Titolo 3!",
-        dato3=-3j
-    )
-
+def test_SentDocument_to_json(sentDocument: microservice_db.SentDocument):
     sentDocument_dict = {
-        "devEUI": 123,
-        "state": "rec",
-        "code": 456,
+        "devEUI": sentDocument.eui,
+        "state": sentDocument.state,
+        "code": sentDocument.code,
         "datiInterni": [
             {
-                "titolo": "Titolo 1",
-                "dato": 7.89
+                "titolo": sentDocument.titolo1,
+                "dato": sentDocument.dato1
             },
             {
-                "titolo": "",
-                "dato": -2
+                "titolo": sentDocument.titolo2,
+                "dato": sentDocument.dato2
             },
             {
-                "titolo": "Titolo 3!",
-                "dato": -3j
+                "titolo": sentDocument.titolo3,
+                "dato": sentDocument.dato3
             }
         ]
     }

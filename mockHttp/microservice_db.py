@@ -54,7 +54,7 @@ class Payload(Document):
 #############################################################################
 class SentDocument(Document):
     eui = StringField(max_length=100, required=True)
-    status = StringField(max_length=100, required=True)
+    state = StringField(max_length=100, required=True)
     code = StringField(max_length=100, required=True)
     titolo1 = StringField(max_length=100, required=True)
     titolo2 = StringField(max_length=100, required=True)
@@ -66,7 +66,7 @@ class SentDocument(Document):
     def to_json(self) -> dict:
         return {
             "devEUI":self.eui,
-            "state": self.status,
+            "state": self.state,
             "code": self.code,
             "datiInterni": [
                 {

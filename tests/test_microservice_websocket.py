@@ -2,6 +2,8 @@ from flask_socketio import SocketIO, SocketIOTestClient
 from flask import Flask
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
+from hypothesis import given
+from hypothesis.strategies import text
 from mockHttp import microservice_websocket, microservice_db
 import pytest
 import json
@@ -128,6 +130,10 @@ class TestFlaskApp:
         "Invalid structure of returned json: doesn't match `to_jsonSent()` \
         function, in `microservice_db.py`. Check stdout log."
 
+
+def test_decode_devEUI(devEUI):
+    assert microservice_websocket.decode_devEUI(devEUI) == "0202020202020202", \
+    "Error in `decode_devEUI()`: output mismatch"
 
 
 def test_get_state():

@@ -17,3 +17,18 @@ def payload(sensorId, readingTimestamp,
         longitude=longitude,
         sensorData=sensorData_noUplink,
     )
+
+
+@pytest.fixture()
+def sentDocument(decoded_devEUI, sensorId, state) -> SentDocument:
+    return SentDocument(
+        eui=decoded_devEUI,
+        code=sensorId,
+        state=state,
+        titolo1="Foo",
+        titolo2="Bar",
+        titolo3="Baz",
+        dato1=0.0,
+        dato2=0.0,
+        dato3=0,
+    )

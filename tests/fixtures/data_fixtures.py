@@ -3,6 +3,7 @@ Data fixtures based on chirpstack data
 """
 
 import pytest
+from mockHttp.microservice_websocket import decode_devEUI, State
 
 
 @pytest.fixture()
@@ -42,12 +43,37 @@ def longitude() -> float:
 
 
 @pytest.fixture()
-def sensorData_noUplink(sensorId, readingTimestamp, latitude, longitude) -> dict:
+def devEUI() -> str:
+    """
+    Example of devEUI received from chirpstack, NOT decoded
+    """
+    return "AgICAgICAgI="
+
+
+@pytest.fixture()
+def decoded_devEUI(devEUI) -> str:
+    """
+    Example of devEUI decoded from `decode_devEUI()`
+    """
+    return decode_devEUI(devEUI)
+
+
+@pytest.fixture()
+def state() -> str:
+    """
+    Example of state from the State class inside `microservice_websocket.py`
+    """
+    return State.OK.name
+
+
+@pytest.fixture()
+def sensorData_noUplink(sensorId, readingTimestamp,
+                        latitude, longitude, devEUI) -> dict:
     return {
         "applicationID": sensorId,
         "applicationName": "temperature-sensor",
         "deviceName": "garden-sensor",
-        "devEUI": "AgICAgICAgI=",
+        "devEUI": devEUI,
         "rxInfo": [
             {
                 "gatewayID": "AwMDAwMDAwM=",
