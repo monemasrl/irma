@@ -5,59 +5,23 @@
 Rete di comunicazione a lunga gittata tramite protocollo LoRa per la trasmissione di dati raccolti da sensori verso il server che raccoglie e elabora i dati ritrasmettendoli tramite un web-service a una dashboard.
 
 
-#### APPLICATION SERVER
+#### CHIRPSTACK DEPLOYMENT
 
-Il setup dell' application server in locale su Ubuntu contiene pochi passi essenziali:
+All'interno della directory [chirpstack-docker](chirpstack-docker) è presente il file [docker-compose.yaml](chirpstack-docker/docker-compose.yaml), grazie al quale è possibile dispiegare l'intero stack di servizi di chirpstack. All'interno della cartella sono presenti anche i file di configurazione dei vari servizi lanciati da docker.
 
-##### 1-Creazione di un database e uno user in postgres:
+Per utilizzare [docker-compose.yaml](chirpstack-docker/docker-compose.yaml):
 
-    sudo -u postgres psql
-    create role chirpstack_as with login password 'dbpassword';
-
-    create database chirpstack_as with owner chirpstack_as;
-
-    \c chirpstack_as
-    create extension pg_trgm;
-    create extension hstore;
-
-    \q
+    docker-compose up -d
     
-##### 2-Download della repository precompilata:
+Per visualizzare i logs:
 
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 1CE2AFD36DBCCA00
+    docker-compose logs -f
 
-    sudo echo "deb https://artifacts.chirpstack.io/packages/3.x/deb stable main" | sudo tee /etc/apt/sources.list.d/chirpstack.list
-    sudo apt-get update
+Per fermare i container (e smontare i volumi):
+
+    docker-compose down (-v)
     
-##### 3-Installazione dell'application server
-
-    sudo apt-get install chirpstack-application-server
-
-
-#### NETWORK SERVER
-
-Il setup del network server in locale su Ubuntu contiene pochi passi essenziali:
-
-##### 1-Creazione di un database e uno user in postgres:
-
-    sudo -u postgres psql
-    create role chirpstack_ns with login password 'dbpassword';
-
-    create database chirpstack_ns with owner chirpstack_ns;
-
-    \q
-    
-##### 2-Download della repository precompilata:
-
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 1CE2AFD36DBCCA00
-
-    sudo echo "deb https://artifacts.chirpstack.io/packages/3.x/deb stable main" | sudo tee /etc/apt/sources.list.d/chirpstack.list
-    sudo apt update
-    
-##### 3-Installazione dell'application server
-
-    sudo apt install chirpstack-network-server
-
+Il [Chirpstack Application Server]() è raggiungibile mediante la porta 8080 sull'host. Le credenziali predefinite per accedere alla dashboard sono username: `admin` e password: `admin`.
 
 #### GATEWAY
 
