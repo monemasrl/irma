@@ -12,6 +12,8 @@ services:
   mqtt:
     image: eclipse-mosquitto
     restart: unless-stopped
+    ports:
+      - 1883:1883
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
 
@@ -29,7 +31,6 @@ services:
     links:
       - db
       - mqtt
-      - redis
 
   chirpstack-application-server:
     image: "chirpstack/chirpstack-application-server"
@@ -39,6 +40,13 @@ services:
     volumes:
       - ./chirpstack-application-server.toml:/etc/chirpstack-application-server/chirpstack-application-server.toml
     links:
-      - db
+      - chirpstack-network-server
+
+  chirpstack-gateway-bridge:
+    image: "chirpstack/chirpstack-gateway-bridge"
+    ports:
+      - 1700:1700/udp
+    volumes:
+      - ./chirpstack-gateway-bridge.toml:/etc/chirpstack-gateway-bridge/chirpstack-gateway-bridge.toml
+    links:
       - mqtt
-      - redis
