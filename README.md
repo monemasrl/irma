@@ -21,7 +21,7 @@ Per fermare i container (e smontare i volumi):
 
     docker-compose down (-v)
     
-Il [Chirpstack Application Server]() è raggiungibile mediante la porta 8080 sull'host. Le credenziali predefinite per accedere alla dashboard sono username: `admin` e password: `admin`.
+Il [Chirpstack Application Server](https://www.chirpstack.io/application-server/) è raggiungibile mediante la porta 8080 sull'host. Le credenziali predefinite per accedere alla dashboard sono username: `admin` e password: `admin`.
 
 #### GATEWAY
 
