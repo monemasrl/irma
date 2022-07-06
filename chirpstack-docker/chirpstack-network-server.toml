@@ -45,7 +45,7 @@ grpc_default_resolver_scheme="passthrough"
 # * require - Always SSL (skip verification)
 # * verify-ca - Always SSL (verify that the certificate presented by the server was signed by a trusted CA)
 # * verify-full - Always SSL (verify that the certification presented by the server was signed by a trusted CA and the server host name matches the one in the certificate)
-dsn="postgres://localhost/chirpstack_ns?sslmode=disable"
+dsn="postgres://postgres:postgres@db/chirpstack_ns?sslmode=disable"
 
 # Automatically apply database migrations.
 #
@@ -78,7 +78,7 @@ max_idle_connections=2
 #
 # Set multiple addresses when connecting to a cluster.
 servers=[
-  "localhost:6379",
+  "redis:6379",
 ]
 
 # Password.
@@ -568,7 +568,7 @@ get_downlink_data_delay="100ms"
     command_topic_template="gateway/{{ .GatewayID }}/command/{{ .CommandType }}"
 
     # MQTT server (e.g. scheme://host:port where scheme is tcp, ssl or ws)
-    server="tcp://localhost:1883"
+    server="tcp://mqtt:1883"
 
     # Connect with the given username (optional)
     username=""
@@ -828,7 +828,7 @@ resolve_domain_suffix=".joineuis.lora-alliance.org"
   # Default server endpoint.
   #
   # This API is provided by ChirpStack Application Server.
-  server="http://localhost:8003"
+  server="localhost:8003"
 
   # # Use the async API scheme.
   async=false
