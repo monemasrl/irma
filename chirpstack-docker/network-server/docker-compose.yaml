@@ -1,0 +1,14 @@
+version: "3"
+services:
+  chirpstack-network-server:
+    image: "chirpstack/chirpstack-network-server"
+    restart: unless-stopped
+    volumes:
+      - ./chirpstack-network-server.toml:/etc/chirpstack-network-server/chirpstack-network-server.toml
+    network:
+      - postgresql-network
+
+networks:
+  postgresql-network:
+    external:
+      name: postgresql-network

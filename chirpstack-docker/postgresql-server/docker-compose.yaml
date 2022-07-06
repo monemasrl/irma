@@ -1,0 +1,14 @@
+version: "3"
+services:
+  db:
+    image: postgres
+    restart: unless-stopped
+    volumes:
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+    networks:
+      - postgresql-network
+
+networks:
+  postgresql-network:
+    driver: bridge
+    name: postgresql-network
