@@ -192,13 +192,12 @@ def create_app():
                 rec = ""
 
             socketio.emit('change')
-            print("1")
+            print("[DEBUG] Saved payload")
             return jsonify(payload.to_json())
 
-        print("Received message different than Uplink")
+        print("[DEBUG] Received message different than Uplink")
         rec = record['applicationID']
         socketio.emit('change')
-        print("2")
         return {}
 
     return app, socketio
