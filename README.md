@@ -98,3 +98,5 @@ Le istruzioni da eseguire sono:
 
     $ sudo modprobe peak_usb
     $ sudo ip link set can0 up type can bitrate 500000
+    
+Per maggiori info consultare la documentazione di [python-can](https://python-can.readthedocs.io/en/stable/interfaces/socketcan.html#pcan).
