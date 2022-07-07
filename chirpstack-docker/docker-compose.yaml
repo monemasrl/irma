@@ -6,6 +6,7 @@ services:
     volumes:
       - ./postgresql.conf:/etc/postgresql/postgresql.conf
       - ./init-postgresql-db.sh:/docker-entrypoint-initdb.d/init-postgresql-db.sh
+      - ./db-data:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: "postgres"
   
@@ -22,6 +23,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis-data:/data
 
   chirpstack-network-server:
     image: "chirpstack/chirpstack-network-server"
