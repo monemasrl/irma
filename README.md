@@ -23,6 +23,10 @@ Per fermare i container (e smontare i volumi):
     
 Il [Chirpstack Application Server](https://www.chirpstack.io/application-server/) è raggiungibile mediante la porta 8080 sull'host. Le credenziali predefinite per accedere alla dashboard sono username: `admin` e password: `admin`.
 
+### Encode e decode del payload
+
+All'interno della cartella [chirpstack-docker](chirpstack-docker) è presente il file [encode_decode.js](chirpstack-docker/encode_decode.js) che contiene il codice da integrare nella sezione ** dell'interfaccia web dell'Application Server.
+
 ## GATEWAY
 
 <img src="assets\raspi4.jpeg" width="150" height="150"/>
