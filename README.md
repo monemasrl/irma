@@ -4,6 +4,29 @@
 
 Rete di comunicazione a lunga gittata tramite protocollo LoRa per la trasmissione di dati raccolti da sensori verso il server che raccoglie e elabora i dati ritrasmettendoli tramite un web-service a una dashboard.
 
+### Struttura progetto
+```mermaid
+graph TD;
+
+chirpstack[chirpstack-docker]
+msw[microservice_websocket.py]
+db[MongoDB]
+dms[downlink_microservice.py]
+irma-ui[Irma UI]
+
+gateway[Gateway LoRaWAN]
+nodo[Nodo]
+sensori[Sensori]
+
+chirpstack -- POST / 5000 --> msw
+msw <--> db
+irma-ui <-- HTTP 5000 e websocket --> msw
+irma-ui -- POST / 5001 --> dms
+dms -- MQTT 1883 --> chirpstack
+gateway -- UDP 1700 --> chirpstack
+nodo -- LoRa --> gateway
+sensori -- CAN --> nodo
+```
 
 ## CHIRPSTACK DEPLOYMENT
 
@@ -26,6 +49,30 @@ Il [Chirpstack Application Server](https://www.chirpstack.io/application-server/
 ### Encode e decode del payload
 
 All'interno della cartella [chirpstack-docker](chirpstack-docker) è presente il file [encode_decode.js](chirpstack-docker/encode_decode.js) che contiene il codice da integrare nella sezione ** dell'interfaccia web dell'Application Server.
+
+### Struttura interna [docker-compose.yaml](chirpstack-docker/docker-compose.yaml)
+
+```mermaid
+graph TD;
+subgraph docker-net;
+  direction LR;
+    redis[redis]
+    cgb[chirpstack-gateway-bridge]
+    cns[chirpstack-network-server]
+    cas[chirpstack-application-server]
+    mqtt[eclipse-mosquitto]
+    db[(PostgreSQL)]
+
+    cas -- HTTP 8000 --> cns
+    cgb & cns <-- TCP 1883 --> mqtt
+    cas & cns <-- TCP 6379 --> redis
+    cns & cas <--> db
+end
+out([host network])
+mqtt <-- TCP 1883 --> out
+cas -- HTTP 8080 --> out
+cgb -- UDP 1700 --> out
+```
 
 ## GATEWAY
 
@@ -65,6 +112,13 @@ Per aggiungere la lettura dei dati dai sensori è stato utilizzato il protocollo
 
 <img src="assets\raspi2.png" width="120" height="120"/>
 
+### Struttura nodo/end-device
+
+```mermaid
+graph LR;
+Sensori <-- CAN --> Nodo -- LoRa --> Gateway
+```
+
 ## WEB-SERVICE E SALVATAGGIO DEI DATI
 
 Il server chirpstack non mantiene i dati trasmessi dagli end-device in nessun modo permanente, perciò sull'application server è stata attivata da interfaccia web l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file [microservice_websocket.py](mockHttp/microservice_websocket.py) si occupa della ricezione del POST e l'inserimento dei JSON in un database Mongo la cui connessione è definita in [microservice_db.py](mockHttp/microservice_db.py), dopo di che i dati dal database vengono rielaborati e ritrasmessi sempre in formato JSON alla dashboard tramite WebSocket per il display dei valori in tempo reale. L'avvio del webservice si fa con :
@@ -93,6 +147,22 @@ Al fine di eseguire dei test in locale per mancanza di una rete LoRaWAN da utili
 
 
 Questo sistema sotituisce la necessità di una rete e di sensori funzionanti per fare test sul funzionameto della infrastruttura di rete.
+
+### Struttura testing locale
+
+```mermaid
+graph LR;
+rpi4[Raspberry PI 4 - gateway]
+subgraph nodo
+  rpi2[Raspberry PI 2]
+  esp[ESP32]
+end
+
+rpi2 -- Serial --> esp
+esp -- LoRa --> rpi4
+rpi4 -- CAN --> rpi2
+rpi4 -- UDP 1700 --> chirpstak
+```
 
 ### Inizializzazione interfaccia CAN
 
