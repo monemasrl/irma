@@ -54,7 +54,7 @@ All'interno della cartella [chirpstack-docker](chirpstack-docker) è presente il
 
 ```mermaid
 graph TD;
-subgraph docker-net;
+subgraph chirpstack-docker;
   direction LR;
     redis[redis]
     cgb[chirpstack-gateway-bridge]
@@ -161,7 +161,7 @@ end
 rpi2 -- Serial --> esp
 esp -- LoRa --> rpi4
 rpi4 -- CAN --> rpi2
-rpi4 -- UDP 1700 --> chirpstak
+rpi4 -- UDP 1700 --> chirpstack
 ```
 
 ### Inizializzazione interfaccia CAN
