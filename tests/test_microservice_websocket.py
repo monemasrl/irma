@@ -118,15 +118,14 @@ class TestFlaskApp:
         "Payload data isn't consistent in the database. Check stdout log."
 
     def test_get_data(self):
-        s: str = microservice_websocket.get_data("123", "123")
-        s_dict: dict = json.loads(s)
-        print(f"{s_dict=}")
-        assert all(key in s_dict for key in [
+        s: dict = microservice_websocket.get_data("123", "123")
+        print(f"{s=}")
+        assert all(key in s for key in [
                 "devEUI",
                 "state",
                 "code",
                 "datiInterni"
-            ]) and len(s_dict["datiInterni"]) == 3, \
+            ]) and len(s["datiInterni"]) == 3, \
         "Invalid structure of returned json: doesn't match `to_jsonSent()` \
         function, in `microservice_db.py`. Check stdout log."
 

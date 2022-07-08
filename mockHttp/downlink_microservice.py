@@ -65,7 +65,7 @@ def create_app():
         # application ID ricevuto per identificare le varie app sull'application server
         appNum: str = str(received['app']['code'])
         # devEUI rivuto per identificare i dipositivi nelle varie app
-        devEUI: str = str(received['app']['eui'])
+        devEUI: str = str(received['app']['devEUI'])
         topic: str = 'application/'+appNum+'/device/'+devEUI+'/command/down'
 
         start: str = 'U3RhcnQ='

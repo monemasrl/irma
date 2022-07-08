@@ -52,7 +52,7 @@ def decode_devEUI(encoded_devEUI: str) -> str:
     return decoded_devEUI
 
 
-def get_data(sensor_id: str, rec: str) -> str:
+def get_data(sensor_id: str, rec: str) -> dict:
     total_sum: int = 0
     monthly_sum: int = 0
 
@@ -103,10 +103,10 @@ def get_data(sensor_id: str, rec: str) -> str:
     else:
         eui: str = ""
 
-    send = SentDocument(
+    send: dict = SentDocument(
         eui=eui,
         code=sensor_id,
-        state=state.name,
+        state=state.name.lower(),
         titolo1="Media Letture Totali",
         dato1=round(total_average, 3),
         titolo2="Media Letture Mensili",
@@ -115,7 +115,7 @@ def get_data(sensor_id: str, rec: str) -> str:
         dato3=monthly_count
     ).to_json()
 
-    return json.dumps(send)
+    return send
 
 
 def create_socketio(app: Flask):
@@ -167,7 +167,7 @@ def create_app():
     @app.route('/', methods=['GET'])
     @cross_origin()
     def home():
-        data: list[str] = [get_data(str(n), rec) for n in range(1, N_DEVICES+1)]
+        data: list[dict] = [get_data(str(n), rec) for n in range(1, N_DEVICES+1)]
         return jsonify(data=data)
 
     @app.route('/', methods=['POST'])
@@ -192,13 +192,12 @@ def create_app():
                 rec = ""
 
             socketio.emit('change')
-            print("1")
+            print("[DEBUG] Saved payload")
             return jsonify(payload.to_json())
 
-        print("Received message different than Uplink")
+        print("[DEBUG] Received message different than Uplink")
         rec = record['applicationID']
         socketio.emit('change')
-        print("2")
         return {}
 
     return app, socketio
@@ -207,4 +206,4 @@ def create_app():
 if __name__ == "__main__":
     app, socketio = create_app()
     db = init_db(app)
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, host="0.0.0.0")

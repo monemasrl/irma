@@ -16,5 +16,7 @@ pyvenv.cfg
 pip-selfcheck.json
 __pycache__/
 .hypothesis/
+redis-data/
+db-data/
 
 # End of https://www.toptal.com/developers/gitignore/api/venv

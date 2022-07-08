@@ -1,0 +1,54 @@
+version: "3"
+services:
+  db:
+    image: postgres
+    restart: unless-stopped
+    volumes:
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./init-postgresql-db.sh:/docker-entrypoint-initdb.d/init-postgresql-db.sh
+      - ./db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: "postgres"
+  
+  mqtt:
+    image: eclipse-mosquitto
+    restart: unless-stopped
+    ports:
+      - 1883:1883
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  redis:
+    image: redis
+    restart: unless-stopped
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis-data:/data
+
+  chirpstack-network-server:
+    image: "chirpstack/chirpstack-network-server"
+    restart: unless-stopped
+    volumes:
+      - ./chirpstack-network-server.toml:/etc/chirpstack-network-server/chirpstack-network-server.toml
+    links:
+      - db
+      - mqtt
+
+  chirpstack-application-server:
+    image: "chirpstack/chirpstack-application-server"
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    volumes:
+      - ./chirpstack-application-server.toml:/etc/chirpstack-application-server/chirpstack-application-server.toml
+    links:
+      - chirpstack-network-server
+
+  chirpstack-gateway-bridge:
+    image: "chirpstack/chirpstack-gateway-bridge"
+    ports:
+      - 1700:1700/udp
+    volumes:
+      - ./chirpstack-gateway-bridge.toml:/etc/chirpstack-gateway-bridge/chirpstack-gateway-bridge.toml
+    links:
+      - mqtt
