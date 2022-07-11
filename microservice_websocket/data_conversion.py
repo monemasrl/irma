@@ -1,3 +1,9 @@
+import base64
+
+
+def decode_devEUI(encoded_devEUI: str) -> str:
+    return base64.b64decode(encoded_devEUI).hex()
+
 
 # Conversione payload chirpstack in payload per mobius
 def to_mobius_payload(record: dict) -> dict:
@@ -5,7 +11,7 @@ def to_mobius_payload(record: dict) -> dict:
     readingTimestamp = record['publishedAt']
     latitude = record['rxInfo'][0]['location']['latitude']
     longitude = record['rxInfo'][0]['location']['longitude']
-    sensorData = record
+    sensorData = record.copy()
 
     return {
         "m2m:cin": {

@@ -7,7 +7,6 @@ import mock_mobius
 import pytest
 import json
 from microservice_websocket.data_conversion import to_mobius_payload
-from microservice_websocket import decode_devEUI
 from fixtures.data_fixtures import *
 
 
@@ -25,7 +24,6 @@ class TestFlaskApp:
         return app.test_client()
 
     def test_publish_data(self, app_client, sensorData_Uplink):
-        sensorData_Uplink["devEUI"] = decode_devEUI(sensorData_Uplink["devEUI"])
         payload: dict = to_mobius_payload(sensorData_Uplink)
         print(payload)
         response: TestResponse = app_client.post(
@@ -44,7 +42,6 @@ class TestFlaskApp:
         This test is meant to check if data stored
         as Reading in database is consistent
         """
-        sensorData_Uplink['devEUI'] = decode_devEUI(sensorData_Uplink['devEUI'])
         payload: dict = to_mobius_payload(sensorData_Uplink)
         response: TestResponse = app_client.post(
             f"/{sensorData_Uplink['applicationID']}", json=payload)
@@ -65,7 +62,6 @@ class TestFlaskApp:
     def test_db_query_limits(self, app_client, sensorData_Uplink: dict):
         reading_timestamps = [datetime(2022, 7, 10, 12, 45, x) for x in [10, 20, 30, 40, 50]]
         reading_timestamps_iso = [x.isoformat() for x in reading_timestamps]
-        sensorData_Uplink['devEUI'] = decode_devEUI(sensorData_Uplink['devEUI'])
 
         for time in reading_timestamps_iso:
             sensorData_Uplink['publishedAt'] = time

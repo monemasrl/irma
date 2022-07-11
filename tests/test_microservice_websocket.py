@@ -6,7 +6,6 @@ from mock import patch
 import microservice_websocket
 import pytest
 import json
-import base64
 from fixtures.data_fixtures import *
 
 
@@ -44,7 +43,6 @@ class TestFlaskApp:
 
         response: TestResponse = app_client.post("/", json=sensorData_Uplink)
         decoded_json: dict = json.loads(response.data)
-        sensorData_Uplink['devEUI'] = base64.b64decode(sensorData_Uplink['devEUI']).hex()
         payload: dict = microservice_websocket.data_conversion.to_mobius_payload(sensorData_Uplink)
 
         print("[DEBUG] Original data: ")
@@ -92,11 +90,6 @@ class TestFlaskApp:
             ]) and len(s["datiInterni"]) == 3, \
         "Invalid structure of returned json: doesn't match `to_irma_ui_data()` \
         function, in `data_conversion.py`. Check stdout log."
-
-
-def test_decode_devEUI(devEUI):
-    assert microservice_websocket.decode_devEUI(devEUI) == "0202020202020202", \
-    "Error in `decode_devEUI()`: output mismatch"
 
 
 def test_get_state():

@@ -7,7 +7,6 @@ from enum import Enum, auto
 
 from datetime import datetime
 
-import base64
 import iso8601
 import requests
 
@@ -49,11 +48,6 @@ def get_sensorData(rawData: str) -> int:
 def get_month(rawDateTime: str) -> int:
     month = iso8601.parse_date(rawDateTime).month
     return month
-
-
-def decode_devEUI(encoded_devEUI: str) -> str:
-    decoded_devEUI: str = base64.b64decode(encoded_devEUI).hex()
-    return decoded_devEUI
 
 
 def get_data(sensor_path: str, rec: str) -> dict:
@@ -173,7 +167,6 @@ def create_app():
         # filtraggio degli eventi mandati dall'application server 
         # in modo da non inserire nel database valori irrilevanti
         if "confirmedUplink" in record:
-            record['devEUI'] = decode_devEUI(record['devEUI'])
             payload: dict = to_mobius_payload(record)
 
             # For testing purposes

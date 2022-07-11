@@ -61,3 +61,9 @@ def test_to_irma_ui():
         titolo1, titolo2, titolo3,
         dato1, dato2, dato3
     ) == expected_value, "Error in `to_irma_ui_data`: output mismatch"
+
+
+def test_decode_devEUI(devEUI):
+    assert data_conversion.decode_devEUI(devEUI) == "0202020202020202", \
+    "Error in `decode_devEUI()`: output mismatch"
+
