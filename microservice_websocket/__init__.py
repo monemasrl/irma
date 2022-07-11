@@ -84,7 +84,7 @@ def get_data(sensor_path: str, rec: str) -> dict:
 
     for x in collect:
         sensor_data: int = get_sensorData(x['sensorData']['objectJSON'])
-        read_time: str = x['readingTimestamp']
+        read_time: str = x['con']['metadata']['readingTimestamp']
         read_month: int = get_month(read_time)
 
         state = State.REC if rec == sensor_path else get_state(sensor_data)
@@ -178,7 +178,7 @@ def create_app():
 
             # For testing purposes
             if MOBIUS_URL != "":
-                requests.post(f"{MOBIUS_URL}/{record['applicationID']}", json=payload)
+                requests.post(f"{MOBIUS_URL}/{record['devEUI']}", json=payload)
 
             if rec == record['applicationID']:
                 rec = ""

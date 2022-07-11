@@ -31,6 +31,7 @@ class Reading(Document):
                     "longitude": self.longitude,
                 },
             },
+            "sensorData": self.sensorData
         }
 
     @classmethod
