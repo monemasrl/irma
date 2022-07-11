@@ -10,6 +10,7 @@ graph TD;
 
 chirpstack[chirpstack-docker]
 msw[microservice_websocket.py]
+mm[mock_mobius]
 db[MongoDB]
 dms[downlink_microservice.py]
 irma-ui[Irma UI]
@@ -19,7 +20,9 @@ nodo[Nodo]
 sensori[Sensori]
 
 chirpstack -- POST / 5000 --> msw
-msw <--> db
+msw -- POST / 5002 --> mm
+msw -- GET / 5002 --> mm
+mm <--> db
 irma-ui <-- HTTP 5000 e websocket --> msw
 irma-ui -- POST / 5001 --> dms
 dms -- MQTT 1883 --> chirpstack
@@ -121,12 +124,31 @@ Sensori <-- CAN --> Nodo -- LoRa --> Gateway
 
 ## WEB-SERVICE E SALVATAGGIO DEI DATI
 
-Il server chirpstack non mantiene i dati trasmessi dagli end-device in nessun modo permanente, perciò sull'application server è stata attivata da interfaccia web l'integrazione con HTTP la quale permette di eseguire un POST con l'intero payload in formato JSON. Il file [microservice_websocket.py](mockHttp/microservice_websocket.py) si occupa della ricezione del POST e l'inserimento dei JSON in un database Mongo la cui connessione è definita in [microservice_db.py](mockHttp/microservice_db.py), dopo di che i dati dal database vengono rielaborati e ritrasmessi sempre in formato JSON alla dashboard tramite WebSocket per il display dei valori in tempo reale. L'avvio del webservice si fa con :
-`python3 -m mockHttp.microservice_websocket`.
+Il server chirpstack non mantiene i dati trasmessi dagli end-device in nessun modo permanente, perciò sull'application server da interfaccia web deve essere attivata l'integrazione con HTTP, che permette di eseguire una POST con l'intero payload in formato JSON. 
 
-Per scaricare le **dipendenze** relative al web-service è possibile eseguire:
+Il modulo [microservice_websocket](microservice_websocket/) si occupa della ricezione del POST e l'inoltro dei JSON al servizio [mock_mobius](mock_mobius/) che simula il comportamento della piattaforma Mobius (piattaforma per la registrazione dei dati).
+
+Inoltre, [microservice_websocket](microservice_websocket/) si occupa anche di gestire la connession alla dashboard mediante WebSocket e di effettuare le query a [mock_mobius](mock_mobius/)
+
+### Avvio di [microservice_websocket](microservice_websocket/)
+
+Per scaricare le **dipendenze** è possibile eseguire:
 
     pip3 install -r requirements.txt
+
+Poi per avviare il servizio:
+
+    python3 -m mockHttp.microservice_websocket
+
+### Avviare [mock_mobius](mock_mobius/)
+
+Per le **dipendenze** far riferimento al paragrafo precedente.
+
+[mock_mobius](mock_mobius/) richiede un'istanza [MongoDB](https://www.mongodb.com/) su localhost.
+
+Per avviare il servizio:
+
+    FLASK_APP=mock_mobius flask run --port=5002
 
 ## COMANDI
 
