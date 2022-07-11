@@ -10,7 +10,7 @@ from datetime import datetime
 import iso8601
 import requests
 
-from .data_conversion import to_irma_ui_data, to_mobius_payload
+from .data_conversion import to_irma_ui_data, to_mobius_payload, decode_devEUI
 
 rec=""
 
@@ -96,7 +96,7 @@ def get_data(sensor_path: str, rec: str) -> dict:
             monthly_average = monthly_sum / monthly_count
 
     if state in [State.OK, State.REC] and len(collect) > 0:
-        eui: str = collect[-1]['sensorData']['devEUI']
+        eui: str = collect[-1]['con']['metadata']['sensorId']
         applicationID: str = collect[-1]['sensorData']['applicationID']
     else:
         eui: str = ""
@@ -173,9 +173,9 @@ def create_app():
 
             # For testing purposes
             if MOBIUS_URL != "":
-                requests.post(f"{MOBIUS_URL}/{record['devEUI']}", json=payload)
+                requests.post(f"{MOBIUS_URL}/{payload['m2m:cin']['con']['metadata']['sensorId']}", json=payload)
 
-            if rec == record['applicationID']:
+            if rec == payload['m2m:cin']['con']['metadata']['sensorId']:
                 rec = ""
 
             socketio.emit('change')
@@ -183,7 +183,7 @@ def create_app():
             return jsonify(payload)
 
         print("[DEBUG] Received message different than Uplink")
-        rec = record['applicationID']
+        rec = decode_devEUI(record['devEUI'])
         socketio.emit('change')
         return {}
 
