@@ -138,7 +138,7 @@ Per scaricare le **dipendenze** è possibile eseguire:
 
 Poi per avviare il servizio:
 
-    python3 -m mockHttp.microservice_websocket
+    python3 -m microservice_websocket
 
 ### Avviare [mock_mobius](mock_mobius/)
 
