@@ -97,12 +97,14 @@ def get_data(sensor_path: str, rec: str) -> dict:
 
     if state in [State.OK, State.REC] and len(collect) > 0:
         eui: str = collect[-1]['sensorData']['devEUI']
+        applicationID: str = collect[-1]['sensorData']['applicationID']
     else:
         eui: str = ""
+        applicationID: str = ""
 
     send: dict = to_irma_ui_data(
-        eui=eui,
-        code=sensor_path,
+        devEUI=eui,
+        applicationID=applicationID,
         state=state.name.lower(),
         titolo1="Media Letture Totali",
         dato1=round(total_average, 3),

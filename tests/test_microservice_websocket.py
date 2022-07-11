@@ -84,8 +84,8 @@ class TestFlaskApp:
         print(f"{s=}")
         assert all(key in s for key in [
                 "devEUI",
+                "applicationID",
                 "state",
-                "code",
                 "datiInterni"
             ]) and len(s["datiInterni"]) == 3, \
         "Invalid structure of returned json: doesn't match `to_irma_ui_data()` \

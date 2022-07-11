@@ -7,11 +7,10 @@ def decode_devEUI(encoded_devEUI: str) -> str:
 
 # Conversione payload chirpstack in payload per mobius
 def to_mobius_payload(record: dict) -> dict:
-    sensorId = record['applicationID']
+    sensorId = decode_devEUI(record['devEUI'])
     readingTimestamp = record['publishedAt']
     latitude = record['rxInfo'][0]['location']['latitude']
     longitude = record['rxInfo'][0]['location']['longitude']
-    sensorData = record.copy()
 
     return {
         "m2m:cin": {
@@ -23,16 +22,16 @@ def to_mobius_payload(record: dict) -> dict:
                     "longitude": longitude,
                 },
             },
-            "sensorData": sensorData,
+            "sensorData": record.copy(),
         }
     }
         
 
 # Creazione payload per irma-ui
 def to_irma_ui_data(
-        eui: str,
+        devEUI: str,
+        applicationID: str,
         state: str,
-        code: str,
         titolo1: str,
         titolo2: str,
         titolo3: str,
@@ -42,9 +41,9 @@ def to_irma_ui_data(
     ) -> dict:
 
     return {
-        "devEUI":eui,
+        "devEUI": devEUI,
+        "applicationID": applicationID,
         "state": state,
-        "code": code,
         "datiInterni": [
             {
                 "titolo": titolo1,

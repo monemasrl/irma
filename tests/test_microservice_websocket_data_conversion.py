@@ -11,7 +11,7 @@ def test_to_mobius_payload(sensorData_Uplink: dict):
         "m2m:cin": {
             "con": {
                 "metadata": {
-                    "sensorId": sensorData_Uplink['applicationID'],
+                    "sensorId": data_conversion.decode_devEUI(sensorData_Uplink['devEUI']),
                     "readingTimestamp": sensorData_Uplink['publishedAt'],
                     "latitude": sensorData_Uplink['rxInfo'][0]['location']['latitude'],
                     "longitude": sensorData_Uplink['rxInfo'][0]['location']['longitude'],
@@ -26,9 +26,9 @@ def test_to_mobius_payload(sensorData_Uplink: dict):
 
 
 def test_to_irma_ui():
-    eui = "123"
+    deviceEUI = "2288300834"
+    applicationID = "123"
     state = "ok"
-    code = "2034823940"
     titolo1 = "Foo"
     titolo2 = "Bar"
     titolo3 = "Baz"
@@ -37,9 +37,9 @@ def test_to_irma_ui():
     dato3 = 0
 
     expected_value = {
-        "devEUI": eui,
+        "devEUI": deviceEUI,
+        "applicationID": applicationID,
         "state": state,
-        "code": code,
         "datiInterni": [
             {
                 "titolo": titolo1,
@@ -57,7 +57,7 @@ def test_to_irma_ui():
     }
 
     assert data_conversion.to_irma_ui_data(
-        eui, state, code,
+        deviceEUI, applicationID, state, 
         titolo1, titolo2, titolo3,
         dato1, dato2, dato3
     ) == expected_value, "Error in `to_irma_ui_data`: output mismatch"

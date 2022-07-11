@@ -63,10 +63,10 @@ def create_app():
         received: dict = json.loads(request.data)
 
         # application ID ricevuto per identificare le varie app sull'application server
-        appNum: str = str(received['app']['code'])
+        applicationID: str = str(received['applicationID'])
         # devEUI rivuto per identificare i dipositivi nelle varie app
-        devEUI: str = str(received['app']['devEUI'])
-        topic: str = 'application/'+appNum+'/device/'+devEUI+'/command/down'
+        devEUI: str = str(received['devEUI'])
+        topic: str = 'application/'+applicationID+'/device/'+devEUI+'/command/down'
 
         start: str = 'U3RhcnQ='
         stop: str = 'U3RvcA=='
