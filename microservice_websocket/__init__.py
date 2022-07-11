@@ -2,23 +2,27 @@ import json
 from flask import Flask, request, jsonify
 from flask_cors import cross_origin
 from flask_socketio import SocketIO
+from flask_api import status
 from enum import Enum, auto
 
 from datetime import datetime
 
 import base64
 import iso8601
+import requests
 
-from mockHttp.microservice_db import Payload, SentDocument, init_db
+from .data_conversion import to_irma_ui_data, to_mobius_payload
 
 rec=""
 
 # valore teorico della soglia di pericolo del sensore
 MAX_TRESHOLD = 20
 
-# valore teorico del quantitativo di dispositivi diversi
-# per cui cercare gli id nel database
-N_DEVICES = 18
+# lista dei SENSOR_PATH per effettuare le query a mobius
+SENSOR_PATHS = [ "2232330000888802" ]
+
+# mobius url
+MOBIUS_URL = "http://localhost:5002"
 
 
 class State(Enum):
@@ -52,7 +56,7 @@ def decode_devEUI(encoded_devEUI: str) -> str:
     return decoded_devEUI
 
 
-def get_data(sensor_id: str, rec: str) -> dict:
+def get_data(sensor_path: str, rec: str) -> dict:
     total_sum: int = 0
     monthly_sum: int = 0
 
@@ -66,25 +70,24 @@ def get_data(sensor_id: str, rec: str) -> dict:
     #salvataggio del valore attuale del mese per il confronto
     current_month: int = datetime.now().month 
 
-    # questa query prende dal database solo i campi sensorId,
-    # ReadinTimestamp e objectJSON da tutti i documenti ordinati 
-    # prima per sensorId e poi readingTimestamp
-    collect = (
-        Payload.objects(sensorId=sensor_id) # type: ignore
-        .order_by('sensorId','-readingTimestamp')
-        .only('sensorId',
-              'readingTimestamp',
-              'sensorData.objectJSON',
-              'sensorData.devEUI'
-        )
-    )
+    # For testing purposes
+    if MOBIUS_URL != "":
+        # Querying mobius for sensor_path
+        response: requests.Response = requests.get(f"{MOBIUS_URL}/{sensor_path}")
+        decoded_response: dict = json.loads(response.content)
+
+        collect: list[dict] = decoded_response["m2m:rsp"]["m2m:cin"] \
+                                if status.is_success(response.status_code) \
+                                else []
+    else:
+        collect = []
 
     for x in collect:
         sensor_data: int = get_sensorData(x['sensorData']['objectJSON'])
         read_time: str = x['readingTimestamp']
         read_month: int = get_month(read_time)
 
-        state = State.REC if rec == sensor_id else get_state(sensor_data)
+        state = State.REC if rec == sensor_path else get_state(sensor_data)
 
         total_sum += sensor_data
         total_count += 1
@@ -99,13 +102,13 @@ def get_data(sensor_id: str, rec: str) -> dict:
             monthly_average = monthly_sum / monthly_count
 
     if state in [State.OK, State.REC] and len(collect) > 0:
-        eui: str = collect[len(collect)-1]['sensorData']['devEUI']
+        eui: str = collect[-1]['sensorData']['devEUI']
     else:
         eui: str = ""
 
-    send: dict = SentDocument(
+    send: dict = to_irma_ui_data(
         eui=eui,
-        code=sensor_id,
+        code=sensor_path,
         state=state.name.lower(),
         titolo1="Media Letture Totali",
         dato1=round(total_average, 3),
@@ -113,7 +116,7 @@ def get_data(sensor_id: str, rec: str) -> dict:
         dato2=round(monthly_average, 3),
         titolo3="Letture eseguite nel mese",
         dato3=monthly_count
-    ).to_json()
+    )
 
     return send
 
@@ -134,7 +137,7 @@ def create_socketio(app: Flask):
     def onChange():
         print('Changed')
 
-        data: list[str] = [get_data(str(n), rec) for n in range(1, N_DEVICES+1)]
+        data: list[dict] = [get_data(x, rec) for x in SENSOR_PATHS]
         socketio.send(jsonify(data=data))
 
     return socketio
@@ -155,19 +158,11 @@ def create_app():
         'Access-Control-Allow-Origin': 'http://localhost:3000',
         'Access-Control-Allow-Credentials': 'true'
     }
-    #########################################################################
-    #####configurazione dei dati relativi al database per la connessione#####
-    #########################################################################
-    app.config['MONGODB_SETTINGS'] = {
-        'db': 'irma',
-        'host': 'localhost',
-        'port': 27017
-    }
 
     @app.route('/', methods=['GET'])
     @cross_origin()
     def home():
-        data: list[dict] = [get_data(str(n), rec) for n in range(1, N_DEVICES+1)]
+        data: list[dict] = [get_data(x, rec) for x in SENSOR_PATHS]
         return jsonify(data=data)
 
     @app.route('/', methods=['POST'])
@@ -177,23 +172,20 @@ def create_app():
 
         # filtraggio degli eventi mandati dall'application server 
         # in modo da non inserire nel database valori irrilevanti
-        if "confirmedUplink" in record:                                            
+        if "confirmedUplink" in record:
             record['devEUI'] = decode_devEUI(record['devEUI'])
-            payload: Payload = Payload(
-                sensorId=record['applicationID'],
-                readingTimestamp=record['publishedAt'],
-                latitude=record['rxInfo'][0]['location']['latitude'],
-                longitude=record['rxInfo'][0]['location']['longitude'],
-                sensorData=record
-            )
-            payload.save()
+            payload: dict = to_mobius_payload(record)
+
+            # For testing purposes
+            if MOBIUS_URL != "":
+                requests.post(f"{MOBIUS_URL}/{record['applicationID']}", json=payload)
 
             if rec == record['applicationID']:
                 rec = ""
 
             socketio.emit('change')
-            print("[DEBUG] Saved payload")
-            return jsonify(payload.to_json())
+            print(f"[DEBUG] Posted payload to '{MOBIUS_URL}'")
+            return jsonify(payload)
 
         print("[DEBUG] Received message different than Uplink")
         rec = record['applicationID']
@@ -205,5 +197,4 @@ def create_app():
 
 if __name__ == "__main__":
     app, socketio = create_app()
-    db = init_db(app)
     socketio.run(app, debug=True, host="0.0.0.0")

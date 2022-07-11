@@ -3,7 +3,6 @@ Data fixtures based on chirpstack data
 """
 
 import pytest
-from mockHttp.microservice_websocket import decode_devEUI, State
 
 
 @pytest.fixture()
@@ -16,7 +15,7 @@ def sensorId() -> str:
 
 
 @pytest.fixture()
-def readingTimestamp() -> str:
+def isoTimestamp() -> str:
     """
     Time format received from chirpstack.
     It does follow the ISO8601 standard.
@@ -51,23 +50,7 @@ def devEUI() -> str:
 
 
 @pytest.fixture()
-def decoded_devEUI(devEUI) -> str:
-    """
-    Example of devEUI decoded from `decode_devEUI()`
-    """
-    return decode_devEUI(devEUI)
-
-
-@pytest.fixture()
-def state() -> str:
-    """
-    Example of state from the State class inside `microservice_websocket.py`
-    """
-    return State.OK.name
-
-
-@pytest.fixture()
-def sensorData_noUplink(sensorId, readingTimestamp,
+def sensorData_noUplink(sensorId, isoTimestamp,
                         latitude, longitude, devEUI) -> dict:
     return {
         "applicationID": sensorId,
@@ -77,7 +60,7 @@ def sensorData_noUplink(sensorId, readingTimestamp,
         "rxInfo": [
             {
                 "gatewayID": "AwMDAwMDAwM=",
-                "time": readingTimestamp,
+                "time": isoTimestamp,
                 "timeSinceGPSEpoch": None,
                 "rssi": -48,
                 "loRaSNR": 9,
@@ -117,7 +100,7 @@ def sensorData_noUplink(sensorId, readingTimestamp,
     }
 
 @pytest.fixture()
-def sensorData_Uplink(sensorId, readingTimestamp, latitude, longitude) -> dict:
+def sensorData_Uplink(sensorId, isoTimestamp, latitude, longitude) -> dict:
     return {
         "applicationID": sensorId,
         "applicationName": "test_esp",
@@ -126,7 +109,7 @@ def sensorData_Uplink(sensorId, readingTimestamp, latitude, longitude) -> dict:
         "rxInfo": [
             {
                 "gatewayID": "5F8B//59p6g=",
-                "time": readingTimestamp,
+                "time": isoTimestamp,
                 "timeSinceGPSEpoch": None,
                 "rssi": -10,
                 "loRaSNR": 8.5,
@@ -166,7 +149,7 @@ def sensorData_Uplink(sensorId, readingTimestamp, latitude, longitude) -> dict:
         "tags": {},
         "confirmedUplink": True,
         "devAddr": "AS6zcQ==",
-        "publishedAt": "2022-06-23T13:32:08.564170948Z",
+        "publishedAt": isoTimestamp,
         "deviceProfileID": "fc9a26f4-58fe-47b0-bfe9-2cb7711f1de1",
         "deviceProfileName": "testOTAA"
     }

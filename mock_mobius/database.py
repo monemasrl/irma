@@ -9,8 +9,8 @@ import json
 #####################################################################
 #####definizione della struttura del documento inserito in mongo#####
 #####################################################################
-class Payload(Document):
-    id=StringField(max_length=100, required=True)
+class Reading(Document):
+    readingId=StringField(max_length=100, required=True)
     sensorPath = StringField(max_length=100, required=True)
     sensorId = StringField(max_length=100, required=True)
     readingTimestamp = StringField(max_length=100, required=True)
@@ -21,7 +21,7 @@ class Payload(Document):
     def to_json(self) -> dict:
         return {
             "pi": "",
-            "ri": self.id,
+            "ri": self.readingId,
             "ct": self.readingTimestamp, # ?
             "con": {
                 "metadata": {
@@ -34,9 +34,9 @@ class Payload(Document):
         }
 
     @classmethod
-    def from_json(cls, s: str) -> Payload:
+    def from_json(cls, s: str) -> Reading:
         s_dict = json.loads(s)
-        new_p = Payload()
+        new_p = Reading()
         new_p.sensorId = s_dict["m2m:cin"]["con"]["metadata"]["sensorId"]
         new_p.readingTimestamp = s_dict["m2m:cin"]["con"]["metadata"]["readingTimestamp"]
         new_p.latitude = s_dict["m2m:cin"]["con"]["metadata"]["latitude"]
