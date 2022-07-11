@@ -1,4 +1,4 @@
-from mockHttp import downlink_microservice
+from microservice_websocket import downlink_microservice
 from flask import Flask
 from flask.testing import FlaskClient
 import pytest
@@ -6,7 +6,7 @@ import pytest
 class TestFlaskApp:
 
     @pytest.fixture()
-    def app(self) -> Flask:
+    def app(self) -> Flask: # type: ignore
         app = downlink_microservice.create_app()
         app.config.update({
             "TESTING": True,

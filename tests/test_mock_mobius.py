@@ -6,7 +6,8 @@ from datetime import datetime
 import mock_mobius
 import pytest
 import json
-from microservice_websocket.database import Payload
+from microservice_websocket.data_conversion import to_mobius_payload
+from microservice_websocket import decode_devEUI
 from fixtures.data_fixtures import *
 
 
@@ -24,15 +25,16 @@ class TestFlaskApp:
         return app.test_client()
 
     def test_publish_data(self, app_client, sensorData_Uplink):
-        payload: Payload = Payload.from_json(json.dumps(sensorData_Uplink))
-        print(payload.to_json())
+        sensorData_Uplink["devEUI"] = decode_devEUI(sensorData_Uplink["devEUI"])
+        payload: dict = to_mobius_payload(sensorData_Uplink)
+        print(payload)
         response: TestResponse = app_client.post(
-            f"/{payload.sensorId}", json=payload.to_json())
+            f"/{sensorData_Uplink['applicationID']}", json=payload)
 
         assert status.is_success(response.status_code), \
         "Invalid response code from server when submitting valid payload"
 
-        response = app_client.post("/", json=payload.to_json())
+        response = app_client.post("/", json=payload)
 
         assert status.is_client_error(response.status_code), \
         "Invalid response code from server when submitting on invalid route"
@@ -42,14 +44,15 @@ class TestFlaskApp:
         This test is meant to check if data stored
         as Reading in database is consistent
         """
-        payload: Payload = Payload.from_json(json.dumps(sensorData_Uplink))
+        sensorData_Uplink['devEUI'] = decode_devEUI(sensorData_Uplink['devEUI'])
+        payload: dict = to_mobius_payload(sensorData_Uplink)
         response: TestResponse = app_client.post(
-            f"/{payload.sensorId}", json=payload.to_json())
+            f"/{sensorData_Uplink['applicationID']}", json=payload)
 
         assert status.is_success(response.status_code), \
         "Invalid response code from server when submitting valid payload"
 
-        data = app_client.get(f"{payload.sensorId}").data
+        data = app_client.get(f"/{sensorData_Uplink['applicationID']}").data
         data_dict: dict = json.loads(data.decode())
 
         print(data_dict)
@@ -62,13 +65,14 @@ class TestFlaskApp:
     def test_db_query_limits(self, app_client, sensorData_Uplink: dict):
         reading_timestamps = [datetime(2022, 7, 10, 12, 45, x) for x in [10, 20, 30, 40, 50]]
         reading_timestamps_iso = [x.isoformat() for x in reading_timestamps]
+        sensorData_Uplink['devEUI'] = decode_devEUI(sensorData_Uplink['devEUI'])
 
         for time in reading_timestamps_iso:
             sensorData_Uplink['publishedAt'] = time
-            payload: Payload = Payload.from_json(json.dumps(sensorData_Uplink))
+            payload: dict = to_mobius_payload(sensorData_Uplink)
 
             response: TestResponse = app_client.post(
-                f"/{payload.sensorId}", json=payload.to_json())
+                f"/{sensorData_Uplink['applicationID']}", json=payload)
 
             assert status.is_success(response.status_code), \
             "Invalid response code from server when submitting valid payload"
@@ -112,7 +116,7 @@ class TestFlaskApp:
         readings.sort(key=lambda x: x["con"]["metadata"]["readingTimestamp"], reverse=True)
         last_reading: dict = readings[0]
 
-        response = app_client.get(f"{sensorData_Uplink['applicationID']}/la")
+        response = app_client.get(f"/{sensorData_Uplink['applicationID']}/la")
 
         assert status.is_success(response.status_code), \
         "Invalid response code from server when querying last sensor reading"
