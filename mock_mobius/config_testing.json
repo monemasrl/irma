@@ -1,0 +1,9 @@
+{
+    "TESING": true,
+    "MONGODB_CONNECt": false,
+    "MONGODB_SETTINGS": {
+        "db": "mongoenginetest",
+        "host": "mongomock://localhost",
+        "port": 27017
+    } 
+}
