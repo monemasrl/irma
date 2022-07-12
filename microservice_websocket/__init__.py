@@ -19,7 +19,7 @@ rec=""
 MAX_TRESHOLD = 20
 
 # lista dei SENSOR_PATH per effettuare le query a mobius
-SENSOR_PATHS = [ "2232330000888802" ]
+SENSOR_PATHS = [ "283923423" ]
 
 # mobius url
 MOBIUS_URL = "http://localhost:5002"
