@@ -1,6 +1,7 @@
 import json
 from flask import Flask, request, jsonify
-from flask_cors import cross_origin
+from flask_cors import cross_origin, CORS
+from flask_mqtt import Mqtt
 from flask_socketio import SocketIO
 from flask_api import status
 from enum import Enum, auto
@@ -22,6 +23,9 @@ SENSOR_PATHS = [ "2232330000888802" ]
 
 # mobius url
 MOBIUS_URL = "http://localhost:5002"
+
+# for testing purposes
+DISABLE_MQTT = False
 
 
 class State(Enum):
@@ -139,6 +143,23 @@ def create_socketio(app: Flask):
     return socketio
 
 
+def create_mqtt(app: Flask) -> Mqtt:
+    mqtt = Mqtt(app)
+
+    @mqtt.on_connect()
+    def handle_connect(client, userdata, flags, rc):
+        mqtt.subscribe('application')
+
+    @mqtt.on_message()
+    def handle_mqtt_message(client, userdata, message):
+        data = dict(
+            topic=message.topic,
+            payload=message.payload.decode()
+        )
+
+    return mqtt
+
+
 def create_app():
     app = Flask(__name__)
     socketio = create_socketio(app)
@@ -154,6 +175,17 @@ def create_app():
         'Access-Control-Allow-Origin': 'http://localhost:3000',
         'Access-Control-Allow-Credentials': 'true'
     }
+    CORS(app)
+
+    ################################################################
+    #####configurazione dei dati relativi alla connessione MQTT#####
+    ################################################################
+    app.config['MQTT_BROKER_URL'] = 'localhost'
+    app.config['MQTT_BROKER_PORT'] = 1883
+    app.config['MQTT_TLS_ENABLED'] = False
+
+    if not DISABLE_MQTT:
+        mqtt: Mqtt = create_mqtt(app)
 
     @app.route('/', methods=['GET'])
     @cross_origin()
@@ -186,6 +218,32 @@ def create_app():
         rec = decode_devEUI(record['devEUI'])
         socketio.emit('change')
         return {}
+
+    @app.route('/downlink', methods=['POST'])
+    def sendMqtt(): # alla ricezione di un post pubblica un messaggio sul topic
+        received: dict = json.loads(request.data)
+
+        # application ID ricevuto per identificare le varie app sull'application server
+        applicationID: str = str(received['applicationID'])
+        # devEUI rivuto per identificare i dipositivi nelle varie app
+        devEUI: str = str(received['devEUI'])
+
+        topic: str = 'application/'+applicationID+'/device/'+devEUI+'/command/down'
+
+        start: str = 'U3RhcnQ='
+        stop: str = 'U3RvcA=='
+
+        data: str = json.dumps({
+            'confirmed': False,
+            'fPort': 2,
+            'data': start if received['statoStaker'] == 1 else stop
+        })
+
+        if not DISABLE_MQTT:
+            mqtt.publish(topic, data.encode())
+
+        print(received)
+        return received
 
     return app, socketio
 

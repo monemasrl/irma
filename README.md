@@ -12,7 +12,6 @@ chirpstack[chirpstack-docker]
 msw[microservice_websocket.py]
 mm[mock_mobius]
 db[MongoDB]
-dms[downlink_microservice.py]
 irma-ui[Irma UI]
 
 gateway[Gateway LoRaWAN]
@@ -24,7 +23,7 @@ msw -- POST / 5002 --> mm
 msw -- GET / 5002 --> mm
 mm <--> db
 irma-ui <-- HTTP 5000 e websocket --> msw
-irma-ui -- POST / 5001 --> dms
+irma-ui -- POST /downlink 5000 --> msw
 dms -- MQTT 1883 --> chirpstack
 gateway -- UDP 1700 --> chirpstack
 nodo -- LoRa --> gateway
@@ -126,9 +125,12 @@ Sensori <-- CAN --> Nodo -- LoRa --> Gateway
 
 Il server chirpstack non mantiene i dati trasmessi dagli end-device in nessun modo permanente, perciò sull'application server da interfaccia web deve essere attivata l'integrazione con HTTP, che permette di eseguire una POST con l'intero payload in formato JSON. 
 
-Il modulo [microservice_websocket](microservice_websocket/) si occupa della ricezione del POST e l'inoltro dei JSON al servizio [mock_mobius](mock_mobius/) che simula il comportamento della piattaforma Mobius (piattaforma per la registrazione dei dati).
+Il modulo [microservice_websocket](microservice_websocket/) ha diversi ruoli, tra cui:
 
-Inoltre, [microservice_websocket](microservice_websocket/) si occupa anche di gestire la connession alla dashboard mediante WebSocket e di effettuare le query a [mock_mobius](mock_mobius/)
+  - Ricezione delle POST su '/' contenenti i dati di chirpstack. Questi poi saranno inoltrati a [mock_mobius](mock_mobius/) che simula il comportamento della piattaforma Mobius (piattaforma per la registrazione dei dati).
+  - Fornitura dati alla dashboard mediante GET su '/' e WebSocket. I dati vengono prelevati da [mock_mobius](mock_mobius/).
+  - Ricezione delle POST su '/downlink', provenienti dalla dashboard. Queste ultime servono per inviare messaggi di downlink al sensore, tramite chirpstack.
+
 
 ### Avvio di [microservice_websocket](microservice_websocket/)
 
@@ -155,6 +157,8 @@ Per avviare il servizio:
 Il file [downlink.py](downlink.py) si occupa dell'invio dei comandi di Start e Stop all'application server tramite MQTT, il quale a sua volta invierà un messaggio di downlink verso l'end-device con il comando ricevuto il quale fermerà o avvierà la lettura dei dati dai sensori. Questo script serve per il test dei comandi senza dashboard.
 
 Per l'utilizzo degli stessi comandi ma da dashboard in remoto si usa il file [downlink_microservice.py](mockHttp/downlink_microservice.py) che riceve un post dalla dashboard con un valore numerico che definisce il messaggio da inviare tramite MQTT(Start o Stop) e due valori che rappresentano gli id dell'applicazione e del dispositivo che servono per pubblicare sul topic dell'application server.
+
+Per l'utilizzo gli stessi comandi ma da dashboard in remoto, si possono effettuare delle POST su '/downlink' di microservice_websocket. Con un valore numerico (statoStaker) definisce il messaggio da inviare tramite MQTT (Start o Stop) e due valori che rappresentano applicationID e il devEUI del dispositivo decodificato, per pubblicare sul topic di chirpstack-application-server.
 
 
 ## TESTING IN LOCALE

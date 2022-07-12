@@ -13,7 +13,10 @@ class TestFlaskApp:
 
     @pytest.fixture()
     def app_socketio(self) -> tuple[Flask, SocketIO]: # type: ignore
-        app, socketio = microservice_websocket.create_app()
+
+        with patch('microservice_websocket.DISABLE_MQTT', True):
+            app, socketio = microservice_websocket.create_app()
+
         app.config.update({
             "TESTING": True,
         })
@@ -35,7 +38,7 @@ class TestFlaskApp:
         return socketio.test_client(app, flask_test_client=app_client)
 
     @patch('microservice_websocket.MOBIUS_URL', "")
-    def test_main_route_post_Uplink(
+    def test_main_route_post(
             self,
             app_client,
             sensorData_Uplink,
