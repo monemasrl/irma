@@ -8,10 +8,18 @@ import pytest
 @pytest.fixture()
 def sensorId() -> str:
     """
-    Basic applicationID received from chirpstack.
-    It's a string composed of a sequence of numbers.
+    sensorId defined in the tags section of the sensor
     """
-    return "123"
+    return "FOO_bar_01"
+
+
+@pytest.fixture()
+def applicationID() -> str:
+    """
+    applicationID which identifies the application running on chirpstackself.
+    It's a string containing a number
+    """
+    return "1"
 
 
 @pytest.fixture()
@@ -50,10 +58,10 @@ def devEUI() -> str:
 
 
 @pytest.fixture()
-def sensorData_noUplink(sensorId, isoTimestamp,
+def sensorData_noUplink(sensorId, applicationID, isoTimestamp,
                         latitude, longitude, devEUI) -> dict:
     return {
-        "applicationID": sensorId,
+        "applicationID": applicationID,
         "applicationName": "temperature-sensor",
         "deviceName": "garden-sensor",
         "devEUI": devEUI,
@@ -95,25 +103,26 @@ def sensorData_noUplink(sensorId, isoTimestamp,
         "data": "...",
         "objectJSON": "{\"temperatureSensor\":25,\"humiditySensor\":32}",
         "tags": {
-            "key": "value"
+            "sensorId": sensorId,
+            "sensor_path": "433423432"
         }
     }
 
 @pytest.fixture()
-def sensorData_Uplink(sensorId, isoTimestamp, latitude, longitude) -> dict:
+def sensorData_Uplink(devEUI, applicationID, sensorId, isoTimestamp, latitude, longitude) -> dict:
     return {
-        "applicationID": sensorId,
-        "applicationName": "test_esp",
-        "deviceName": "esp32",
-        "devEUI": "IjIzAACIiAI=",
+        "applicationID": applicationID,
+        "applicationName": "irma",
+        "deviceName": "irma-sensor",
+        "devEUI": devEUI,
         "rxInfo": [
             {
-                "gatewayID": "5F8B//59p6g=",
-                "time": isoTimestamp,
+                "gatewayID": "e45f01fffe7da7a8",
+                "time": None,
                 "timeSinceGPSEpoch": None,
-                "rssi": -10,
-                "loRaSNR": 8.5,
-                "channel": 4,
+                "rssi": -61,
+                "loRaSNR": -2.8,
+                "channel": 7,
                 "rfChain": 0,
                 "board": 0,
                 "antenna": 0,
@@ -125,13 +134,13 @@ def sensorData_Uplink(sensorId, isoTimestamp, latitude, longitude) -> dict:
                     "accuracy": 0
                 },
                 "fineTimestampType": "NONE",
-                "context": "Ki0a3A==",
-                "uplinkID": "wPR+sie0RG2x6bz5t4+G3Q==",
+                "context": "XZ4gbA==",
+                "uplinkID": "76d9f46d-d799-491e-ac16-48f953077232",
                 "crcStatus": "CRC_OK"
             }
         ],
         "txInfo": {
-            "frequency": 867300000,
+            "frequency": 867900000,
             "modulation": "LORA",
             "loRaModulationInfo": {
                 "bandwidth": 125,
@@ -142,14 +151,20 @@ def sensorData_Uplink(sensorId, isoTimestamp, latitude, longitude) -> dict:
         },
         "adr": True,
         "dr": 0,
-        "fCnt": 579,
+        "fCnt": 6,
         "fPort": 2,
-        "data": "AAE=",
-        "objectJSON": "{\"sensorData\":1}",
-        "tags": {},
+        "data": "ABE=",
+        "objectJSON": {
+            "sensorData": 17
+        },
+        "tags": {
+            "sensorId": sensorId,
+            "sensor_path": "283923423"
+        },
         "confirmedUplink": True,
-        "devAddr": "AS6zcQ==",
+        "devAddr": "0021051c",
         "publishedAt": isoTimestamp,
-        "deviceProfileID": "fc9a26f4-58fe-47b0-bfe9-2cb7711f1de1",
-        "deviceProfileName": "testOTAA"
+        "deviceProfileID": "be018f1b-c068-43c0-a276-a7665ff090b4",
+        "deviceProfileName": "device-OTAA"
     }
+

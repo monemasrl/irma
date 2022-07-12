@@ -75,17 +75,18 @@ def get_data(sensor_path: str, rec: str) -> dict:
         decoded_response: dict = json.loads(response.content)
 
         collect: list[dict] = decoded_response["m2m:rsp"]["m2m:cin"] \
-                                if status.is_success(response.status_code) \
-                                else []
+                              if status.is_success(response.status_code) \
+                              else []
     else:
         collect = []
 
     for x in collect:
         sensor_data: int = get_sensorData(x['sensorData']['objectJSON'])
+        sensorId: str = x['con']['metadata']['sensorId']
         read_time: str = x['con']['metadata']['readingTimestamp']
         read_month: int = get_month(read_time)
 
-        state = State.REC if rec == sensor_path else get_state(sensor_data)
+        state = State.REC if rec == sensorId else get_state(sensor_data)
 
         total_sum += sensor_data
         total_count += 1
@@ -100,15 +101,18 @@ def get_data(sensor_path: str, rec: str) -> dict:
             monthly_average = monthly_sum / monthly_count
 
     if state in [State.OK, State.REC] and len(collect) > 0:
-        eui: str = collect[-1]['con']['metadata']['sensorId']
+        devEUI: str = collect[-1]['sensorData']['devEUI']
         applicationID: str = collect[-1]['sensorData']['applicationID']
+        sensorId: str = collect[-1]['con']['metadata']['sensorId']
     else:
-        eui: str = ""
+        devEUI: str = ""
         applicationID: str = ""
+        sensorId: str = ""
 
     send: dict = to_irma_ui_data(
-        devEUI=eui,
+        devEUI=devEUI,
         applicationID=applicationID,
+        sensorId=sensorId,
         state=state.name.lower(),
         titolo1="Media Letture Totali",
         dato1=round(total_average, 3),
@@ -201,21 +205,21 @@ def create_app():
         # filtraggio degli eventi mandati dall'application server 
         # in modo da non inserire nel database valori irrilevanti
         if "confirmedUplink" in record:
-            payload: dict = to_mobius_payload(record)
+            mobius_payload: dict = to_mobius_payload(record)
 
             # For testing purposes
             if MOBIUS_URL != "":
-                requests.post(f"{MOBIUS_URL}/{payload['m2m:cin']['con']['metadata']['sensorId']}", json=payload)
+                requests.post(f"{MOBIUS_URL}/{record['tags']['sensor_path']}", json=mobius_payload)
 
-            if rec == payload['m2m:cin']['con']['metadata']['sensorId']:
+            if rec == record['tags']['sensorId']:
                 rec = ""
 
             socketio.emit('change')
             print(f"[DEBUG] Posted payload to '{MOBIUS_URL}'")
-            return jsonify(payload)
+            return jsonify(mobius_payload)
 
         print("[DEBUG] Received message different than Uplink")
-        rec = decode_devEUI(record['devEUI'])
+        rec = record['tags']['sensorId']
         socketio.emit('change')
         return {}
 
@@ -226,7 +230,7 @@ def create_app():
         # application ID ricevuto per identificare le varie app sull'application server
         applicationID: str = str(received['applicationID'])
         # devEUI rivuto per identificare i dipositivi nelle varie app
-        devEUI: str = str(received['devEUI'])
+        devEUI: str = decode_devEUI(received['devEUI'])
 
         topic: str = 'application/'+applicationID+'/device/'+devEUI+'/command/down'
 
