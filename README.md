@@ -24,7 +24,7 @@ msw -- GET / 5002 --> mm
 mm <--> db
 irma-ui <-- HTTP 5000 e websocket --> msw
 irma-ui -- POST /downlink 5000 --> msw
-dms -- MQTT 1883 --> chirpstack
+msw -- MQTT 1883 --> chirpstack
 gateway -- UDP 1700 --> chirpstack
 nodo -- LoRa --> gateway
 sensori -- CAN --> nodo
