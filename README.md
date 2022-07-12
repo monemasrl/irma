@@ -133,6 +133,16 @@ Il modulo [microservice_websocket](microservice_websocket/) ha diversi ruoli, tr
   - Fornitura dati alla dashboard mediante GET su '/' e WebSocket. I dati vengono prelevati da [mock_mobius](mock_mobius/).
   - Ricezione delle POST su '/downlink', provenienti dalla dashboard. Queste ultime servono per inviare messaggi di downlink al sensore, tramite chirpstack.
 
+### Opzioni [microservice_websocket](microservice_websocket/)
+
+È possibile specificare le seguenti opzioni tramite variabili d'ambiente:
+
+- MAX_TRESHOLD: valore della soglia di pericolo dei sensori, default `20`.
+- MOBIUS_URL: l'indirizzo dell'istanza Mobius, default `http://localhost`.
+- MOBIUS_PORT: la porta su cui è esposto il servizio, default `5002`.
+- DISABLE_MQTT: disabilita il servizio MQTT per il testing, True se settato ad 1, default False.
+- HOST: host su cui esporre il servizio. Opzioni possibili sono `127.0.0.1` e `0.0.0.0`, default `0.0.0.0`.
+- PORT: porta da cui esporre il servizio, default `5000`.
 
 ### Avvio di [microservice_websocket](microservice_websocket/)
 

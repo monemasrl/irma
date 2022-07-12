@@ -5,6 +5,7 @@ from flask_mqtt import Mqtt
 from flask_socketio import SocketIO
 from flask_api import status
 from enum import Enum, auto
+from os import environ
 
 from datetime import datetime
 
@@ -16,17 +17,24 @@ from .data_conversion import to_irma_ui_data, to_mobius_payload, decode_devEUI
 rec=""
 
 # valore teorico della soglia di pericolo del sensore
-MAX_TRESHOLD = 20
+MAX_TRESHOLD = int(environ.get("MAX_TRESHOLD", 20))
 
 # lista dei SENSOR_PATH per effettuare le query a mobius
 SENSOR_PATHS = [ "283923423" ]
 
 # mobius url
-MOBIUS_URL = "http://localhost:5002"
+MOBIUS_URL = environ.get("MOBIUS_URL", "http://localhost")
+MOBIUS_PORT = environ.get("MOBIUS_PORT", "5002")
 
 # for testing purposes
-DISABLE_MQTT = False
+DISABLE_MQTT = False if environ.get("DISABLE_MQTT") != 1 else True
 
+# host su cui far girare il servizio
+# 127.0.0.1 o 0.0.0.0
+HOST = environ.get("HOST", "0.0.0.0")
+
+# porta da cui esporre il servizio
+PORT = environ.get("PORT", 5000)
 
 class State(Enum):
     OFF=auto()
@@ -71,7 +79,7 @@ def get_data(sensor_path: str, rec: str) -> dict:
     # For testing purposes
     if MOBIUS_URL != "":
         # Querying mobius for sensor_path
-        response: requests.Response = requests.get(f"{MOBIUS_URL}/{sensor_path}")
+        response: requests.Response = requests.get(f"{MOBIUS_URL}:{MOBIUS_PORT}/{sensor_path}")
         decoded_response: dict = json.loads(response.content)
 
         collect: list[dict] = decoded_response["m2m:rsp"]["m2m:cin"] \
@@ -209,13 +217,13 @@ def create_app():
 
             # For testing purposes
             if MOBIUS_URL != "":
-                requests.post(f"{MOBIUS_URL}/{record['tags']['sensor_path']}", json=mobius_payload)
+                requests.post(f"{MOBIUS_URL}:{MOBIUS_PORT}/{record['tags']['sensor_path']}", json=mobius_payload)
 
             if rec == record['tags']['sensorId']:
                 rec = ""
 
             socketio.emit('change')
-            print(f"[DEBUG] Posted payload to '{MOBIUS_URL}'")
+            print(f"[DEBUG] Posted payload to '{MOBIUS_URL}:{MOBIUS_PORT}'")
             return jsonify(mobius_payload)
 
         print("[DEBUG] Received message different than Uplink")

@@ -1,6 +1,6 @@
 {
     "TESING": true,
-    "MONGODB_CONNECt": false,
+    "MONGODB_CONNECT": false,
     "MONGODB_SETTINGS": {
         "db": "mongoenginetest",
         "host": "mongomock://localhost",
