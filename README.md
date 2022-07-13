@@ -18,11 +18,12 @@ gateway[Gateway LoRaWAN]
 nodo[Nodo]
 sensori[Sensori]
 
-chirpstack -- POST / 5000 --> msw
+chirpstack -- POST /publish 5000 --> msw
 msw -- POST / 5002 --> mm
 msw -- GET / 5002 --> mm
 mm <--> db
-irma-ui <-- HTTP 5000 e websocket --> msw
+irma-ui <-- websocket 5000 --> msw
+irma-ui -- POST / --> msw
 irma-ui -- POST /downlink 5000 --> msw
 msw -- MQTT 1883 --> chirpstack
 gateway -- UDP 1700 --> chirpstack

@@ -19,9 +19,6 @@ rec=""
 # valore teorico della soglia di pericolo del sensore
 MAX_TRESHOLD = int(environ.get("MAX_TRESHOLD", 20))
 
-# lista dei SENSOR_PATH per effettuare le query a mobius
-SENSOR_PATHS = [ "283923423" ]
-
 # mobius url
 MOBIUS_URL = environ.get("MOBIUS_URL", "http://localhost")
 MOBIUS_PORT = environ.get("MOBIUS_PORT", "5002")
@@ -199,13 +196,14 @@ def create_app():
     if not DISABLE_MQTT:
         mqtt: Mqtt = create_mqtt(app)
 
-    @app.route('/', methods=['GET'])
+    @app.route('/', methods=['POST'])
     @cross_origin()
     def home():
-        data: list[dict] = [get_data(x, rec) for x in SENSOR_PATHS]
+        sensor_paths: list = json.loads(request.data)["paths"]
+        data: list[dict] = [get_data(x, rec) for x in sensor_paths]
         return jsonify(data=data)
 
-    @app.route('/', methods=['POST'])
+    @app.route('/publish', methods=['POST'])
     def create_record():
         global rec
         record: dict = json.loads(request.data)
