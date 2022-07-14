@@ -3,9 +3,9 @@ from flask.testing import FlaskClient
 from flask_api import status
 from werkzeug.test import TestResponse
 from datetime import datetime
-import mock_mobius
 import pytest
 import json
+from mock_mobius import app as mobius_app
 from microservice_websocket.data_conversion import to_mobius_payload
 from fixtures.data_fixtures import *
 
@@ -14,7 +14,7 @@ class TestFlaskApp:
 
     @pytest.fixture()
     def app(self) -> Flask: # type: ignore
-        app = mock_mobius.create_app("config_testing.json")
+        app = mobius_app.create_app("config_testing.json")
         # set up
         yield app
         # clean up

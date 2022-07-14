@@ -156,13 +156,13 @@ Poi per avviare il servizio:
 
 ### Avviare [mock_mobius](mock_mobius/)
 
-Per le **dipendenze** far riferimento al paragrafo precedente.
+È presente il file [docker-compose.yaml](mock_mobius/docker-compose.yaml) che permette di far partire il servizio di **mock_mobius** e il database [MongoDB](http://mongodb.com) ad esso associato.
 
-[mock_mobius](mock_mobius/) richiede un'istanza [MongoDB](https://www.mongodb.com/) su localhost.
+Basta lanciare il comando:
 
-Per avviare il servizio:
+    docker-compose up -d
 
-    FLASK_APP=mock_mobius flask run --port=5002
+All'interno del docker-compose è possibile cambiare il mapping della **porta**, di default `5002`.
 
 ## COMANDI
 
