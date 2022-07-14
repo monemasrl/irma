@@ -38,13 +38,13 @@ class TestFlaskApp:
         return socketio.test_client(app, flask_test_client=app_client)
 
     @patch('microservice_websocket.MOBIUS_URL', "")
-    def test_main_route_post(
+    def test_publish_route_post(
             self,
             app_client,
             sensorData_Uplink,
             sensorData_noUplink):
 
-        response: TestResponse = app_client.post("/", json=sensorData_Uplink)
+        response: TestResponse = app_client.post("/publish", json=sensorData_Uplink)
         decoded_json: dict = json.loads(response.data)
         payload: dict = microservice_websocket.data_conversion.to_mobius_payload(sensorData_Uplink)
 
@@ -56,18 +56,23 @@ class TestFlaskApp:
         assert decoded_json == payload, \
         "Output mismatch when posting valida data. Check stdout log."
 
-        response: TestResponse = app_client.post("/", json=sensorData_noUplink)
+        response: TestResponse = app_client.post("/publish", json=sensorData_noUplink)
         decoded_json: dict = json.loads(response.data)
         assert not decoded_json, \
         "Wrong response from post request: should be empty, but it's not"
 
     @patch('microservice_websocket.MOBIUS_URL', "")
-    def test_main_route_get(self, app_client: FlaskClient):
-        response: TestResponse = app_client.get("/")
+    def test_main_route_post(self, app_client: FlaskClient, sensorData_Uplink):
+        
+        body = {
+            "paths": [sensorData_Uplink["tags"]["sensor_path"]],
+        }
+
+        response: TestResponse = app_client.post("/", json=body)
         decoded_json: dict = json.loads(response.data)
         assert "data" in decoded_json, "Invalid json from '/' route"
         devices: list = decoded_json["data"]
-        assert len(devices) == len(microservice_websocket.SENSOR_PATHS), \
+        assert len(devices) == len(body["paths"]), \
         "Invalid number of devices in json from '/' route"
 
     @patch('microservice_websocket.MOBIUS_URL', "")
@@ -76,7 +81,7 @@ class TestFlaskApp:
             app_client: FlaskClient,
             socketio_client: SocketIOTestClient,
             sensorData_Uplink: dict):
-        app_client.post("/", json=sensorData_Uplink)
+        app_client.post("/publish", json=sensorData_Uplink)
         received: list = socketio_client.get_received()
         assert received[0]['name'] == 'change', \
         "Invalid response from socket 'onChange()'"
