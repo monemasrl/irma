@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./postgresql.conf:/etc/postgresql/postgresql.conf
-      - ./init-postgresql-db.sh:/docker-entrypoint-initdb.d/init-postgresql-db.sh
+      - ./provision/:/docker-entrypoint-initdb.d/
       - ./db-data:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: "postgres"
