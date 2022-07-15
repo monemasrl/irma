@@ -3,7 +3,8 @@ from flask import Flask
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
 from mock import patch
-import microservice_websocket
+from microservice_websocket_docker import app as websocket_app
+from microservice_websocket_docker import data_conversion
 import pytest
 import json
 from fixtures.data_fixtures import *
@@ -14,8 +15,8 @@ class TestFlaskApp:
     @pytest.fixture()
     def app_socketio(self) -> tuple[Flask, SocketIO]: # type: ignore
 
-        with patch('microservice_websocket.DISABLE_MQTT', True):
-            app, socketio = microservice_websocket.create_app()
+        with patch('microservice_websocket_docker.app.DISABLE_MQTT', True):
+            app, socketio = websocket_app.create_app()
 
         app.config.update({
             "TESTING": True,
@@ -37,7 +38,7 @@ class TestFlaskApp:
         app, socketio = app_socketio
         return socketio.test_client(app, flask_test_client=app_client)
 
-    @patch('microservice_websocket.MOBIUS_URL', "")
+    @patch('microservice_websocket_docker.app.MOBIUS_URL', "")
     def test_publish_route_post(
             self,
             app_client,
@@ -46,7 +47,7 @@ class TestFlaskApp:
 
         response: TestResponse = app_client.post("/publish", json=sensorData_Uplink)
         decoded_json: dict = json.loads(response.data)
-        payload: dict = microservice_websocket.data_conversion.to_mobius_payload(sensorData_Uplink)
+        payload: dict = data_conversion.to_mobius_payload(sensorData_Uplink)
 
         print("[DEBUG] Original data: ")
         print(payload)
@@ -61,7 +62,7 @@ class TestFlaskApp:
         assert not decoded_json, \
         "Wrong response from post request: should be empty, but it's not"
 
-    @patch('microservice_websocket.MOBIUS_URL', "")
+    @patch('microservice_websocket_docker.app.MOBIUS_URL', "")
     def test_main_route_post(self, app_client: FlaskClient, sensorData_Uplink):
         
         body = {
@@ -75,7 +76,7 @@ class TestFlaskApp:
         assert len(devices) == len(body["paths"]), \
         "Invalid number of devices in json from '/' route"
 
-    @patch('microservice_websocket.MOBIUS_URL', "")
+    @patch('microservice_websocket_docker.app.MOBIUS_URL', "")
     def test_socketio_emits_on_change(
             self,
             app_client: FlaskClient,
@@ -86,9 +87,9 @@ class TestFlaskApp:
         assert received[0]['name'] == 'change', \
         "Invalid response from socket 'onChange()'"
     
-    @patch('microservice_websocket.MOBIUS_URL', "")
+    @patch('microservice_websocket_docker.app.MOBIUS_URL', "")
     def test_get_data(self):
-        s: dict = microservice_websocket.get_data("", "")
+        s: dict = websocket_app.get_data("", "")
         print(f"{s=}")
         assert all(key in s for key in [
                 "devEUI",
@@ -102,36 +103,36 @@ class TestFlaskApp:
 
 def test_get_state():
     dato: int = 0
-    assert microservice_websocket.get_state(dato) == microservice_websocket.State.OFF, \
+    assert websocket_app.get_state(dato) == websocket_app.State.OFF, \
     "Error in `get_state()` with dato == 0: output mismatch"
 
-    dato = microservice_websocket.MAX_TRESHOLD-1
-    assert microservice_websocket.get_state(dato) == microservice_websocket.State.OK, \
+    dato = websocket_app.MAX_TRESHOLD-1
+    assert websocket_app.get_state(dato) == websocket_app.State.OK, \
     "Error in `get_state()` with dato < MAX_TRESHOLD: output mismatch"
 
-    dato = microservice_websocket.MAX_TRESHOLD+1
-    assert microservice_websocket.get_state(dato) == microservice_websocket.State.ALERT, \
+    dato = websocket_app.MAX_TRESHOLD+1
+    assert websocket_app.get_state(dato) == websocket_app.State.ALERT, \
     "Error in `get_state()` with dato >= MAX_TRESHOLD: output mismatch"
 
 
 def test_get_month(isoTimestamp):
-    assert microservice_websocket.get_month(isoTimestamp) == 3, \
+    assert websocket_app.get_month(isoTimestamp) == 3, \
     "Error in `get_month()`: output mismatch when providin ISO8601 datetime"
 
     with pytest.raises(ValueError):
-        microservice_websocket.get_month("1-0")
+        websocket_app.get_month("1-0")
 
 
 def test_get_sensorData():
     data: str = '{"sensorData": 123}'
-    assert microservice_websocket.get_sensorData(data) == 123, \
+    assert websocket_app.get_sensorData(data) == 123, \
     "Error in `get_sensorData()`: output mismatch when providing right input"
 
     data: str = '{"sensorData": 1-0}'
     with pytest.raises(ValueError):
-        microservice_websocket.get_sensorData(data)
+        websocket_app.get_sensorData(data)
 
     data: str = '{"foo": "bar"}'
     with pytest.raises(KeyError):
-        microservice_websocket.get_sensorData(data)
+        websocket_app.get_sensorData(data)
 

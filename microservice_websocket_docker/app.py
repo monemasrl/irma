@@ -26,12 +26,11 @@ MOBIUS_PORT = environ.get("MOBIUS_PORT", "5002")
 # for testing purposes
 DISABLE_MQTT = False if environ.get("DISABLE_MQTT") != 1 else True
 
-# host su cui far girare il servizio
-# 127.0.0.1 o 0.0.0.0
-HOST = environ.get("HOST", "0.0.0.0")
+# MQTT 
+MQTT_BROKER_URL = environ.get("MQTT_BROKER_URL", 'localhost')
+MQTT_BROKER_PORT = int(environ.get("MQTT_BROKER_PORT", 1883))
 
-# porta da cui esporre il servizio
-PORT = environ.get("PORT", 5000)
+cached_sensor_paths = []
 
 class State(Enum):
     OFF=auto()
@@ -146,8 +145,11 @@ def create_socketio(app: Flask):
     def onChange():
         print('Changed')
 
-        data: list[dict] = [get_data(x, rec) for x in SENSOR_PATHS]
-        socketio.send(jsonify(data=data))
+        if cached_sensor_paths:
+            data: list[dict] = [get_data(x, rec) for x in cached_sensor_paths]
+            socketio.send(jsonify(data=data))
+        else:
+            socketio.send(jsonify({}))
 
     return socketio
 
@@ -189,8 +191,8 @@ def create_app():
     ################################################################
     #####configurazione dei dati relativi alla connessione MQTT#####
     ################################################################
-    app.config['MQTT_BROKER_URL'] = 'localhost'
-    app.config['MQTT_BROKER_PORT'] = 1883
+    app.config['MQTT_BROKER_URL'] = MQTT_BROKER_URL
+    app.config['MQTT_BROKER_PORT'] = MQTT_BROKER_PORT
     app.config['MQTT_TLS_ENABLED'] = False
 
     if not DISABLE_MQTT:
@@ -199,8 +201,8 @@ def create_app():
     @app.route('/', methods=['POST'])
     @cross_origin()
     def home():
-        sensor_paths: list = json.loads(request.data)["paths"]
-        data: list[dict] = [get_data(x, rec) for x in sensor_paths]
+        cached_sensor_paths: list = json.loads(request.data)["paths"]
+        data: list[dict] = [get_data(x, rec) for x in cached_sensor_paths]
         return jsonify(data=data)
 
     @app.route('/publish', methods=['POST'])
@@ -257,3 +259,11 @@ def create_app():
 
     return app, socketio
 
+if __name__ == "__main__":
+    app, socketio = create_app()
+    socketio.run(
+        app,
+        debug=True,
+        host="0.0.0.0",
+        port=5000,
+    )

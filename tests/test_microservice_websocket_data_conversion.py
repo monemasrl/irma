@@ -1,4 +1,4 @@
-from microservice_websocket import data_conversion
+from microservice_websocket_docker import data_conversion
 from fixtures.data_fixtures import *
 
 

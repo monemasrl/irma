@@ -1,7 +1,7 @@
 {
     "MONGODB_SETTINGS": {
         "db": "mobius",
-        "host": "localhost",
+        "host": "mongo",
         "port": 27017
     } 
 }
