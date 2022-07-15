@@ -42,3 +42,21 @@ jobs:
       - name: Run unit tests
         run: |
           python -m pytest --import-mode=append
+
+  docker:
+    runs-on: self-hosted
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build mock_mobius_docker
+        uses: docker/build-push-action@v3
+        with:
+          context: ./mock_mobius_docker/
+          push: false
+
+      - name: Build microservice_websocket
+        uses: docker/build-push-action@v3
+        with:
+          context: ./microservice_websocket/
+          push: false
