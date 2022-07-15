@@ -43,7 +43,7 @@ jobs:
         run: |
           python -m pytest --import-mode=append
 
-  build-mock_mobius:
+  build-mock_mobius_docker:
     runs-on: self-hosted
     steps:
       - name: Set up Docker Buildx
@@ -55,7 +55,7 @@ jobs:
           context: ./mock_mobius_docker/
           push: false
 
-  build-microservice_websocket:
+  build-microservice_websocket_docker:
     runs-on: self-hosted
     steps:
       - name: Set up Docker Buildx
@@ -64,5 +64,5 @@ jobs:
       - name: Build
         uses: docker/build-push-action@v3
         with:
-          context: ./microservice_websocket/
+          context: ./microservice_websocket_docker/
           push: false
