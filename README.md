@@ -139,9 +139,9 @@ L'immagine [microservice_websocket_docker](microservice_websocket_docker/) ha di
 
 Esempio payload: 
 
-```json
+```jsonc
 {
-  "paths": [01230213] // esempio
+  "paths": [] // esempio
 }
 ```
 
@@ -149,7 +149,7 @@ Esempio payload:
 
 Esempio payload:
 
-```json
+```jsonc
 {
   "statoStaker": 1, // opzioni possibili 0-1 (stop-start)
   "applicationID": "1", // applicationID di chirpstack
