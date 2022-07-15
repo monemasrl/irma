@@ -2,14 +2,14 @@
 version: "3"
 services:
   microservice_websocket:
-    build: ./microservice_websocket_docker/
+    build: .
     restart: unless-stopped
     ports:
       - 5000:5000
     environment:
-      - MOBIUS_URL: "http://localhost"
-      - MOBIUS_PORT: 5000
-      - MQTT_BROKER_URL: "localhost"
-      - MQTT_BROKER_PORT: 1883
-      - MAX_TRESHOLD: 20
-      - DISABLE_MQTT: false
+      - MOBIUS_URL="http://localhost"
+      - MOBIUS_PORT=5000
+      - MQTT_BROKER_URL="localhost"
+      - MQTT_BROKER_PORT=1883
+      - MAX_TRESHOLD=20
+      - DISABLE_MQTT=false
