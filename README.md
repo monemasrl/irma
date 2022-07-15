@@ -23,19 +23,20 @@ msw -- POST / 5002 --> mm
 msw -- GET / 5002 --> mm
 mm <--> db
 irma-ui <-- websocket 5000 --> msw
-irma-ui -- POST / --> msw
+irma-ui -- POST / 5000 --> msw
 irma-ui -- POST /downlink 5000 --> msw
+irma-ui -- HTTP 8080 --> chirpstack
 msw -- MQTT 1883 --> chirpstack
 gateway -- UDP 1700 --> chirpstack
 nodo -- LoRa --> gateway
 sensori -- CAN --> nodo
 ```
 
-## CHIRPSTACK DEPLOYMENT
+## DEPLOYMENT
 
-All'interno della directory [chirpstack-docker](chirpstack-docker) è presente il file [docker-compose.yaml](chirpstack-docker/docker-compose.yaml), grazie al quale è possibile dispiegare l'intero stack di servizi di chirpstack. All'interno della cartella sono presenti anche i file di configurazione dei vari servizi lanciati da docker.
+All'interno della **root** principale è presente il file [docker-compose.yaml](docker-compose.yaml), grazie al quale è possibile dispiegare l'intero stack di servizi, **chirpstack**, **mock_mobius** e **microservice_websocket**. All'interno della cartella [config](config/) sono presenti anche i file di configurazione dei vari servizi lanciati da docker.
 
-Per utilizzare [docker-compose.yaml](chirpstack-docker/docker-compose.yaml):
+Per utilizzare [docker-compose.yaml](docker-compose.yaml):
 
     docker-compose up -d
     
@@ -53,7 +54,7 @@ Il [Chirpstack Application Server](https://www.chirpstack.io/application-server/
 
 All'interno della cartella [chirpstack-docker](chirpstack-docker) è presente il file [encode_decode.js](chirpstack-docker/encode_decode.js) che contiene il codice da integrare nella sezione ** dell'interfaccia web dell'Application Server.
 
-### Struttura interna [docker-compose.yaml](chirpstack-docker/docker-compose.yaml)
+### Struttura interna [docker-compose.yaml](docker-compose.yaml)
 
 ```mermaid
 graph TD;
@@ -64,16 +65,23 @@ subgraph chirpstack-docker;
     cns[chirpstack-network-server]
     cas[chirpstack-application-server]
     mqtt[eclipse-mosquitto]
+    mobius[mock_mobius]
+    mongo[(MongoDB)]
+    msw[microservice_websocket]
     db[(PostgreSQL)]
 
+    mobius <--> mongo
+    cgb & cns & msw <-- TCP 1883 --> mqtt
     cas -- HTTP 8000 --> cns
-    cgb & cns <-- TCP 1883 --> mqtt
     cas & cns <-- TCP 6379 --> redis
     cns & cas <--> db
+    msw -- HTTP 5000 --> mobius
+    cas -- HTTP 5000 --> msw
 end
 out([host network])
 mqtt <-- TCP 1883 --> out
 cas -- HTTP 8080 --> out
+msw -- HTTP 5000 --> out
 cgb -- UDP 1700 --> out
 ```
 
@@ -128,40 +136,53 @@ Sensori <-- CAN --> Nodo -- LoRa --> Gateway
 
 Il server chirpstack non mantiene i dati trasmessi dagli end-device in nessun modo permanente, perciò sull'application server da interfaccia web deve essere attivata l'integrazione con HTTP, che permette di eseguire una POST con l'intero payload in formato JSON. 
 
-Il modulo [microservice_websocket](microservice_websocket/) ha diversi ruoli, tra cui:
+L'immagine [microservice_websocket_docker](microservice_websocket_docker/) ha diversi ruoli, tra cui:
 
-  - Ricezione delle POST su '/' contenenti i dati di chirpstack. Questi poi saranno inoltrati a [mock_mobius](mock_mobius/) che simula il comportamento della piattaforma Mobius (piattaforma per la registrazione dei dati).
-  - Fornitura dati alla dashboard mediante GET su '/' e WebSocket. I dati vengono prelevati da [mock_mobius](mock_mobius/).
-  - Ricezione delle POST su '/downlink', provenienti dalla dashboard. Queste ultime servono per inviare messaggi di downlink al sensore, tramite chirpstack.
+  - Ricezione delle POST su '/publish' contenenti i dati di chirpstack. Questi poi saranno inoltrati a [mock_mobius_docker](mock_mobius_docker/) che simula il comportamento della piattaforma Mobius (piattaforma per la registrazione dei dati).
+  - Fornitura dati alla dashboard mediante POST su '/' e WebSocket. Queste ultime devono contenere un payload json contenente un array di sensor_paths per interrogare [mock_mobius_docker](mock_mobius_docker/).
 
-### Opzioni [microservice_websocket](microservice_websocket/)
+Esempio payload: 
+
+```json
+{
+  paths: [sensor_paths]
+}
+```
+
+  - Ricezione delle POST su '/downlink', provenienti dalla dashboard. Queste ultime servono per inviare messaggi di downlink al sensore, tramite chirpstack, e devono contenere un payload json.
+
+Esempio payload:
+
+```json
+{
+  statoStaker: 1, // opzioni possibili 0-1 (stop-start)
+  applicationID: "1", // applicationID di chirpstack
+  devEUI: "AgICAgICAgI=" // deviceEUI ricevuto da chirpstack (non decodificato)
+}
+```
+
+### Opzioni [microservice_websocket_docker](microservice_websocket_docker/)
 
 È possibile specificare le seguenti opzioni tramite variabili d'ambiente:
 
-- MAX_TRESHOLD: valore della soglia di pericolo dei sensori, default `20`.
-- MOBIUS_URL: l'indirizzo dell'istanza Mobius, default `http://localhost`.
-- MOBIUS_PORT: la porta su cui è esposto il servizio, default `5002`.
-- DISABLE_MQTT: disabilita il servizio MQTT per il testing, True se settato ad 1, default False.
-- HOST: host su cui esporre il servizio. Opzioni possibili sono `127.0.0.1` e `0.0.0.0`, default `0.0.0.0`.
-- PORT: porta da cui esporre il servizio, default `5000`.
+- **MAX_TRESHOLD**: valore della soglia di pericolo dei sensori, default `20`.
+- **MOBIUS_URL**: l'indirizzo dell'istanza Mobius, default `http://localhost`.
+- **MOBIUS_PORT**: la porta su cui è esposto il servizio, default `5002`.
+- **DISABLE_MQTT**: disabilita il servizio MQTT per il testing, True se settato ad 1, default False.
+- **MQTT_BROKER_URL**: url del serivizo MQTT per comunicare con Chirpstack, default `localhost`.
+- **MQTT_BROKER_PORT**: porta del servizio MQTT per comunicare con Chirpstackm default `1883`.
 
-### Avvio di [microservice_websocket](microservice_websocket/)
+### Avvio di [microservice_websocket_docker](microservice_websocket_docker/)
 
-Per scaricare le **dipendenze** è possibile eseguire:
+Nel caso in cui si volesse avviare **standalone**, viene fornito il file **docker-compose.yaml** all'interno della cartella [microservice_websocket_docker](microservice_websocket_docker/).
 
-    pip3 install -r requirements.txt
-
-Poi per avviare il servizio:
-
-    python3 -m microservice_websocket
+Per i comandi di **docker-compose** fare riferimento al paragrafo **DEPLOYMENT**.
 
 ### Avviare [mock_mobius](mock_mobius/)
 
-È presente il file [docker-compose.yaml](mock_mobius/docker-compose.yaml) che permette di far partire il servizio di **mock_mobius** e il database [MongoDB](http://mongodb.com) ad esso associato.
+Come per [microservice_websocket_docker](microservice_websocket_docker/), è presente il file [docker-compose.yaml](mock_mobius/docker-compose.yaml) che permette di far partire **standalone** il servizio di **mock_mobius** e il database [MongoDB](http://mongodb.com) ad esso associato.
 
-Basta lanciare il comando:
-
-    docker-compose up -d
+Per i comandi di **docker-compose** fare riferimento al paragrafo **DEPLOYMENT**.
 
 All'interno del docker-compose è possibile cambiare il mapping della **porta**, di default `5002`.
 
