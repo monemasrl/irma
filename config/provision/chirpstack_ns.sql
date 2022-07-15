@@ -20,6 +20,8 @@ SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
+\connect chirpstack_ns
+
 --
 -- Name: code_migration; Type: TABLE; Schema: public; Owner: chirpstack_ns
 --
