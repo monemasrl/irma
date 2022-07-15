@@ -132,47 +132,12 @@ Sensori <-- CAN --> Nodo -- LoRa --> Gateway
 
 Il server chirpstack non mantiene i dati trasmessi dagli end-device in nessun modo permanente, perciò sull'application server da interfaccia web deve essere attivata l'integrazione con HTTP, che permette di eseguire una POST con l'intero payload in formato JSON. 
 
-L'immagine [microservice_websocket_docker](microservice_websocket_docker/) ha diversi ruoli, tra cui:
+I due servizi principali che si occupano di memorizzazione ed elaborazione dei dati sono:
 
-  - Ricezione delle POST su '/publish' contenenti i dati di chirpstack. Questi poi saranno inoltrati a [mock_mobius_docker](mock_mobius_docker/) che simula il comportamento della piattaforma Mobius (piattaforma per la registrazione dei dati).
-  - Fornitura dati alla dashboard mediante POST su '/' e WebSocket. Queste ultime devono contenere un payload json contenente un array di sensor_paths per interrogare [mock_mobius_docker](mock_mobius_docker/).
+- `microservice_websocket`.
+- `mock_mobius` (che simula la piattaforma **Mobius**).
 
-Esempio payload: 
-
-```jsonc
-{
-  "paths": [] // esempio
-}
-```
-
-  - Ricezione delle POST su '/downlink', provenienti dalla dashboard. Queste ultime servono per inviare messaggi di downlink al sensore, tramite chirpstack, e devono contenere un payload json.
-
-Esempio payload:
-
-```jsonc
-{
-  "statoStaker": 1, // opzioni possibili 0-1 (stop-start)
-  "applicationID": "1", // applicationID di chirpstack
-  "devEUI": "AgICAgICAgI=" // deviceEUI ricevuto da chirpstack (non decodificato)
-}
-```
-
-### Opzioni [microservice_websocket_docker](microservice_websocket_docker/)
-
-È possibile specificare le seguenti opzioni tramite variabili d'ambiente:
-
-- **MAX_TRESHOLD**: valore della soglia di pericolo dei sensori, default `20`.
-- **MOBIUS_URL**: l'indirizzo dell'istanza Mobius, default `http://localhost`.
-- **MOBIUS_PORT**: la porta su cui è esposto il servizio, default `5002`.
-- **DISABLE_MQTT**: disabilita il servizio MQTT per il testing, True se settato ad 1, default False.
-- **MQTT_BROKER_URL**: url del serivizo MQTT per comunicare con Chirpstack, default `localhost`.
-- **MQTT_BROKER_PORT**: porta del servizio MQTT per comunicare con Chirpstackm default `1883`.
-
-### Avvio di [microservice_websocket_docker](microservice_websocket_docker/)
-
-Nel caso in cui si volesse avviare **standalone**, viene fornito il file **docker-compose.yaml** all'interno della cartella [microservice_websocket_docker](microservice_websocket_docker/).
-
-Per i comandi di **docker-compose** fare riferimento al paragrafo **DEPLOYMENT**.
+Per maggiori informazioni su **microservice_websocket** consultare la sua [documentazione](./microservice_websocket_docker/microservice_websocket.md).
 
 ### Avviare [mock_mobius](mock_mobius/)
 
