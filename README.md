@@ -141,7 +141,7 @@ Esempio payload:
 
 ```json
 {
-  paths: [sensor_paths]
+  "paths": [01230213] // esempio
 }
 ```
 
@@ -151,9 +151,9 @@ Esempio payload:
 
 ```json
 {
-  statoStaker: 1, // opzioni possibili 0-1 (stop-start)
-  applicationID: "1", // applicationID di chirpstack
-  devEUI: "AgICAgICAgI=" // deviceEUI ricevuto da chirpstack (non decodificato)
+  "statoStaker": 1, // opzioni possibili 0-1 (stop-start)
+  "applicationID": "1", // applicationID di chirpstack
+  "devEUI": "AgICAgICAgI=" // deviceEUI ricevuto da chirpstack (non decodificato)
 }
 ```
 
