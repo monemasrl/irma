@@ -6,7 +6,7 @@ from datetime import datetime
 import pytest
 import json
 from mock_mobius_docker import app as mobius_app
-from microservice_websocket_docker.data_conversion import to_mobius_payload
+from microservice_websocket_docker.app import to_mobius_payload
 from fixtures.data_fixtures import *
 
 
