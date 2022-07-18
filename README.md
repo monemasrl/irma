@@ -139,9 +139,9 @@ I due servizi principali che si occupano di memorizzazione ed elaborazione dei d
 
 Per maggiori informazioni su **microservice_websocket** consultare la sua [documentazione](./microservice_websocket_docker/microservice_websocket.md).
 
-### Avviare [mock_mobius](mock_mobius/)
+### Avviare [mock_mobius](mock_mobius_docker/)
 
-Come per [microservice_websocket_docker](microservice_websocket_docker/), è presente il file [docker-compose.yaml](mock_mobius/docker-compose.yaml) che permette di far partire **standalone** il servizio di **mock_mobius** e il database [MongoDB](http://mongodb.com) ad esso associato.
+Come per [microservice_websocket_docker](microservice_websocket_docker/), è presente il file [docker-compose.yaml](mock_mobius_docker/docker-compose.yaml) che permette di far partire **standalone** il servizio di **mock_mobius** e il database [MongoDB](http://mongodb.com) ad esso associato.
 
 Per i comandi di **docker-compose** fare riferimento al paragrafo **DEPLOYMENT**.
 
@@ -149,23 +149,19 @@ All'interno del docker-compose è possibile cambiare il mapping della **porta**,
 
 ## COMANDI
 
-Il file [downlink.py](downlink.py) si occupa dell'invio dei comandi di Start e Stop all'application server tramite MQTT, il quale a sua volta invierà un messaggio di downlink verso l'end-device con il comando ricevuto il quale fermerà o avvierà la lettura dei dati dai sensori. Questo script serve per il test dei comandi senza dashboard.
+Il file [downlink.py](utils/downlink.py) si occupa dell'invio dei comandi di Start e Stop all'application server tramite MQTT, che a sua volta invierà un messaggio di downlink verso l'end-device con il comando ricevuto e questo fermerà o avvierà la lettura dei dati dai sensori. Questo script serve per il test dei comandi senza dashboard.
 
-Per l'utilizzo degli stessi comandi ma da dashboard in remoto si usa il file [downlink_microservice.py](mockHttp/downlink_microservice.py) che riceve un post dalla dashboard con un valore numerico che definisce il messaggio da inviare tramite MQTT(Start o Stop) e due valori che rappresentano gli id dell'applicazione e del dispositivo che servono per pubblicare sul topic dell'application server.
-
-Per l'utilizzo gli stessi comandi ma da dashboard in remoto, si possono effettuare delle POST su '/downlink' di microservice_websocket. Con un valore numerico (statoStaker) definisce il messaggio da inviare tramite MQTT (Start o Stop) e due valori che rappresentano applicationID e il devEUI del dispositivo decodificato, per pubblicare sul topic di chirpstack-application-server.
-
+Per l'utilizzo degli stessi comandi, ma da dashboard in remoto, si usa [microservice_websocket_docker](microservice_websocket_docker/), in particolare si effettua una **POST** su **/downlink**. Per maggiori informazioni consultare la [documentazione di microservic_websocket_docker](microservice_websocket_docker/microservice_websocket.md).
 
 ## TESTING IN LOCALE
 
-Al fine di eseguire dei test in locale per mancanza di una rete LoRaWAN da utilizzare sono stati utilizzati due script:
+Al fine di eseguire dei test in locale, per mancanza di una rete LoRaWAN da utilizzare, venogono utilizzati due script:
 
-1. [auto_can.py](auto_can.py) - 
-    Questo script eseguito (solo per test) sul gateway invia tramite interfaccia CAN due messaggi a intervalli regolari.
+1. [auto_can.py](utils/auto_can.py) - 
+    Questo script, eseguito (solo per test) sul gateway, invia tramite interfaccia CAN due messaggi a intervalli regolari.
     
-2. [arduino_communication.py](arduino-py-communication/arduino_communication.py) - 
-    Questo script eseguito su un Rapberry Pi connesso all'ESP32 riceve tramite interfaccia CAN i messaggi che successivamente ritrasmetterà attraverso intefaccia seriale all'end-device.
-
+2. [arduino_communication.py](utils/arduino-py-communication/arduino_communication.py) - 
+    Questo script, eseguito su un Rapberry Pi connesso all'ESP32, riceve tramite interfaccia CAN i messaggi, che successivamente ritrasmetterà attraverso intefaccia seriale all'end-device.
 
 Questo sistema sotituisce la necessità di una rete e di sensori funzionanti per fare test sul funzionameto della infrastruttura di rete.
 
@@ -194,4 +190,4 @@ Le istruzioni da eseguire sono:
     $ sudo modprobe peak_usb
     $ sudo ip link set can0 up type can bitrate 500000
     
-Per maggiori info consultare la documentazione di [python-can](https://python-can.readthedocs.io/en/stable/interfaces/socketcan.html#pcan).
+Per maggiori informazioni consultare la documentazione di [python-can](https://python-can.readthedocs.io/en/stable/interfaces/socketcan.html#pcan).
