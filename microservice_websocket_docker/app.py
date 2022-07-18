@@ -245,7 +245,7 @@ def create_app():
     ###########################################################################################
     app.config['CORS_SETTINGS'] = {
         'Content-Type':'application/json',
-        'Access-Control-Allow-Origin': 'http://localhost:3000',
+        'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Credentials': 'true'
     }
     CORS(app)
