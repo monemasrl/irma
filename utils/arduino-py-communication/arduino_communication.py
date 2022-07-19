@@ -1,16 +1,76 @@
-import serial, can
-if __name__ == '__main__':
-    dati: int = 0
-    print('Running. Press CTRL-C to exit.')
-    bus = can.interface.Bus(bustype='socketcan', channel='can0', bitrate=125000) # type: ignore
-    try:
-        with serial.Serial("/dev/ttyUSB1", 115200, timeout=1) as arduino: # type: ignore
-            if arduino.isOpen():
-                for msg in bus:
-                    dati = int.from_bytes(msg.data, byteorder='big', signed=False)
-                    print(f"id: {msg.arbitration_id:X}")
-                    print(f"Invio i dati ricevuti : {dati}")
-                    arduino.write("{}".format(dati).encode('utf-8'))
-    except KeyboardInterrupt:
-        print("KeyboardInterrupt has been caught.")
+import serial
+import time
+import can
+
+#========================
+
+def setupSerial(baudRate, serialPortName):
+
+    global  serialPort
+
+    serialPort = serial.Serial(port= serialPortName, baudrate = baudRate, timeout=1) # type: ignore
+
+    print(f"Serial port {serialPortName} opened @{baudRate}")
+
+#========================
+
+def setupCan(bustype, channel, bitrate):
+
+    global bus
+
+    bus = can.interface.Bus(bustype=bustype, channel=channel, bitrate=bitrate) # type: ignore
+
+    print(f"Can type '{bustype}', on channel '{channel}' @{bitrate}")
+
+#========================
+
+def sendToArduino(stringToSend):
+
+    serialPort.write(f"{stringToSend}".encode('utf-8')) # encode needed for Python3
+
+#==================
+
+def recvLikeArduino():
+
+    global serialPort
+
+    data = serialPort.readline().decode('utf-8')
+
+    if data != "":
+        print(f"ESP> {data}")
+
+#==================
+
+def readFromCan():
+
+    global bus
+
+    msg = bus.recv(timeout=0.5)
+
+    if msg is not None:
+        msg = int.from_bytes(msg.data, byteorder='big', signed=False)
+        print(f"CAN> {msg}")
+
+    return msg
+
+#====================
+
+if __name__ == "__main__":
+
+    print("Starting... press Ctrl+c to quit")
+    setupSerial(115200, "/dev/ttyUSB0")
+    setupCan('socketcan','can0', 12500)
+    while True:
+        try:
+            # Receive from serial
+            recvLikeArduino()
+
+            # Receive from can
+            data = readFromCan()
+            if data is not None:
+                # Transmit to serial
+                sendToArduino(data)
+        except KeyboardInterrupt:
+            print("Quitting...")
+            break
 
