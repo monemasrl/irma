@@ -1,3 +1,4 @@
+import base64
 from datetime import datetime
 from time import sleep
 from typing import Union
@@ -15,25 +16,47 @@ with open("config.yaml", "r") as file:
     config = loaded_yaml["settings"]
 
 
-class RecorginState(IntEnum):
+class RecordingState(IntEnum):
     NOT_RECORDING = 0
     BEGIN_REC = auto()
     END_REC = auto()
 
 
-def send_data(data: int, recording_state: RecorginState):
+class Command(IntEnum):
+    START_RECORDING = 0
+
+
+"""
+encoded data
+| 1 byte state | 4 byte data | 1 byte sensorID | 10 byte sensorId | 10 byte sensorPath |
+"""
+
+def encode_data(state: int, data: int,
+                sensorID: int, mobius_sensorId: str,
+                mobius_sensorPath: str) -> str:
+
+    bytes = b''
+    bytes += state.to_bytes(1, 'big')
+    bytes += data.to_bytes(4, 'big')
+    bytes += sensorID.to_bytes(1, 'big')
+    bytes += mobius_sensorId.ljust(10).encode()
+    bytes += mobius_sensorPath.ljust(10).encode()
+
+    return base64.b64encode(bytes).decode()
+
+
+def send_data(data: int, recording_state: RecordingState):
     payload: dict = {
         "applicationID": config["node_info"]["applicationID"],
         "organizationID": config["node_info"]["organizationID"],
-        "data": {
-            "state": recording_state.value,
-            "sensorData": data,
-            "sensorId": config["node_info"]["sensorId"],
-            "sensorPath": config["node_info"]["sensorPath"],
-        },
+        "data": encode_data(recording_state.value,
+                            data,
+                            config["node_info"]["sensorID"],
+                            config["mobius"]["sensorId"],
+                            config["mobius"]["sensorPath"]),
         "publishedAt": datetime.now().isoformat()
     }
-    
+
     host = config["microservice"]["url"]
     port = config["microservice"]["port"]
     api_key = config["microservice"]["api_key"]
@@ -66,7 +89,7 @@ def read_and_send():
     data: int = int.from_bytes(msg.data, byteorder='big', signed=False)
     print(f"CAN> {data}")
 
-    send_data(data, RecorginState.NOT_RECORDING)
+    send_data(data, RecordingState.NOT_RECORDING)
 
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -79,28 +102,32 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe(f"{config['node_info']['sensorPath']}/rec")
 
 # The callback for when a PUBLISH message is received from the server.
-def on_message(client, userdata, msg):
+def on_message(client, userdata, msg: mqtt.MQTTMessage):
     print(msg.topic+" -> "+str(msg.payload))
 
-    print("Received MQTT message, sending rec start...")
+    decoded_num = int.from_bytes(msg.payload, 'big')
 
-    send_data(0, RecorginState.BEGIN_REC)
+    if decoded_num == Command.START_RECORDING:
 
-    print("Sleeping for 10 seconds...")
+        print("Received MQTT message, sending rec start...")
 
-    for _ in range(10):
-        sleep(1)        
-        print(".", end="")
+        send_data(0, RecordingState.BEGIN_REC)
 
-    print()
+        print("Sleeping for 10 seconds...")
 
-    print("Sending readings...")
+        for _ in range(10):
+            sleep(1)
+            print(".", end="")
 
-    read_and_send()
+        print()
 
-    print("Sending rec end...")
+        print("Sending readings...")
 
-    send_data(0, RecorginState.END_REC)
+        read_and_send()
+
+        print("Sending rec end...")
+
+        send_data(0, RecordingState.END_REC)
 
 
 if __name__ == "__main__":
