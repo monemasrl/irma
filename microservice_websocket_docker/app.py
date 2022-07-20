@@ -6,7 +6,7 @@ from flask_mqtt import Mqtt
 from flask_mongoengine import MongoEngine
 from flask_socketio import SocketIO
 from flask_security import Security, MongoEngineUserDatastore, \
-    UserMixin, RoleMixin, login_required, current_user
+    UserMixin, RoleMixin, login_required, current_user, verify_password, login_user
 from enum import Enum, auto
 from os import environ
 
@@ -273,7 +273,8 @@ def create_app():
     # identity when creating JWTs and converts it to a JSON serializable format.
     @jwt.user_identity_loader
     def user_identity_lookup(user):
-        return user.id
+        app.logger.info(f'{user=}')
+        return user_datastore.find_user(email=user.email)
 
     # Register a callback function that loads a user from your database whenever
     # a protected route is accessed. This should return any python object on a
@@ -282,7 +283,8 @@ def create_app():
     @jwt.user_lookup_loader
     def user_lookup_callback(_jwt_header, jwt_data):
         identity = jwt_data["sub"]
-        return user_datastore.find_user(email=identity)
+        app.logger.info(f'{identity=}')
+        return user_datastore.find_user(email=identity['email'])
 
     # Create a user to test with
     @app.before_first_request
@@ -305,16 +307,22 @@ def create_app():
 
     #     access_token = create_access_token(identity=username)
     #     return jsonify(access_token=access_token)
+    @app.route("/api/authenticate", methods=["POST"])
+    def custom_login():
+        username = request.json.get("username", None)
+        password = request.json.get("password", None)
 
-    @app.route("/create-api-token")
-    @login_required
-    def create_or_get_token():
-        """Return jwt token if existing, else create new and return"""
-        access_token = create_access_token(identity=current_user)
-        return jsonify({"access_token": access_token}), 200
+        user = user_datastore.find_user(email=username)
+
+        if verify_password(password, user['password']):
+            login_user(user=user, remember=False)
+            access_token = create_access_token(identity=current_user)
+            return jsonify(access_token=access_token)
+
+        return jsonify("Wrong username or password"), 401
 
     @app.route("/api/jwttest")
-    @jwt_required
+    @jwt_required()
     def jwttest():
         """View protected by jwt test. If necessary, exempt it from csrf protection. See flask_wtf.csrf for more info"""
         return jsonify({"foo": "bar", "baz": "qux"})
