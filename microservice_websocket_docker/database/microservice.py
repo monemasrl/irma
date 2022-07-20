@@ -1,6 +1,6 @@
 from __future__ import annotations
-from flask_mongoengine import Document, ReferenceField, ListField, BooleanField, DateTimeField
-from mongoengine.fields import DictField, StringField, FloatField
+from flask_mongoengine import Document
+from mongoengine.fields import DictField, StringField, FloatField, ReferenceField, ListField, BooleanField, DateTimeField
 from flask_security import Security, MongoEngineUserDatastore, \
     UserMixin, RoleMixin, login_required
 import json
@@ -25,6 +25,7 @@ class Role(Document, RoleMixin):
 class User(Document, UserMixin):
     email = StringField(max_length=255)
     password = StringField(max_length=255)    # User information
+    fs_uniquifier = StringField(max_length=64, unique=True)
     first_name = StringField(default='')
     last_name = StringField(default='')
     active = BooleanField(default=True)
