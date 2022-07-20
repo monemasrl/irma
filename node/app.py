@@ -1,3 +1,4 @@
+import base64
 from datetime import datetime
 from time import sleep
 from typing import Union
@@ -25,16 +26,30 @@ class Command(IntEnum):
     START_RECORDING = 0
 
 
+"""
+encoded data
+| 1 byte state | 4 byte data | 10 byte sensorId | 10 byte sensorPath |
+"""
+
+def encode_data(state: int, data: int, sensorId: str, sensorPath: str) -> str:
+    
+    bytes = b''
+    bytes += state.to_bytes(1, 'big')
+    bytes += data.to_bytes(4, 'big')
+    bytes += sensorId.ljust(10).encode()
+    bytes += sensorPath.ljust(10).encode()
+
+    return base64.b64encode(bytes).decode()
+    
+
 def send_data(data: int, recording_state: RecordingState):
     payload: dict = {
         "applicationID": config["node_info"]["applicationID"],
         "organizationID": config["node_info"]["organizationID"],
-        "data": {
-            "state": recording_state.value,
-            "sensorData": data,
-            "sensorId": config["node_info"]["sensorId"],
-            "sensorPath": config["node_info"]["sensorPath"],
-        },
+        "data": encode_data(recording_state.value, 
+                            data, 
+                            config["node_info"]["sensorId"], 
+                            config["node_info"]["sensorPath"]),
         "publishedAt": datetime.now().isoformat()
     }
     
