@@ -6,7 +6,7 @@ from flask_mqtt import Mqtt
 from flask_mongoengine import MongoEngine
 from flask_socketio import SocketIO
 from flask_security import Security, MongoEngineUserDatastore, \
-    UserMixin, RoleMixin, login_required
+    UserMixin, RoleMixin, login_required, current_user
 from enum import Enum, auto
 from os import environ
 
@@ -18,6 +18,11 @@ import base64
 
 from mobius import utils
 from database import microservice
+
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import JWTManager
 
 rec=""
 
@@ -43,6 +48,7 @@ class ConfigClass(object):
     # Generate a good salt using: secrets.SystemRandom().getrandbits(128)
     SECURITY_PASSWORD_SALT = os.environ.get("SECURITY_PASSWORD_SALT", '146585145368132386173505678016728509634')
 
+    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", 'pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw')
     # Flask-MongoEngine settings
     MONGODB_SETTINGS = {
         'db': 'mobius',
@@ -253,6 +259,7 @@ def create_app():
 
     CORS(app)
 
+    jwt = JWTManager(app)
     if not DISABLE_MQTT:
         mqtt: Mqtt = create_mqtt(app)
 
@@ -262,12 +269,55 @@ def create_app():
     user_datastore = MongoEngineUserDatastore(db, microservice.User, microservice.Role)
     security = Security(app, user_datastore)
 
-    # The Home page is accessible to anyone
+    # Register a callback function that takes whatever object is passed in as the
+    # identity when creating JWTs and converts it to a JSON serializable format.
+    @jwt.user_identity_loader
+    def user_identity_lookup(user):
+        return user.id
+
+    # Register a callback function that loads a user from your database whenever
+    # a protected route is accessed. This should return any python object on a
+    # successful lookup, or None if the lookup failed for any reason (for example
+    # if the user has been deleted from the database).
+    @jwt.user_lookup_loader
+    def user_lookup_callback(_jwt_header, jwt_data):
+        identity = jwt_data["sub"]
+        return user_datastore.find_user(email=identity)
 
     # Create a user to test with
     @app.before_first_request
     def create_user():
         user_datastore.create_user(email='bettarini@monema.it', password='password')
+
+    # Create a route to authenticate your users and return JWTs. The
+    # create_access_token() function is used to actually generate the JWT.
+    # @app.route("/authenticate", methods=["POST"])
+    # def login():
+    #     username = request.json.get("username", None)
+    #     password = request.json.get("password", None)
+
+    #     user = user_datastore.find_user(email=username)
+
+    #     if not user or not user.check_password(password):
+    #         return jsonify("Wrong username or password"), 401
+    #     if username != "test" or password != "test":
+    #         return jsonify({"msg": "Bad username or password"}), 401
+
+    #     access_token = create_access_token(identity=username)
+    #     return jsonify(access_token=access_token)
+
+    @app.route("/create-api-token")
+    @login_required
+    def create_or_get_token():
+        """Return jwt token if existing, else create new and return"""
+        access_token = create_access_token(identity=current_user)
+        return jsonify({"access_token": access_token}), 200
+
+    @app.route("/api/jwttest")
+    @jwt_required
+    def jwttest():
+        """View protected by jwt test. If necessary, exempt it from csrf protection. See flask_wtf.csrf for more info"""
+        return jsonify({"foo": "bar", "baz": "qux"})
 
     # Views
     @app.route('/')
