@@ -15,7 +15,7 @@ with open("config.yaml", "r") as file:
     config = loaded_yaml["settings"]
 
 
-class RecorginState(IntEnum):
+class RecordingState(IntEnum):
     NOT_RECORDING = 0
     BEGIN_REC = auto()
     END_REC = auto()
@@ -25,7 +25,7 @@ class Command(IntEnum):
     START_RECORDING = 0
 
 
-def send_data(data: int, recording_state: RecorginState):
+def send_data(data: int, recording_state: RecordingState):
     payload: dict = {
         "applicationID": config["node_info"]["applicationID"],
         "organizationID": config["node_info"]["organizationID"],
@@ -70,7 +70,7 @@ def read_and_send():
     data: int = int.from_bytes(msg.data, byteorder='big', signed=False)
     print(f"CAN> {data}")
 
-    send_data(data, RecorginState.NOT_RECORDING)
+    send_data(data, RecordingState.NOT_RECORDING)
 
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -92,7 +92,7 @@ def on_message(client, userdata, msg: mqtt.MQTTMessage):
 
         print("Received MQTT message, sending rec start...")
 
-        send_data(0, RecorginState.BEGIN_REC)
+        send_data(0, RecordingState.BEGIN_REC)
 
         print("Sleeping for 10 seconds...")
 
@@ -108,7 +108,7 @@ def on_message(client, userdata, msg: mqtt.MQTTMessage):
 
         print("Sending rec end...")
 
-        send_data(0, RecorginState.END_REC)
+        send_data(0, RecordingState.END_REC)
 
 
 if __name__ == "__main__":
