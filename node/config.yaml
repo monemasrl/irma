@@ -2,8 +2,7 @@ settings:
   node_info:
     organizationID: ""
     applicationID: ""
-    sensorId: ""
-    sensorPath: ""
+    sensorID: 1
   microservice:
     url: "http://localhost"
     port: 5000
@@ -11,4 +10,6 @@ settings:
   mqtt:
     url: "localhost"
     port: 1883
-
+  mobius:
+    sensorId: ""
+    sensorPath: ""

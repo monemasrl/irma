@@ -28,31 +28,35 @@ class Command(IntEnum):
 
 """
 encoded data
-| 1 byte state | 4 byte data | 10 byte sensorId | 10 byte sensorPath |
+| 1 byte state | 4 byte data | 1 byte sensorID | 10 byte sensorId | 10 byte sensorPath |
 """
 
-def encode_data(state: int, data: int, sensorId: str, sensorPath: str) -> str:
-    
+def encode_data(state: int, data: int,
+                sensorID: int, mobius_sensorId: str,
+                mobius_sensorPath: str) -> str:
+
     bytes = b''
     bytes += state.to_bytes(1, 'big')
     bytes += data.to_bytes(4, 'big')
-    bytes += sensorId.ljust(10).encode()
-    bytes += sensorPath.ljust(10).encode()
+    bytes += sensorID.to_bytes(1, 'big')
+    bytes += mobius_sensorId.ljust(10).encode()
+    bytes += mobius_sensorPath.ljust(10).encode()
 
     return base64.b64encode(bytes).decode()
-    
+
 
 def send_data(data: int, recording_state: RecordingState):
     payload: dict = {
         "applicationID": config["node_info"]["applicationID"],
         "organizationID": config["node_info"]["organizationID"],
-        "data": encode_data(recording_state.value, 
-                            data, 
-                            config["node_info"]["sensorId"], 
-                            config["node_info"]["sensorPath"]),
+        "data": encode_data(recording_state.value,
+                            data,
+                            config["node_info"]["sensorID"],
+                            config["mobius"]["sensorId"],
+                            config["mobius"]["sensorPath"]),
         "publishedAt": datetime.now().isoformat()
     }
-    
+
     host = config["microservice"]["url"]
     port = config["microservice"]["port"]
     api_key = config["microservice"]["api_key"]
