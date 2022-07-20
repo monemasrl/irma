@@ -21,6 +21,10 @@ class RecorginState(IntEnum):
     END_REC = auto()
 
 
+class Command(IntEnum):
+    START_RECORDING = 0
+
+
 def send_data(data: int, recording_state: RecorginState):
     payload: dict = {
         "applicationID": config["node_info"]["applicationID"],
@@ -79,28 +83,32 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe(f"{config['node_info']['sensorPath']}/rec")
 
 # The callback for when a PUBLISH message is received from the server.
-def on_message(client, userdata, msg):
+def on_message(client, userdata, msg: mqtt.MQTTMessage):
     print(msg.topic+" -> "+str(msg.payload))
 
-    print("Received MQTT message, sending rec start...")
+    decoded_num = int.from_bytes(msg.payload, 'big')
 
-    send_data(0, RecorginState.BEGIN_REC)
+    if decoded_num == Command.START_RECORDING:
 
-    print("Sleeping for 10 seconds...")
+        print("Received MQTT message, sending rec start...")
 
-    for _ in range(10):
-        sleep(1)        
-        print(".", end="")
+        send_data(0, RecorginState.BEGIN_REC)
 
-    print()
+        print("Sleeping for 10 seconds...")
 
-    print("Sending readings...")
+        for _ in range(10):
+            sleep(1)
+            print(".", end="")
 
-    read_and_send()
+        print()
 
-    print("Sending rec end...")
+        print("Sending readings...")
 
-    send_data(0, RecorginState.END_REC)
+        read_and_send()
+
+        print("Sending rec end...")
+
+        send_data(0, RecorginState.END_REC)
 
 
 if __name__ == "__main__":
