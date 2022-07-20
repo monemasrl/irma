@@ -1,5 +1,6 @@
 import json
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, render_template_string
 from flask_cors import cross_origin, CORS
 from flask_mqtt import Mqtt
 from flask_mongoengine import MongoEngine
@@ -14,7 +15,6 @@ from datetime import datetime
 import iso8601
 import requests
 import base64
-from microservice_websocket_docker.database.microservice import User
 
 from mobius import utils
 from database import microservice
@@ -31,23 +31,22 @@ MOBIUS_PORT = environ.get("MOBIUS_PORT", "5002")
 # for testing purposes
 DISABLE_MQTT = False if environ.get("DISABLE_MQTT") != 1 else True
 
-# MQTT 
-MQTT_BROKER_URL = environ.get("MQTT_BROKER_URL", 'localhost')
-MQTT_BROKER_PORT = int(environ.get("MQTT_BROKER_PORT", 1883))
-
 cached_sensor_paths = []
 
 # Class-based application configuration
 class ConfigClass(object):
     """ Flask application config """
 
-    # Flask settings
-    SECRET_KEY = 'This is an INSECURE secret!! DO NOT use this in production!!'
+    # Generate a nice key using secrets.token_urlsafe()
+    SECRET_KEY = os.environ.get("SECRET_KEY", 'pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw')
+    # Bcrypt is set as default SECURITY_PASSWORD_HASH, which requires a salt
+    # Generate a good salt using: secrets.SystemRandom().getrandbits(128)
+    SECURITY_PASSWORD_SALT = os.environ.get("SECURITY_PASSWORD_SALT", '146585145368132386173505678016728509634')
 
     # Flask-MongoEngine settings
     MONGODB_SETTINGS = {
-        'db': 'tst_app',
-        'host': 'mongodb://localhost:27017/mobius'
+        'db': 'mobius',
+        'host': 'mongodb://mongo:27017/mobius'
     }
 
     # Flask-User settings
@@ -70,8 +69,8 @@ class ConfigClass(object):
     ################################################################
     #####configurazione dei dati relativi alla connessione MQTT#####
     ################################################################
-    MQTT_BROKER_URL = MQTT_BROKER_URL
-    MQTT_BROKER_PORT = MQTT_BROKER_PORT
+    MQTT_BROKER_URL = environ.get("MQTT_BROKER_URL", 'localhost')
+    MQTT_BROKER_PORT = int(environ.get("MQTT_BROKER_PORT", 1883))
     MQTT_TLS_ENABLED = False
 
 def decode_devEUI(encoded_devEUI: str) -> str:
@@ -156,7 +155,7 @@ def get_data(sensor_path: str, rec: str) -> dict:
 
     # For testing purposes
     if MOBIUS_URL != "":
-        collect: list[dict] = utils.read({)
+        collect: list[dict] = utils.read(sensor_path)
     else:
         collect = []
 
@@ -257,7 +256,12 @@ def create_app():
     if not DISABLE_MQTT:
         mqtt: Mqtt = create_mqtt(app)
 
+    db = MongoEngine()
+    db.init_app(app)
+
     user_datastore = MongoEngineUserDatastore(db, microservice.User, microservice.Role)
+    security = Security(app, user_datastore)
+
     # The Home page is accessible to anyone
 
     # Create a user to test with
@@ -268,8 +272,8 @@ def create_app():
     # Views
     @app.route('/')
     @login_required
-    def home():
-        return render_template('index.html')
+    def webhome():
+        return render_template_string("Hello {{ current_user.email }}")
 
     @app.route('/', methods=['POST'])
     @cross_origin()
