@@ -168,3 +168,22 @@ def sensorData_Uplink(devEUI, applicationID, sensorId, isoTimestamp, latitude, l
         "deviceProfileName": "device-OTAA"
     }
 
+
+def dati_utili() -> dict:
+    return {
+        "applicationID": "foo",
+        "organizationID": "bar",
+        "deviceName": "irma-sensor",
+        "devEUI": "baz",
+        "latitude": 34,
+        "longitude": 45,
+        "altitude": 0,
+        "data": {
+            "state": 3,
+            "sensorData": 4.5,
+            "sensorId": "foo",
+            "sensorPath": "bar",
+        },
+        "publishedAt": "time",
+    }
+
