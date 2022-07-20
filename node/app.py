@@ -33,10 +33,18 @@ def send_data(data: int, recording_state: RecorginState):
         },
         "publishedAt": datetime.now().isoformat()
     }
+    
+    host = config["microservice"]["url"]
+    port = config["microservice"]["port"]
+    api_key = config["microservice"]["api_key"]
+    route = config["node_info"]["sensorPath"]
 
     requests.post(
-        f'{config["microservice"]["url"]}:{config["microservice"]["port"]}/{config["node_info"]["sensorPath"]}',
-        data=payload
+        url=f'{host}:{port}/{route}',
+        data=payload,
+        headers={
+            "Authorization": f'Bearer {api_key}'
+        }
     )
 
 

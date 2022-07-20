@@ -7,6 +7,7 @@ settings:
   microservice:
     url: "http://localhost"
     port: 5000
+    api_key: "verysecret"
   mqtt:
     url: "localhost"
     port: 1883
