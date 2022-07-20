@@ -1,5 +1,6 @@
 from __future__ import annotations
 from flask_mongoengine import Document
+from mongoengine import IntField
 from mongoengine.fields import DictField, StringField, FloatField, ReferenceField, ListField, BooleanField, DateTimeField
 from flask_security import Security, MongoEngineUserDatastore, \
     UserMixin, RoleMixin, login_required
@@ -31,3 +32,15 @@ class User(Document, UserMixin):
     active = BooleanField(default=True)
     confirmed_at = DateTimeField()
     roles = ListField(ReferenceField(Role), default=[])
+
+class Sensor(Document):
+    sensorID = IntField(required=True)
+    application = ReferenceField(Application, required=True)
+    organization = ReferenceField(Organization, required=True)
+    sensorName = StringField(default='', required=True)
+    state = IntField(required=True)
+
+class Reading(Document):
+    sensor = ReferenceField(Sensor)  
+    publishedAt = DateTimeField()
+    data = DictField()

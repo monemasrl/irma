@@ -28,17 +28,16 @@ class Command(IntEnum):
 
 """
 encoded data
-| 1 byte state | 4 byte data | 1 byte sensorID | 10 byte sensorId | 10 byte sensorPath |
+| 1 byte state | 4 byte data | 10 byte sensorId | 10 byte sensorPath |
 """
 
 def encode_data(state: int, data: int,
-                sensorID: int, mobius_sensorId: str,
+                mobius_sensorId: str,
                 mobius_sensorPath: str) -> str:
 
     bytes = b''
     bytes += state.to_bytes(1, 'big')
     bytes += data.to_bytes(4, 'big')
-    bytes += sensorID.to_bytes(1, 'big')
     bytes += mobius_sensorId.ljust(10).encode()
     bytes += mobius_sensorPath.ljust(10).encode()
 
@@ -47,11 +46,12 @@ def encode_data(state: int, data: int,
 
 def send_data(data: int, recording_state: RecordingState):
     payload: dict = {
+        "sensorID": config["node_info"]["sensorID"],
+        "sensorName": config["node_info"]["sensorName"],
         "applicationID": config["node_info"]["applicationID"],
         "organizationID": config["node_info"]["organizationID"],
         "data": encode_data(recording_state.value,
                             data,
-                            config["node_info"]["sensorID"],
                             config["mobius"]["sensorId"],
                             config["mobius"]["sensorPath"]),
         "publishedAt": datetime.now().isoformat()
@@ -60,10 +60,11 @@ def send_data(data: int, recording_state: RecordingState):
     host = config["microservice"]["url"]
     port = config["microservice"]["port"]
     api_key = config["microservice"]["api_key"]
-    route = config["node_info"]["sensorPath"]
+    sensorID = config["node_info"]["sensorID"]
+    applicationID = config["node_info"]["applicationID"]
 
     requests.post(
-        url=f'{host}:{port}/{route}',
+        url=f'{host}:{port}/api/{applicationID}/{sensorID}/publish',
         data=payload,
         headers={
             "Authorization": f'Bearer {api_key}'
@@ -99,7 +100,9 @@ def on_connect(client, userdata, flags, rc):
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     # TODO: riguardare
-    client.subscribe(f"{config['node_info']['sensorPath']}/rec")
+    applicationID = config["node_info"]["applicationID"]
+    sensorID = config["node_info"]["sensorID"]
+    client.subscribe(f"{applicationID}/{sensorID}/commands")
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg: mqtt.MQTTMessage):

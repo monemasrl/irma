@@ -2,7 +2,6 @@ import requests
 import json
 from os import environ
 from flask_api import status
-from flask import jsonify
 
 
 MOBIUS_URL = environ.get("MOBIUS_URL", "http://localhost")
@@ -10,10 +9,8 @@ MOBIUS_PORT = environ.get("MOBIUS_PORT", "5002")
 
 # Conversione payload chirpstack in payload per mobius
 def to_mobius_payload(record: dict) -> dict:
-    sensorId = record["tags"]["sensorId"]
+    sensorId = record["data"]["mobius_sensorId"]
     readingTimestamp = record['publishedAt']
-    latitude = record['rxInfo'][0]['location']['latitude']
-    longitude = record['rxInfo'][0]['location']['longitude']
 
     return {
         "m2m:cin": {
@@ -21,8 +18,6 @@ def to_mobius_payload(record: dict) -> dict:
                 "metadata": {
                     "sensorId": sensorId,
                     "readingTimestamp": readingTimestamp,
-                    "latitude": latitude,
-                    "longitude": longitude,
                 },
             },
             "sensorData": record,
@@ -32,9 +27,8 @@ def to_mobius_payload(record: dict) -> dict:
 def insert(record):
     mobius_payload: dict = to_mobius_payload(record)
 
-    requests.post(f"{MOBIUS_URL}:{MOBIUS_PORT}/{record['tags']['sensor_path']}", json=mobius_payload)
+    requests.post(f"{MOBIUS_URL}:{MOBIUS_PORT}/{record['data']['mobius_sensorPath']}", json=mobius_payload)
 
-    return jsonify(mobius_payload)
 
 def read(sensor_path):
     # Querying mobius for sensor_path

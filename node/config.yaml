@@ -3,6 +3,7 @@ settings:
     organizationID: ""
     applicationID: ""
     sensorID: 1
+    sensorName: "Nodo1"
   microservice:
     url: "http://localhost"
     port: 5000
