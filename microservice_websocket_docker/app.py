@@ -2,8 +2,10 @@ import json
 from flask import Flask, request, jsonify
 from flask_cors import cross_origin, CORS
 from flask_mqtt import Mqtt
+from flask_mongoengine import MongoEngine
 from flask_socketio import SocketIO
-from flask_api import status
+from flask_security import Security, MongoEngineUserDatastore, \
+    UserMixin, RoleMixin, login_required
 from enum import Enum, auto
 from os import environ
 
@@ -12,6 +14,10 @@ from datetime import datetime
 import iso8601
 import requests
 import base64
+from microservice_websocket_docker.database.microservice import User
+
+from mobius import utils
+from database import microservice
 
 rec=""
 
@@ -31,31 +37,45 @@ MQTT_BROKER_PORT = int(environ.get("MQTT_BROKER_PORT", 1883))
 
 cached_sensor_paths = []
 
+# Class-based application configuration
+class ConfigClass(object):
+    """ Flask application config """
+
+    # Flask settings
+    SECRET_KEY = 'This is an INSECURE secret!! DO NOT use this in production!!'
+
+    # Flask-MongoEngine settings
+    MONGODB_SETTINGS = {
+        'db': 'tst_app',
+        'host': 'mongodb://localhost:27017/mobius'
+    }
+
+    # Flask-User settings
+    USER_APP_NAME = "Flask-User MongoDB App"      # Shown in and email templates and page footers
+    USER_ENABLE_EMAIL = False      # Disable email authentication
+    USER_ENABLE_USERNAME = True    # Enable username authentication
+    USER_REQUIRE_RETYPE_PASSWORD = False    # Simplify register form
+
+
+    ###########################################################################################
+    #####configurazione dei dati relativi al cors per la connessione da una pagina esterna#####
+    ###########################################################################################
+    CORS_SETTINGS = {
+        'Content-Type':'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': 'true'
+    }
+
+
+    ################################################################
+    #####configurazione dei dati relativi alla connessione MQTT#####
+    ################################################################
+    MQTT_BROKER_URL = MQTT_BROKER_URL
+    MQTT_BROKER_PORT = MQTT_BROKER_PORT
+    MQTT_TLS_ENABLED = False
 
 def decode_devEUI(encoded_devEUI: str) -> str:
     return base64.b64decode(encoded_devEUI).hex()
-
-
-# Conversione payload chirpstack in payload per mobius
-def to_mobius_payload(record: dict) -> dict:
-    sensorId = record["tags"]["sensorId"]
-    readingTimestamp = record['publishedAt']
-    latitude = record['rxInfo'][0]['location']['latitude']
-    longitude = record['rxInfo'][0]['location']['longitude']
-
-    return {
-        "m2m:cin": {
-            "con": {
-                "metadata": {
-                    "sensorId": sensorId,
-                    "readingTimestamp": readingTimestamp,
-                    "latitude": latitude,
-                    "longitude": longitude,
-                },
-            },
-            "sensorData": record,
-        }
-    }
 
 
 # Creazione payload per irma-ui
@@ -136,13 +156,7 @@ def get_data(sensor_path: str, rec: str) -> dict:
 
     # For testing purposes
     if MOBIUS_URL != "":
-        # Querying mobius for sensor_path
-        response: requests.Response = requests.get(f"{MOBIUS_URL}:{MOBIUS_PORT}/{sensor_path}")
-        decoded_response: dict = json.loads(response.content)
-
-        collect: list[dict] = decoded_response["m2m:rsp"]["m2m:cin"] \
-                              if status.is_success(response.status_code) \
-                              else []
+        collect: list[dict] = utils.read({)
     else:
         collect = []
 
@@ -235,30 +249,27 @@ def create_mqtt(app: Flask) -> Mqtt:
 
 def create_app():
     app = Flask(__name__)
+    app.config.from_object(__name__+'.ConfigClass')
     socketio = create_socketio(app)
 
-    # TODO: randomize key gen
-    app.config['SECRET_KEY'] = 'secret!'
-
-    ###########################################################################################
-    #####configurazione dei dati relativi al cors per la connessione da una pagina esterna#####
-    ###########################################################################################
-    app.config['CORS_SETTINGS'] = {
-        'Content-Type':'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': 'true'
-    }
     CORS(app)
-
-    ################################################################
-    #####configurazione dei dati relativi alla connessione MQTT#####
-    ################################################################
-    app.config['MQTT_BROKER_URL'] = MQTT_BROKER_URL
-    app.config['MQTT_BROKER_PORT'] = MQTT_BROKER_PORT
-    app.config['MQTT_TLS_ENABLED'] = False
 
     if not DISABLE_MQTT:
         mqtt: Mqtt = create_mqtt(app)
+
+    user_datastore = MongoEngineUserDatastore(db, microservice.User, microservice.Role)
+    # The Home page is accessible to anyone
+
+    # Create a user to test with
+    @app.before_first_request
+    def create_user():
+        user_datastore.create_user(email='bettarini@monema.it', password='password')
+
+    # Views
+    @app.route('/')
+    @login_required
+    def home():
+        return render_template('index.html')
 
     @app.route('/', methods=['POST'])
     @cross_origin()
@@ -275,18 +286,15 @@ def create_app():
         # filtraggio degli eventi mandati dall'application server 
         # in modo da non inserire nel database valori irrilevanti
         if "confirmedUplink" in record:
-            mobius_payload: dict = to_mobius_payload(record)
-
             # For testing purposes
             if MOBIUS_URL != "":
-                requests.post(f"{MOBIUS_URL}:{MOBIUS_PORT}/{record['tags']['sensor_path']}", json=mobius_payload)
+                mobius_data = utils.insert(record)
 
             if rec == record['tags']['sensorId']:
                 rec = ""
 
             socketio.emit('change')
-            print(f"[DEBUG] Posted payload to '{MOBIUS_URL}:{MOBIUS_PORT}'")
-            return jsonify(mobius_payload)
+            return mobius_data
 
         print("[DEBUG] Received message different than Uplink")
         rec = record['tags']['sensorId']

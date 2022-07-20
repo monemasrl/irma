@@ -1,9 +1,15 @@
 
 version: "3"
 services:
+  mongo:
+    image: mongo
+    restart: unless-stopped
+
   microservice_websocket:
     build: .
     restart: unless-stopped
+    links:
+      - db
     ports:
       - 5000:5000
     environment:
