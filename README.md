@@ -121,6 +121,12 @@ Per aggiungere la lettura dei dati dai sensori è stato utilizzato il protocollo
 
 <img src="assets\raspi2.png" width="120" height="120"/>
 
+## NODO
+
+Sul nodo, nel nostro caso un Rapsberry PI 2, gira uno script che si occupa di **gestire** le **letture** dei sensori e i comandi di **REC**.
+
+Per maggiori informazioni consultare la [documentazione](./node/node.md).
+
 ### Struttura nodo/end-device
 
 ```mermaid

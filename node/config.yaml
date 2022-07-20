@@ -1,0 +1,13 @@
+settings:
+  node_info:
+    organizationID: ""
+    applicationID: ""
+    sensorId: ""
+    sensorPath: ""
+  microservice:
+    url: "http://localhost"
+    port: 5000
+  mqtt:
+    url: "localhost"
+    port: 1883
+
