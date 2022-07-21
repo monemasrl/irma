@@ -82,6 +82,10 @@ def send_data(data: int, payload_type: PayloadType,
     )
 
 
+def send_keep_alive():
+    send_data(0, PayloadType.KEEP_ALIVE)
+
+
 def init_can(bustype, channel, bitrate):
     global bus
     bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate) # type: ignore
@@ -158,7 +162,7 @@ if __name__ == "__main__":
     if not BYPASS_CAN:
         init_can('socketcan', 'can0', 12500)
 
-    read_and_send()
+    send_keep_alive()
 
     client = mqtt.Client()
     client.on_connect = on_connect
