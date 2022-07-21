@@ -6,6 +6,7 @@ from flask_mqtt import Mqtt
 from flask_mongoengine import MongoEngine
 from flask_socketio import SocketIO
 from flask_security import Security, MongoEngineUserDatastore, login_required, current_user, login_user
+import flask_security
 from enum import IntEnum, auto
 from os import environ
 
@@ -19,7 +20,6 @@ from mobius import utils
 from database import microservice
 
 from flask_jwt_extended import create_access_token
-from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
 
@@ -335,7 +335,7 @@ def create_app():
 
         user = user_datastore.find_user(email=username)
 
-        if verify_password(password, user['password']):
+        if flask_security.verify_password(password, user['password']):
             login_user(user=user, remember=False)
             access_token = create_access_token(identity=current_user)
             return jsonify(access_token=access_token)
