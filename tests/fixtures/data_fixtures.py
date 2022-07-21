@@ -169,6 +169,7 @@ def sensorData_Uplink(devEUI, applicationID, sensorId, isoTimestamp, latitude, l
     }
 
 
+@pytest.fixture()
 def node_data() -> dict:
     return {
         "sensorID": 1,

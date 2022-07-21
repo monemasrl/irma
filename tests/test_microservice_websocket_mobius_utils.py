@@ -1,5 +1,5 @@
 from microservice_websocket_docker.mobius.utils import to_mobius_payload
-from tests.fixtures import *
+from tests.fixtures.data_fixtures import *
 
 def test_to_mobius_payload(node_data: dict):
     """
