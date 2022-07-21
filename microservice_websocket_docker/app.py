@@ -316,8 +316,10 @@ def create_app():
     def get_organizations():
         organizations = microservice.Organization.objects() # type: ignore
 
-        json_list = [x.to_json() for x in organizations]
-        return jsonify(organizations=json_list)
+        if len(organizations) == 0:
+            return { 'message': 'Not Found' }, 404
+
+        return jsonify(organizations=organizations)
 
     @jwt_required()
     @app.route('/api/organizations', methods=['POST'])
@@ -352,16 +354,20 @@ def create_app():
     def get_applications(organizationID: str):
         applications = microservice.Application.objects(organization=organizationID) # type: ignore
 
-        json_list = [x.to_json() for x in applications]
-        return jsonify(applications=json_list)
+        if len(applications) == 0:
+            return { 'message': 'Not Found' }, 404
+
+        return jsonify(applications=applications)
 
     @jwt_required()
     @app.route('/api/sensors/<applicationID>')
     def get_sensors(applicationID: str):
-        sensors = microservice.Sensor.obejects(application=applicationID) # type: ignore
+        sensors = microservice.Sensor.objects(application=applicationID) # type: ignore
 
-        json_list = [x.to_json() for x in sensors]
-        return jsonify(sensors=json_list)
+        if len(sensors) == 0:
+            return { 'message': 'Not Found' }, 404
+
+        return jsonify(sensors=sensors)
 
     @app.route('/api/<applicationID>/<sensorID>/publish', methods=['POST'])
     def create_record(applicationID: str, sensorID: int):
