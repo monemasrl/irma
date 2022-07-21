@@ -45,7 +45,8 @@ def encode_data(payload_type: int, data: int,
     return base64.b64encode(bytes).decode()
 
 
-def decode_mqtt_data(encoded_data: bytes) -> dict:
+def decode_mqtt_data(encoded_string: str) -> dict:
+    encoded_data = base64.b64decode(encoded_string)
     return {
         "command": int.from_bytes(encoded_data[:1], 'big'),
         "commandTimestamp": encoded_data[1:].decode()
@@ -127,7 +128,7 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg: mqtt.MQTTMessage):
     print(msg.topic+" -> "+str(msg.payload))
 
-    decoded_data = decode_mqtt_data(msg.payload)
+    decoded_data = decode_mqtt_data(msg.payload.decode())
 
     command = decoded_data["command"]
 
