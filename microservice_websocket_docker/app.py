@@ -469,7 +469,7 @@ def create_app():
                 sensor=sensor,
                 publishedAt=iso8601.parse_date(record["publishedAt"]),
                 requestedAt=iso8601.parse_date(record["requestedAt"]),
-                data=record["data"]['sensorData']
+                data=record["data"]
             )
             reading.save()
 
