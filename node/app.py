@@ -7,7 +7,10 @@ from enum import IntEnum, auto
 import requests
 import paho.mqtt.client as mqtt
 import yaml
+from os import environ
 from can.interface import Bus
+
+BYPASS_CAN = bool(environ.get("BYPASS_CAN", 0))
 
 config: dict = {}
 
@@ -87,6 +90,11 @@ def init_can(bustype, channel, bitrate):
 
 
 def read_and_send(commandTimestamp: str = ""):
+    if BYPASS_CAN:
+        data = int(input("Inserisci un dato: "))
+        send_data(data, PayloadType.READING, commandTimestamp)
+        return
+
     global bus
 
     msg: Union[None, Message] = None
@@ -147,7 +155,8 @@ def on_message(client, userdata, msg: mqtt.MQTTMessage):
 
 if __name__ == "__main__":
 
-    init_can('socketcan', 'can0', 12500)
+    if not BYPASS_CAN:
+        init_can('socketcan', 'can0', 12500)
 
     read_and_send()
 
