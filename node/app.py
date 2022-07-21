@@ -76,9 +76,10 @@ def send_data(data: int, payload_type: PayloadType,
 
     requests.post(
         url=f'{host}:{port}/api/{applicationID}/{sensorID}/publish',
-        data=payload,
+        json=payload,
         headers={
-            "Authorization": f'Bearer {api_key}'
+            "Authorization": f'Bearer {api_key}',
+            "Content-Type": "application/json"
         }
     )
 
