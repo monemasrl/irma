@@ -135,6 +135,19 @@ class SensorState(IntEnum):
     ALERT_READY=auto()
     ALERT_RUNNING=auto()
 
+    @classmethod
+    def to_irma_ui_state(_cls, n: int):
+        if n == 0:
+            return 'off'
+        elif n == 1:
+            return 'ok'
+        elif n == 2:
+            return 'rec'
+        elif n >= 3:
+            return 'alert'
+        else:
+            return 'undefined'
+
 
 class PayloadType(IntEnum):
     READING=0
@@ -190,7 +203,7 @@ def get_data(sensorID: str) -> dict:
     current_month: int = datetime.now().month 
 
     # TODO: better return
-    sensor = Sensor.objects(id=sensorID).first() # type: ignore
+    sensor = microservice.Sensor.objects(sensorID=sensorID).first() # type: ignore
 
     if sensor is None:
         return {}
@@ -198,7 +211,7 @@ def get_data(sensorID: str) -> dict:
     state: SensorState = sensor["state"]
     sensorName: str = sensor["sensorName"]
 
-    collect = Reading.objects(sensor=sensorID).order_by("-publishedAt") # type: ignore
+    collect = microservice.Reading.objects(sensor=sensor).order_by("-publishedAt") # type: ignore
 
     # TODO: better return
     if len(collect) == 0:
@@ -224,7 +237,7 @@ def get_data(sensorID: str) -> dict:
     send: dict = to_irma_ui_data(
         sensorID=sensorID,
         sensorName=sensorName,
-        state=state,
+        state=SensorState.to_irma_ui_state(state),
         titolo1="Media Letture Totali",
         dato1=round(total_average, 3),
         titolo2="Media Letture Mensili",
@@ -232,6 +245,8 @@ def get_data(sensorID: str) -> dict:
         titolo3="Letture eseguite nel mese",
         dato3=monthly_count
     )
+
+    app.logger.info(f'{send=}')
 
     return send
 
@@ -483,7 +498,7 @@ def create_app():
         received: dict = json.loads(request.data)
 
         if received["command"] == PayloadType.CONFIRM:
-            sensor = Sensor.objects(id=sensorID).first() # type: ignore
+            sensor = microservice.Sensor.objects(id=sensorID).first() # type: ignore
 
             if sensor is not None:
                 sensor["state"] = update_state(
