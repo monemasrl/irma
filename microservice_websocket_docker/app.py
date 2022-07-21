@@ -154,6 +154,9 @@ def update_state(current_state: SensorState, typ: PayloadType, dato: int = 0):
     elif current_state == SensorState.READY:
         if typ == PayloadType.START_REC:
             return SensorState.RUNNING
+        elif typ == PayloadType.READING:
+            if dato >= MAX_TRESHOLD:
+                return SensorState.ALERT_READY
 
     elif current_state == SensorState.RUNNING:
         if typ == PayloadType.READING:
@@ -171,8 +174,8 @@ def update_state(current_state: SensorState, typ: PayloadType, dato: int = 0):
     elif current_state == SensorState.ALERT_READY:
         if typ == PayloadType.CONFIRM:
             return SensorState.READY
-    else:
-        return current_state
+
+    return current_state
 
 
 def get_data(sensorID: str) -> dict:
