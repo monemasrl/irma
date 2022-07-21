@@ -5,7 +5,7 @@ from flask_cors import cross_origin, CORS
 from flask_mqtt import Mqtt
 from flask_mongoengine import MongoEngine
 from flask_socketio import SocketIO
-from flask_security import Security, MongoEngineUserDatastore, login_required, current_user, verify_password, login_user
+from flask_security import Security, MongoEngineUserDatastore, login_required, current_user, login_user
 from enum import IntEnum, auto
 from os import environ
 
