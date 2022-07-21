@@ -394,7 +394,7 @@ def create_app():
 
 
     @jwt_required()
-    @app.route('/api/applications/')
+    @app.route('/api/applications')
     def get_applications():
         organizationID: str = request.args.get('organizationID', '')
 
@@ -409,7 +409,7 @@ def create_app():
         return jsonify(applications=applications)
 
     @jwt_required()
-    @app.route('/api/sensors/')
+    @app.route('/api/sensors')
     def get_sensors():
         applicationID: str = request.args.get('applicationID', '')
 
