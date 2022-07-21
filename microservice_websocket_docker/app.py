@@ -34,8 +34,6 @@ MOBIUS_PORT = environ.get("MOBIUS_PORT", "5002")
 # for testing purposes
 DISABLE_MQTT = False if environ.get("DISABLE_MQTT") != 1 else True
 
-cached_sensor_paths = []
-
 # Class-based application configuration
 class ConfigClass(object):
     """ Flask application config """
@@ -254,12 +252,6 @@ def create_socketio(app: Flask):
     def onChange():
         print('Changed')
 
-        if cached_sensor_paths:
-            data: list[dict] = [get_data(x) for x in cached_sensor_paths]
-            socketio.send(jsonify(data=data))
-        else:
-            socketio.send(jsonify({}))
-
     return socketio
 
 
@@ -351,8 +343,8 @@ def create_app():
     @app.route('/', methods=['POST'])
     @cross_origin()
     def home():
-        cached_sensor_paths: list = json.loads(request.data)["paths"]
-        data: list[dict] = [get_data(x) for x in cached_sensor_paths]
+        sensorIDs: list = json.loads(request.data)["paths"]
+        data: list[dict] = [get_data(x) for x in sensorIDs]
         return jsonify(data=data)
 
     @jwt_required()
