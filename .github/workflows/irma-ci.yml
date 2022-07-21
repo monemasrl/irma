@@ -41,7 +41,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          python -m pytest tests --import-mode=append
+          python -m pytest tests/ --import-mode=append
 
   build-mock_mobius_docker:
     runs-on: self-hosted
