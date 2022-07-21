@@ -241,14 +241,14 @@ def create_app():
     app.config.from_object(__name__+'.ConfigClass')
     socketio = create_socketio(app)
 
+    db = MongoEngine()
+    db.init_app(app)
+
     CORS(app)
 
     jwt = JWTManager(app)
     if not DISABLE_MQTT:
         mqtt: Mqtt = create_mqtt(app)
-
-    db = MongoEngine()
-    db.init_app(app)
 
     user_datastore = MongoEngineUserDatastore(db, microservice.User, microservice.Role)
     security = Security(app, user_datastore)
@@ -273,6 +273,7 @@ def create_app():
     # Create a user to test with
     @app.before_first_request
     def create_user():
+        app.logger.info('Creo utente')
         user_datastore.create_user(email='bettarini@monema.it', password='password')
 
     # Create a route to authenticate your users and return JWTs. The
@@ -317,6 +318,34 @@ def create_app():
 
         json_list = [x.to_json() for x in organizations]
         return jsonify(organizations=json_list)
+
+    @jwt_required()
+    @app.route('/api/organizations', methods=['POST'])
+    def create_organization():
+        record: dict = json.loads(request.data)
+
+        organization = microservice.Organization(organizationName=record['name'])
+        organization.save()
+
+        return jsonify(organization.to_json())
+
+    @jwt_required()
+    @app.route('/api/applications/<organizationID>', methods=['POST'])
+    def create_application(organizationID):
+        record: dict = json.loads(request.data)
+
+        organizations = microservice.Organization.objects(id=organizationID) # type: ignore
+
+        if len(organizations) > 0: 
+            organization = organizations[0]
+            application = microservice.Application(applicationName=record['name'], organization=organization)
+            application.save()
+            return application.to_json()
+        else:
+            return { 'message': 'Not Found' }, 404
+
+
+
 
     @jwt_required()
     @app.route('/api/applications/<organizationID>')
