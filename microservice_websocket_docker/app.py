@@ -90,6 +90,14 @@ def decode_data(encoded_data: str) -> dict:
     }
 
 
+def encode_mqtt_data(command: int, iso_timestamp: str) -> bytes:
+    encoded_data = b''
+    encoded_data += command.to_bytes(1, 'big')
+    encoded_data += iso_timestamp.encode()
+    
+    return encoded_data
+
+
 # Creazione payload per irma-ui
 def to_irma_ui_data(
         sensorID: str,
@@ -308,7 +316,7 @@ def create_app():
     @cross_origin()
     def home():
         cached_sensor_paths: list = json.loads(request.data)["paths"]
-        data: list[dict] = [get_data(x, rec) for x in cached_sensor_paths]
+        data: list[dict] = [get_data(x) for x in cached_sensor_paths]
         return jsonify(data=data)
 
     @jwt_required()
@@ -418,7 +426,7 @@ def create_app():
 
         topic: str = f'{applicationID}/{sensorID}/commands'
 
-        data: bytes = received["state"].to_bytes(1, 'big')
+        data: bytes = encode_mqtt_data(received["command"], datetime.now().isoformat())
 
         if not DISABLE_MQTT:
             mqtt.publish(topic, data)

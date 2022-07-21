@@ -44,7 +44,14 @@ def encode_data(state: int, data: int,
     return base64.b64encode(bytes).decode()
 
 
-def send_data(data: int, recording_state: RecordingState):
+def decode_mqtt_data(encoded_data: bytes) -> dict:
+    return {
+        "command": int.from_bytes(encoded_data[:1], 'big'),
+        "commandTimestamp": encoded_data[1:].decode()
+    }
+
+
+def send_data(data: int, recording_state: RecordingState, commandTimestamp: str = ""):
     payload: dict = {
         "sensorID": config["node_info"]["sensorID"],
         "sensorName": config["node_info"]["sensorName"],
@@ -54,7 +61,8 @@ def send_data(data: int, recording_state: RecordingState):
                             data,
                             config["mobius"]["sensorId"],
                             config["mobius"]["sensorPath"]),
-        "publishedAt": datetime.now().isoformat()
+        "publishedAt": datetime.now().isoformat(),
+        "requestedAt": commandTimestamp
     }
 
     host = config["microservice"]["url"]
@@ -79,7 +87,7 @@ def init_can(bustype, channel, bitrate):
     print(f"Can type '{bustype}', on channel '{channel}' @{bitrate}")
 
 
-def read_and_send():
+def read_and_send(commandTimestamp: str = ""):
     global bus
 
     msg: Union[None, Message] = None
@@ -90,7 +98,7 @@ def read_and_send():
     data: int = int.from_bytes(msg.data, byteorder='big', signed=False)
     print(f"CAN> {data}")
 
-    send_data(data, RecordingState.NOT_RECORDING)
+    send_data(data, RecordingState.NOT_RECORDING, commandTimestamp)
 
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -108,9 +116,11 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg: mqtt.MQTTMessage):
     print(msg.topic+" -> "+str(msg.payload))
 
-    decoded_num = int.from_bytes(msg.payload, 'big')
+    decoded_data = decode_mqtt_data(msg.payload)
 
-    if decoded_num == Command.START_RECORDING:
+    command = decoded_data["command"]
+
+    if command == Command.START_RECORDING:
 
         print("Received MQTT message, sending rec start...")
 
@@ -126,7 +136,10 @@ def on_message(client, userdata, msg: mqtt.MQTTMessage):
 
         print("Sending readings...")
 
-        read_and_send()
+        read_and_send(decoded_data["commandTimestamp"])
+        read_and_send(decoded_data["commandTimestamp"])
+        read_and_send(decoded_data["commandTimestamp"])
+        read_and_send(decoded_data["commandTimestamp"])
 
         print("Sending rec end...")
 
