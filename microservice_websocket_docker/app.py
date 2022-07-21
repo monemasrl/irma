@@ -1,10 +1,13 @@
 import json
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, render_template_string
 from flask_cors import cross_origin, CORS
 from flask_mqtt import Mqtt
+from flask_mongoengine import MongoEngine
 from flask_socketio import SocketIO
-from flask_api import status
-from enum import Enum, auto
+from flask_security import Security, MongoEngineUserDatastore, \
+    UserMixin, RoleMixin, login_required, current_user, verify_password, login_user
+from enum import IntEnum, auto
 from os import environ
 
 from datetime import datetime
@@ -13,7 +16,13 @@ import iso8601
 import requests
 import base64
 
-rec=""
+from mobius import utils
+from database import microservice
+
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import JWTManager
 
 # valore teorico della soglia di pericolo del sensore
 MAX_TRESHOLD = int(environ.get("MAX_TRESHOLD", 20))
@@ -25,45 +34,71 @@ MOBIUS_PORT = environ.get("MOBIUS_PORT", "5002")
 # for testing purposes
 DISABLE_MQTT = False if environ.get("DISABLE_MQTT") != 1 else True
 
-# MQTT 
-MQTT_BROKER_URL = environ.get("MQTT_BROKER_URL", 'localhost')
-MQTT_BROKER_PORT = int(environ.get("MQTT_BROKER_PORT", 1883))
+# Class-based application configuration
+class ConfigClass(object):
+    """ Flask application config """
 
-cached_sensor_paths = []
+    # Generate a nice key using secrets.token_urlsafe()
+    SECRET_KEY = os.environ.get("SECRET_KEY", 'pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw')
+    # Bcrypt is set as default SECURITY_PASSWORD_HASH, which requires a salt
+    # Generate a good salt using: secrets.SystemRandom().getrandbits(128)
+    SECURITY_PASSWORD_SALT = os.environ.get("SECURITY_PASSWORD_SALT", '146585145368132386173505678016728509634')
+
+    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", 'pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw')
+    # Flask-MongoEngine settings
+    MONGODB_SETTINGS = {
+        'db': 'mobius',
+        'host': 'mongodb://mongo:27017/mobius'
+    }
+
+    # Flask-User settings
+    USER_APP_NAME = "Flask-User MongoDB App"      # Shown in and email templates and page footers
+    USER_ENABLE_EMAIL = False      # Disable email authentication
+    USER_ENABLE_USERNAME = True    # Enable username authentication
+    USER_REQUIRE_RETYPE_PASSWORD = False    # Simplify register form
 
 
-def decode_devEUI(encoded_devEUI: str) -> str:
-    return base64.b64decode(encoded_devEUI).hex()
+    ###########################################################################################
+    #####configurazione dei dati relativi al cors per la connessione da una pagina esterna#####
+    ###########################################################################################
+    CORS_SETTINGS = {
+        'Content-Type':'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': 'true'
+    }
 
 
-# Conversione payload chirpstack in payload per mobius
-def to_mobius_payload(record: dict) -> dict:
-    sensorId = record["tags"]["sensorId"]
-    readingTimestamp = record['publishedAt']
-    latitude = record['rxInfo'][0]['location']['latitude']
-    longitude = record['rxInfo'][0]['location']['longitude']
+    ################################################################
+    #####configurazione dei dati relativi alla connessione MQTT#####
+    ################################################################
+    MQTT_BROKER_URL = environ.get("MQTT_BROKER_URL", 'localhost')
+    MQTT_BROKER_PORT = int(environ.get("MQTT_BROKER_PORT", 1883))
+    MQTT_TLS_ENABLED = False
+
+def decode_data(encoded_data: str) -> dict:
+    raw_bytes = base64.b64decode(encoded_data)
 
     return {
-        "m2m:cin": {
-            "con": {
-                "metadata": {
-                    "sensorId": sensorId,
-                    "readingTimestamp": readingTimestamp,
-                    "latitude": latitude,
-                    "longitude": longitude,
-                },
-            },
-            "sensorData": record,
-        }
+        "payloadType": int.from_bytes(raw_bytes[:1], 'big'),
+        "sensorData": int.from_bytes(raw_bytes[1:5], 'big'),
+        "mobius_sensorId": raw_bytes[5:16].decode(),
+        "mobius_sensorPath": raw_bytes[16:].decode()
     }
+
+
+def encode_mqtt_data(command: int, iso_timestamp: str) -> bytes:
+    encoded_data = b''
+    encoded_data += command.to_bytes(1, 'big')
+    encoded_data += iso_timestamp.encode()
+    
+    return encoded_data
 
 
 # Creazione payload per irma-ui
 def to_irma_ui_data(
-        devEUI: str,
-        applicationID: str,
-        sensorId: str,
-        state: str,
+        sensorID: str,
+        sensorName: str,
+        state: int,
         titolo1: str,
         titolo2: str,
         titolo3: str,
@@ -73,9 +108,8 @@ def to_irma_ui_data(
     ) -> dict:
 
     return {
-        "devEUI": devEUI,
-        "applicationID": applicationID,
-        "sensorId": sensorId,
+        "sensorID": sensorID,
+        "sensorName": sensorName,
         "state": state,
         "datiInterni": [
             {
@@ -94,33 +128,68 @@ def to_irma_ui_data(
     }
 
 
-class State(Enum):
-    OFF=auto()
-    OK=auto()
-    REC=auto()
-    ALERT=auto()
+class SensorState(IntEnum):
+    ERROR=0
+    READY=auto()
+    RUNNING=auto()
+    ALERT_READY=auto()
+    ALERT_RUNNING=auto()
+
+    @classmethod
+    def to_irma_ui_state(_cls, n: int):
+        if n == 0:
+            return 'off'
+        elif n == 1:
+            return 'ok'
+        elif n == 2:
+            return 'rec'
+        elif n >= 3:
+            return 'alert'
+        else:
+            return 'undefined'
 
 
-def get_state(dato: int) -> State:
-    if dato == 0:
-        return State.OFF
-    elif dato < MAX_TRESHOLD:
-        return State.OK
-    return State.ALERT
+class PayloadType(IntEnum):
+    READING=0
+    START_REC=auto()
+    END_REC=auto()
+    KEEP_ALIVE=auto()
+    CONFIRM=auto()
 
 
-def get_sensorData(rawData: str) -> int:
-    sensorData = json.loads(rawData)['sensorData']
-    sensorData = int(sensorData)
-    return sensorData
+def update_state(current_state: SensorState, typ: PayloadType, dato: int = 0):
+    if current_state == SensorState.ERROR:
+        if typ == PayloadType.KEEP_ALIVE:
+            return SensorState.READY
+
+    elif current_state == SensorState.READY:
+        if typ == PayloadType.START_REC:
+            return SensorState.RUNNING
+        elif typ == PayloadType.READING:
+            if dato >= MAX_TRESHOLD:
+                return SensorState.ALERT_READY
+
+    elif current_state == SensorState.RUNNING:
+        if typ == PayloadType.READING:
+            if dato >= MAX_TRESHOLD:
+                return SensorState.ALERT_RUNNING
+        elif typ == PayloadType.END_REC:
+            return SensorState.READY
+
+    elif current_state == SensorState.ALERT_RUNNING:
+        if typ == PayloadType.CONFIRM:
+            return SensorState.RUNNING
+        elif typ == PayloadType.END_REC:
+            return SensorState.ALERT_READY
+
+    elif current_state == SensorState.ALERT_READY:
+        if typ == PayloadType.CONFIRM:
+            return SensorState.READY
+
+    return current_state
 
 
-def get_month(rawDateTime: str) -> int:
-    month = iso8601.parse_date(rawDateTime).month
-    return month
-
-
-def get_data(sensor_path: str, rec: str) -> dict:
+def get_data(sensorID: str) -> dict:
     total_sum: int = 0
     monthly_sum: int = 0
 
@@ -130,29 +199,28 @@ def get_data(sensor_path: str, rec: str) -> dict:
     total_average: float = 0.0
     monthly_average: float = 0.0
 
-    state: State = State.OFF
     #salvataggio del valore attuale del mese per il confronto
     current_month: int = datetime.now().month 
 
-    # For testing purposes
-    if MOBIUS_URL != "":
-        # Querying mobius for sensor_path
-        response: requests.Response = requests.get(f"{MOBIUS_URL}:{MOBIUS_PORT}/{sensor_path}")
-        decoded_response: dict = json.loads(response.content)
+    # TODO: better return
+    sensor = microservice.Sensor.objects(sensorID=sensorID).first() # type: ignore
 
-        collect: list[dict] = decoded_response["m2m:rsp"]["m2m:cin"] \
-                              if status.is_success(response.status_code) \
-                              else []
-    else:
-        collect = []
+    if sensor is None:
+        return {}
+
+    state: SensorState = sensor["state"]
+    sensorName: str = sensor["sensorName"]
+
+    collect = microservice.Reading.objects(sensor=sensor).order_by("-publishedAt") # type: ignore
+
+    # TODO: better return
+    if len(collect) == 0:
+        return {}
 
     for x in collect:
-        sensor_data: int = get_sensorData(x['sensorData']['objectJSON'])
-        sensorId: str = x['con']['metadata']['sensorId']
-        read_time: str = x['con']['metadata']['readingTimestamp']
-        read_month: int = get_month(read_time)
-
-        state = State.REC if rec == sensorId else get_state(sensor_data)
+        sensor_data: int = x['data']['sensorData']
+        read_time: datetime = x['publishedAt']
+        read_month: int = read_time.month
 
         total_sum += sensor_data
         total_count += 1
@@ -166,20 +234,10 @@ def get_data(sensor_path: str, rec: str) -> dict:
         if monthly_count != 0:
             monthly_average = monthly_sum / monthly_count
 
-    if state in [State.OK, State.REC] and len(collect) > 0:
-        devEUI: str = collect[-1]['sensorData']['devEUI']
-        applicationID: str = collect[-1]['sensorData']['applicationID']
-        sensorId: str = collect[-1]['con']['metadata']['sensorId']
-    else:
-        devEUI: str = ""
-        applicationID: str = ""
-        sensorId: str = ""
-
     send: dict = to_irma_ui_data(
-        devEUI=devEUI,
-        applicationID=applicationID,
-        sensorId=sensorId,
-        state=state.name.lower(),
+        sensorID=sensorID,
+        sensorName=sensorName,
+        state=SensorState.to_irma_ui_state(state),
         titolo1="Media Letture Totali",
         dato1=round(total_average, 3),
         titolo2="Media Letture Mensili",
@@ -188,11 +246,13 @@ def get_data(sensor_path: str, rec: str) -> dict:
         dato3=monthly_count
     )
 
+    app.logger.info(f'{send=}')
+
     return send
 
 
 def create_socketio(app: Flask):
-    # TODO: remove wildcard
+    # TODO: remove wildcard ?
     socketio: SocketIO = SocketIO(app, cors_allowed_origins="*")
 
     @socketio.on('connect')
@@ -206,12 +266,6 @@ def create_socketio(app: Flask):
     @socketio.on('change')
     def onChange():
         print('Changed')
-
-        if cached_sensor_paths:
-            data: list[dict] = [get_data(x, rec) for x in cached_sensor_paths]
-            socketio.send(jsonify(data=data))
-        else:
-            socketio.send(jsonify({}))
 
     return socketio
 
@@ -235,86 +289,230 @@ def create_mqtt(app: Flask) -> Mqtt:
 
 def create_app():
     app = Flask(__name__)
+    app.config.from_object(__name__+'.ConfigClass')
     socketio = create_socketio(app)
 
-    # TODO: randomize key gen
-    app.config['SECRET_KEY'] = 'secret!'
+    db = MongoEngine()
+    db.init_app(app)
 
-    ###########################################################################################
-    #####configurazione dei dati relativi al cors per la connessione da una pagina esterna#####
-    ###########################################################################################
-    app.config['CORS_SETTINGS'] = {
-        'Content-Type':'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': 'true'
-    }
     CORS(app)
 
-    ################################################################
-    #####configurazione dei dati relativi alla connessione MQTT#####
-    ################################################################
-    app.config['MQTT_BROKER_URL'] = MQTT_BROKER_URL
-    app.config['MQTT_BROKER_PORT'] = MQTT_BROKER_PORT
-    app.config['MQTT_TLS_ENABLED'] = False
-
+    jwt = JWTManager(app)
     if not DISABLE_MQTT:
         mqtt: Mqtt = create_mqtt(app)
+
+    user_datastore = MongoEngineUserDatastore(db, microservice.User, microservice.Role)
+    security = Security(app, user_datastore)
+
+    # Register a callback function that takes whatever object is passed in as the
+    # identity when creating JWTs and converts it to a JSON serializable format.
+    @jwt.user_identity_loader
+    def user_identity_lookup(user):
+        app.logger.info(f'{user=}')
+        return user_datastore.find_user(email=user.email)
+
+    # Register a callback function that loads a user from your database whenever
+    # a protected route is accessed. This should return any python object on a
+    # successful lookup, or None if the lookup failed for any reason (for example
+    # if the user has been deleted from the database).
+    @jwt.user_lookup_loader
+    def user_lookup_callback(_jwt_header, jwt_data):
+        identity = jwt_data["sub"]
+        app.logger.info(f'{identity=}')
+        return user_datastore.find_user(email=identity['email'])
+
+    # Create a user to test with
+    @app.before_first_request
+    def create_user():
+        app.logger.info('Creo utente')
+        user_datastore.create_user(email='bettarini@monema.it', password='password')
+
+    # Create a route to authenticate your users and return JWTs. The
+    # create_access_token() function is used to actually generate the JWT.
+    @app.route("/api/authenticate", methods=["POST"])
+    def custom_login():
+        username = request.json.get("username", None)
+        password = request.json.get("password", None)
+
+        user = user_datastore.find_user(email=username)
+
+        if verify_password(password, user['password']):
+            login_user(user=user, remember=False)
+            access_token = create_access_token(identity=current_user)
+            return jsonify(access_token=access_token)
+
+        return jsonify("Wrong username or password"), 401
+
+    @app.route("/api/jwttest")
+    @jwt_required()
+    def jwttest():
+        """View protected by jwt test. If necessary, exempt it from csrf protection. See flask_wtf.csrf for more info"""
+        return jsonify({"foo": "bar", "baz": "qux"})
+
+    # Views
+    @app.route('/')
+    @login_required
+    def webhome():
+        return render_template_string("Hello {{ current_user.email }}")
 
     @app.route('/', methods=['POST'])
     @cross_origin()
     def home():
-        cached_sensor_paths: list = json.loads(request.data)["paths"]
-        data: list[dict] = [get_data(x, rec) for x in cached_sensor_paths]
+        sensorIDs: list = json.loads(request.data)["paths"]
+        data: list[dict] = [get_data(x) for x in sensorIDs]
         return jsonify(data=data)
 
-    @app.route('/publish', methods=['POST'])
-    def create_record():
-        global rec
+    @jwt_required()
+    @app.route('/api/organizations')
+    def get_organizations():
+        organizations = microservice.Organization.objects() # type: ignore
+
+        if len(organizations) == 0:
+            return { 'message': 'Not Found' }, 404
+
+        return jsonify(organizations=organizations)
+
+    @jwt_required()
+    @app.route('/api/organizations', methods=['POST'])
+    def create_organization():
         record: dict = json.loads(request.data)
 
-        # filtraggio degli eventi mandati dall'application server 
-        # in modo da non inserire nel database valori irrilevanti
-        if "confirmedUplink" in record:
-            mobius_payload: dict = to_mobius_payload(record)
+        organization = microservice.Organization(organizationName=record['name'])
+        organization.save()
 
-            # For testing purposes
-            if MOBIUS_URL != "":
-                requests.post(f"{MOBIUS_URL}:{MOBIUS_PORT}/{record['tags']['sensor_path']}", json=mobius_payload)
+        return jsonify(organization.to_json())
 
-            if rec == record['tags']['sensorId']:
-                rec = ""
+    @jwt_required()
+    @app.route('/api/applications/<organizationID>', methods=['POST'])
+    def create_application(organizationID):
+        record: dict = json.loads(request.data)
 
-            socketio.emit('change')
-            print(f"[DEBUG] Posted payload to '{MOBIUS_URL}:{MOBIUS_PORT}'")
-            return jsonify(mobius_payload)
+        organizations = microservice.Organization.objects(id=organizationID) # type: ignore
 
-        print("[DEBUG] Received message different than Uplink")
-        rec = record['tags']['sensorId']
+        if len(organizations) > 0: 
+            organization = organizations[0]
+            application = microservice.Application(applicationName=record['name'], organization=organization)
+            application.save()
+            return application.to_json()
+        else:
+            return { 'message': 'Not Found' }, 404
+
+
+
+
+    @jwt_required()
+    @app.route('/api/applications')
+    def get_applications():
+        organizationID: str = request.args.get('organizationID', '')
+
+        if organizationID == "":
+            return { 'message': 'Bad Request' }, 400
+
+        applications = microservice.Application.objects(organization=organizationID) # type: ignore
+
+        if len(applications) == 0:
+            return { 'message': 'Not Found' }, 404
+
+        return jsonify(applications=applications)
+
+    @jwt_required()
+    @app.route('/api/sensors')
+    def get_sensors():
+        applicationID: str = request.args.get('applicationID', '')
+
+        if applicationID == "":
+            return { 'message': 'Bad Request' }, 400
+
+        sensors = microservice.Sensor.objects(application=applicationID) # type: ignore
+
+        if len(sensors) == 0:
+            return { 'message': 'Not Found' }, 404
+
+        return jsonify(sensors=sensors)
+
+    @app.route('/api/<applicationID>/<sensorID>/publish', methods=['POST'])
+    def create_record(applicationID: str, sensorID: int):
+        # TODO: controllo header token
+
+        app.logger.info(f'{request=}')
+        app.logger.info(f'{vars(request)=}')
+
+        data = request.data.decode()
+        # record: dict = json.loads(request.data.decode())
+
+        app.logger.info(f'{data=}')
+        record: dict = json.loads(data)
+
+        record["data"] = decode_data(record["data"])
+
+        # Vero se arriva da chirpstack
+        if "txInfo" in record:
+            # TODO: portare a payload di node/app.py
+            pass 
+            
+        if MOBIUS_URL != "":
+            app.logger.info(f'{record=}')
+            utils.insert(record)
+
+        application = microservice.Application.objects(id=applicationID).first() # type: ignore
+
+        if application is None:
+            return { 'message': 'Not Found' }, 404
+
+        sensor =  microservice.Sensor.objects(sensorID=sensorID).first() # type: ignore
+
+        if sensor is None:
+            sensor = microservice.Sensor(
+                sensorID=record["sensorID"],
+                application=application,
+                organization=application["organization"],
+                sensorName=record["sensorName"],
+                state=SensorState.READY
+            )
+            sensor.save()
+
+        if record["data"]["payloadType"] == PayloadType.READING:
+            reading = microservice.Reading(
+                sensor=sensor,
+                publishedAt=iso8601.parse_date(record["publishedAt"]),
+                requestedAt=iso8601.parse_date(record["requestedAt"]),
+                data=record["data"]
+            )
+            reading.save()
+
+        sensor["state"] = update_state(
+            sensor["state"], 
+            record["data"]["payloadType"],
+            record["data"]['sensorData']
+        )
+        sensor.save()
+
+
         socketio.emit('change')
-        return {}
+        return record
 
-    @app.route('/downlink', methods=['POST'])
-    def sendMqtt(): # alla ricezione di un post pubblica un messaggio sul topic
+
+    @jwt_required()
+    @app.route('/api/<applicationID>/<sensorID>/commands', methods=['POST'])
+    def sendMqtt(applicationID: str, sensorID: int): # alla ricezione di un post pubblica un messaggio sul topic
         received: dict = json.loads(request.data)
 
-        # application ID ricevuto per identificare le varie app sull'application server
-        applicationID: str = str(received['applicationID'])
-        # devEUI rivuto per identificare i dipositivi nelle varie app
-        devEUI: str = decode_devEUI(received['devEUI'])
+        if received["command"] == PayloadType.CONFIRM:
+            sensor = microservice.Sensor.objects(id=sensorID).first() # type: ignore
 
-        topic: str = 'application/'+applicationID+'/device/'+devEUI+'/command/down'
+            if sensor is not None:
+                sensor["state"] = update_state(
+                    sensor["state"], 
+                    received["command"]
+                )
+                sensor.save()
 
-        start: str = 'U3RhcnQ='
-        stop: str = 'U3RvcA=='
+        topic: str = f'{applicationID}/{sensorID}/commands'
 
-        data: str = json.dumps({
-            'confirmed': False,
-            'fPort': 2,
-            'data': start if received['statoStaker'] == 1 else stop
-        })
+        data: bytes = encode_mqtt_data(received["command"], datetime.now().isoformat())
 
         if not DISABLE_MQTT:
-            mqtt.publish(topic, data.encode())
+            mqtt.publish(topic, data)
 
         print(received)
         return received

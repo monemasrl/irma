@@ -6,7 +6,7 @@ from datetime import datetime
 import pytest
 import json
 from mock_mobius_docker import app as mobius_app
-from microservice_websocket_docker.app import to_mobius_payload
+from microservice_websocket_docker.mobius.utils import to_mobius_payload
 from fixtures.data_fixtures import *
 
 
@@ -23,11 +23,11 @@ class TestFlaskApp:
     def app_client(self, app: Flask) -> FlaskClient:
         return app.test_client()
 
-    def test_publish_data(self, app_client, sensorData_Uplink):
-        payload: dict = to_mobius_payload(sensorData_Uplink)
+    def test_publish_data(self, app_client, node_data):
+        payload: dict = to_mobius_payload(node_data)
         print(payload)
         response: TestResponse = app_client.post(
-            f"/{sensorData_Uplink['applicationID']}", json=payload)
+            f"/{node_data['data']['mobius_sensorPath']}", json=payload)
 
         assert status.is_success(response.status_code), \
         "Invalid response code from server when submitting valid payload"
@@ -37,19 +37,19 @@ class TestFlaskApp:
         assert status.is_client_error(response.status_code), \
         "Invalid response code from server when submitting on invalid route"
 
-    def test_db_consistency(self, app_client, sensorData_Uplink: dict):
+    def test_db_consistency(self, app_client, node_data: dict):
         """
         This test is meant to check if data stored
         as Reading in database is consistent
         """
-        payload: dict = to_mobius_payload(sensorData_Uplink)
+        payload: dict = to_mobius_payload(node_data)
         response: TestResponse = app_client.post(
-            f"/{sensorData_Uplink['applicationID']}", json=payload)
+            f"/{node_data['data']['mobius_sensorPath']}", json=payload)
 
         assert status.is_success(response.status_code), \
         "Invalid response code from server when submitting valid payload"
 
-        data = app_client.get(f"/{sensorData_Uplink['applicationID']}").data
+        data = app_client.get(f"/{node_data['data']['mobius_sensorPath']}").data
         data_dict: dict = json.loads(data.decode())
 
         print(data_dict)
@@ -59,16 +59,16 @@ class TestFlaskApp:
         assert len(data_dict["m2m:rsp"]["m2m:cin"]) > 0, \
         "Reading doesn't get saved on the database"
 
-    def test_db_query_limits(self, app_client, sensorData_Uplink: dict):
+    def test_db_query_limits(self, app_client, node_data: dict):
         reading_timestamps = [datetime(2022, 7, 10, 12, 45, x) for x in [10, 20, 30, 40, 50]]
         reading_timestamps_iso = [x.isoformat() for x in reading_timestamps]
 
         for time in reading_timestamps_iso:
-            sensorData_Uplink['publishedAt'] = time
-            payload: dict = to_mobius_payload(sensorData_Uplink)
+            node_data['publishedAt'] = time
+            payload: dict = to_mobius_payload(node_data)
 
             response: TestResponse = app_client.post(
-                f"/{sensorData_Uplink['applicationID']}", json=payload)
+                f"/{node_data['data']['mobius_sensorPath']}", json=payload)
 
             assert status.is_success(response.status_code), \
             "Invalid response code from server when submitting valid payload"
@@ -76,7 +76,7 @@ class TestFlaskApp:
         inf_limit: str = reading_timestamps[0].strftime("%Y%m%dT%H%M%S")
         sup_limit: str = reading_timestamps[-1].strftime("%Y%m%dT%H%M%S")
         response = app_client.get(
-            f"/{sensorData_Uplink['applicationID']}?crb={sup_limit}&cra={inf_limit}"
+            f"/{node_data['data']['mobius_sensorPath']}?crb={sup_limit}&cra={inf_limit}"
         ) 
 
         assert status.is_success(response.status_code), \
@@ -90,7 +90,7 @@ class TestFlaskApp:
         f"Invalid response from server, expected 3 results but got {len(decoded_response['m2m:rsp']['m2m:cin'])}"
 
         response = app_client.get(
-            f"/{sensorData_Uplink['applicationID']}?crb={sup_limit}&cra={inf_limit}&lim=2"
+            f"/{node_data['data']['mobius_sensorPath']}?crb={sup_limit}&cra={inf_limit}&lim=2"
         ) 
 
         assert status.is_success(response.status_code), \
@@ -103,8 +103,8 @@ class TestFlaskApp:
         assert len(decoded_response["m2m:rsp"]["m2m:cin"]) == 2, \
         f"Invalid response from server, expected 2 results but got {len(decoded_response['m2m:rsp']['m2m:cin'])}"
 
-    def test_db_query_last(self, app_client, sensorData_Uplink: dict):
-        response: TestResponse = app_client.get(f"/{sensorData_Uplink['applicationID']}")
+    def test_db_query_last(self, app_client, node_data: dict):
+        response: TestResponse = app_client.get(f"/{node_data['data']['mobius_sensorPath']}")
         decoded_response: dict = json.loads(response.data)
 
         readings = [x for x in decoded_response["m2m:rsp"]["m2m:cin"]]
@@ -112,7 +112,7 @@ class TestFlaskApp:
         readings.sort(key=lambda x: x["con"]["metadata"]["readingTimestamp"], reverse=True)
         last_reading: dict = readings[0]
 
-        response = app_client.get(f"/{sensorData_Uplink['applicationID']}/la")
+        response = app_client.get(f"/{node_data['data']['mobius_sensorPath']}/la")
 
         assert status.is_success(response.status_code), \
         "Invalid response code from server when querying last sensor reading"

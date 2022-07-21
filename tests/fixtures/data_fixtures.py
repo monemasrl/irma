@@ -169,21 +169,20 @@ def sensorData_Uplink(devEUI, applicationID, sensorId, isoTimestamp, latitude, l
     }
 
 
+@pytest.fixture()
 def node_data() -> dict:
     return {
+        "sensorID": 1,
         "applicationID": "foo",
         "organizationID": "bar",
         # "deviceName": "irma-sensor",
-        # "devEUI": "baz",
-        # "latitude": 34,
-        # "longitude": 45,
-        # "altitude": 0,
         "data": {
             "state": 3,
             "sensorData": 4.5,
-            "sensorId": "foo",
-            "sensorPath": "bar",
+            "mobius_sensorId": "foo",
+            "mobius_sensorPath": "bar",
         },
         "publishedAt": "time",
+        "payloadType": 1
     }
 

@@ -7,7 +7,10 @@ from enum import IntEnum, auto
 import requests
 import paho.mqtt.client as mqtt
 import yaml
+from os import environ
 from can.interface import Bus
+
+BYPASS_CAN = bool(environ.get("BYPASS_CAN", 0))
 
 config: dict = {}
 
@@ -16,59 +19,73 @@ with open("config.yaml", "r") as file:
     config = loaded_yaml["settings"]
 
 
-class RecordingState(IntEnum):
-    NOT_RECORDING = 0
-    BEGIN_REC = auto()
-    END_REC = auto()
-
-
-class Command(IntEnum):
-    START_RECORDING = 0
+class PayloadType(IntEnum):
+    READING=0
+    START_REC=auto()
+    END_REC=auto()
+    KEEP_ALIVE=auto()
+    CONFIRM=auto()
 
 
 """
 encoded data
-| 1 byte state | 4 byte data | 1 byte sensorID | 10 byte sensorId | 10 byte sensorPath |
+| 1 byte payload_type | 4 byte data | 10 byte sensorId | 10 byte sensorPath |
 """
 
-def encode_data(state: int, data: int,
-                sensorID: int, mobius_sensorId: str,
+def encode_data(payload_type: int, data: int,
+                mobius_sensorId: str,
                 mobius_sensorPath: str) -> str:
 
     bytes = b''
-    bytes += state.to_bytes(1, 'big')
+    bytes += payload_type.to_bytes(1, 'big')
     bytes += data.to_bytes(4, 'big')
-    bytes += sensorID.to_bytes(1, 'big')
     bytes += mobius_sensorId.ljust(10).encode()
     bytes += mobius_sensorPath.ljust(10).encode()
 
     return base64.b64encode(bytes).decode()
 
 
-def send_data(data: int, recording_state: RecordingState):
+def decode_mqtt_data(encoded_string: str) -> dict:
+    encoded_data = base64.b64decode(encoded_string)
+    return {
+        "command": int.from_bytes(encoded_data[:1], 'big'),
+        "commandTimestamp": encoded_data[1:].decode()
+    }
+
+
+def send_data(data: int, payload_type: PayloadType,
+              commandTimestamp: str = ""):
     payload: dict = {
+        "sensorID": config["node_info"]["sensorID"],
+        "sensorName": config["node_info"]["sensorName"],
         "applicationID": config["node_info"]["applicationID"],
         "organizationID": config["node_info"]["organizationID"],
-        "data": encode_data(recording_state.value,
+        "data": encode_data(payload_type.value,
                             data,
-                            config["node_info"]["sensorID"],
                             config["mobius"]["sensorId"],
                             config["mobius"]["sensorPath"]),
-        "publishedAt": datetime.now().isoformat()
+        "publishedAt": datetime.now().isoformat(),
+        "requestedAt": commandTimestamp,
     }
 
     host = config["microservice"]["url"]
     port = config["microservice"]["port"]
     api_key = config["microservice"]["api_key"]
-    route = config["node_info"]["sensorPath"]
+    sensorID = config["node_info"]["sensorID"]
+    applicationID = config["node_info"]["applicationID"]
 
     requests.post(
-        url=f'{host}:{port}/{route}',
-        data=payload,
+        url=f'{host}:{port}/api/{applicationID}/{sensorID}/publish',
+        json=payload,
         headers={
-            "Authorization": f'Bearer {api_key}'
+            "Authorization": f'Bearer {api_key}',
+            "Content-Type": "application/json"
         }
     )
+
+
+def send_keep_alive():
+    send_data(0, PayloadType.KEEP_ALIVE)
 
 
 def init_can(bustype, channel, bitrate):
@@ -78,7 +95,12 @@ def init_can(bustype, channel, bitrate):
     print(f"Can type '{bustype}', on channel '{channel}' @{bitrate}")
 
 
-def read_and_send():
+def read_and_send(commandTimestamp: str = ""):
+    if BYPASS_CAN:
+        data = int(input("Inserisci un dato: "))
+        send_data(data, PayloadType.READING, commandTimestamp)
+        return
+
     global bus
 
     msg: Union[None, Message] = None
@@ -89,7 +111,7 @@ def read_and_send():
     data: int = int.from_bytes(msg.data, byteorder='big', signed=False)
     print(f"CAN> {data}")
 
-    send_data(data, RecordingState.NOT_RECORDING)
+    send_data(data, PayloadType.READING, commandTimestamp)
 
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -99,19 +121,23 @@ def on_connect(client, userdata, flags, rc):
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     # TODO: riguardare
-    client.subscribe(f"{config['node_info']['sensorPath']}/rec")
+    applicationID = config["node_info"]["applicationID"]
+    sensorID = config["node_info"]["sensorID"]
+    client.subscribe(f"{applicationID}/{sensorID}/commands")
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg: mqtt.MQTTMessage):
     print(msg.topic+" -> "+str(msg.payload))
 
-    decoded_num = int.from_bytes(msg.payload, 'big')
+    decoded_data = decode_mqtt_data(msg.payload.decode())
 
-    if decoded_num == Command.START_RECORDING:
+    command = decoded_data["command"]
+
+    if command == PayloadType.START_REC:
 
         print("Received MQTT message, sending rec start...")
 
-        send_data(0, RecordingState.BEGIN_REC)
+        send_data(0, PayloadType.START_REC)
 
         print("Sleeping for 10 seconds...")
 
@@ -123,18 +149,22 @@ def on_message(client, userdata, msg: mqtt.MQTTMessage):
 
         print("Sending readings...")
 
-        read_and_send()
+        read_and_send(decoded_data["commandTimestamp"])
+        read_and_send(decoded_data["commandTimestamp"])
+        read_and_send(decoded_data["commandTimestamp"])
+        read_and_send(decoded_data["commandTimestamp"])
 
         print("Sending rec end...")
 
-        send_data(0, RecordingState.END_REC)
+        send_data(0, PayloadType.END_REC)
 
 
 if __name__ == "__main__":
 
-    init_can('socketcan', 'can0', 12500)
+    if not BYPASS_CAN:
+        init_can('socketcan', 'can0', 12500)
 
-    read_and_send()
+    send_keep_alive()
 
     client = mqtt.Client()
     client.on_connect = on_connect

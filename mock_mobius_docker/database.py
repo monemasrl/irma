@@ -14,8 +14,8 @@ class Reading(Document):
     sensorPath = StringField(max_length=100, required=True)
     sensorId = StringField(max_length=100, required=True)
     readingTimestamp = StringField(max_length=100, required=True)
-    latitude = FloatField(required=True)
-    longitude = FloatField(required=True)
+    latitude = FloatField()
+    longitude = FloatField()
     sensorData = DictField(required=True)
 
     def to_json(self) -> dict:
@@ -37,11 +37,10 @@ class Reading(Document):
     @classmethod
     def from_json(cls, s: str) -> Reading:
         s_dict = json.loads(s)
+        print(s_dict)
         new_p = Reading()
         new_p.sensorId = s_dict["m2m:cin"]["con"]["metadata"]["sensorId"]
         new_p.readingTimestamp = s_dict["m2m:cin"]["con"]["metadata"]["readingTimestamp"]
-        new_p.latitude = s_dict["m2m:cin"]["con"]["metadata"]["latitude"]
-        new_p.longitude = s_dict["m2m:cin"]["con"]["metadata"]["longitude"]
         new_p.sensorData = s_dict["m2m:cin"]["sensorData"]
 
         return new_p
