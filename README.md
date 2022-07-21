@@ -5,30 +5,50 @@
 Rete di comunicazione a lunga gittata tramite protocollo LoRa per la trasmissione di dati raccolti da sensori verso il server che raccoglie e elabora i dati ritrasmettendoli tramite un web-service a una dashboard.
 
 ### Struttura progetto
+
+Versione che implementa **LoRaWAN**:
+
 ```mermaid
 graph TD;
 
 chirpstack[chirpstack-docker]
-msw[microservice_websocket.py]
-mm[mock_mobius]
-db[MongoDB]
+msw[microservice_websocket_docker]
+mm[mock_mobius_docker]
 irma-ui[Irma UI]
 
 gateway[Gateway LoRaWAN]
 nodo[Nodo]
 sensori[Sensori]
 
-chirpstack -- POST /publish 5000 --> msw
-msw -- POST / 5002 --> mm
-msw -- GET / 5002 --> mm
-mm <--> db
+chirpstack -- POST 5000 --> msw
+msw -- POST 5002 --> mm
 irma-ui <-- websocket 5000 --> msw
-irma-ui -- POST / 5000 --> msw
-irma-ui -- POST /downlink 5000 --> msw
-irma-ui -- HTTP 8080 --> chirpstack
+irma-ui -- POST 5000 --> msw
 msw -- MQTT 1883 --> chirpstack
 gateway -- UDP 1700 --> chirpstack
 nodo -- LoRa --> gateway
+sensori -- CAN --> nodo
+```
+
+---
+
+Versione **senza LoRaWAN**:
+
+```mermaid
+graph TD;
+
+msw[microservice_websocket_docker]
+mm[mock_mobius_docker]
+irma-ui[Irma UI]
+
+nodo[Node]
+sensori[Sensori]
+
+nodo -- POST  5000 --> msw
+msw -- POST 5002 --> mm
+irma-ui <-- websocket 5000 --> msw
+irma-ui -- POST 5000 --> msw
+msw -- MQTT 1883 --> nodo
 sensori -- CAN --> nodo
 ```
 
@@ -50,9 +70,39 @@ Per fermare i container (e smontare i volumi):
     
 Il [Chirpstack Application Server](https://www.chirpstack.io/application-server/) è raggiungibile mediante la porta 8080 sull'host. Le credenziali predefinite per accedere alla dashboard sono username: `admin` e password: `admin`.
 
-### Encode e decode del payload
+### Encode e decode dei dati
 
-All'interno della cartella [chirpstack-docker](chirpstack-docker) è presente il file [encode_decode.js](chirpstack-docker/encode_decode.js) che contiene il codice da integrare nella sezione ** dell'interfaccia web dell'Application Server.
+Per agevolare la trasmissione, i dati vengono codificati in **stringhe base64**. Una volta convertita nuovamente in bytes, la struttura è la seguente:
+
+    |payload_type: 1 byte|sensorData: 4 byte|mobius_sensorId: 10 byte|mobius_sensorPath: 10 byte| 
+
+- `payload_type`: numoro **intero** che rappresenta il **tipo di messaggio** che viene inviato. Fare riferimento al capitolo sugli **Enum**.
+- `sensorData`: numero **intero**, **big endian** che rappresenta la **lettura** del sensore.
+- `mobius_sensorId`: **stringa** di 10 caratteri, padding a **destra**, richiesta per l'inserimento della lettura sulla piattaforma **Mobius**.
+- `mobius_sensorPath`: **stringa** di 10 caratteri, padding a **destra**, richiesta per l'inserimento della lettura sulla piattaforma **Mobius**.
+
+Esempio di **payload base64**: `AQAAAAdtb2JpdXNJZG1vYml1c1BhdGg=`
+
+Lo stesso payload **decodificato**:
+
+```json
+{
+  "payloadType": 1,
+  "sensorData": 7,
+  "mobius_sensorId": "mobiusId",
+  "mobius_sensorPath": "mobiusPath"
+}
+```
+
+
+### Encode e decode dei payload MQTT
+
+Come per il paragrafo precedente, la trasmissione avviene con **strighe base64**. Una volta convertita nuovamente in bytes, la struttura è la seguente:
+
+    |command: 1 byte|commandTimestamp: x bytes|
+
+- `command`: numero **intero** che rappresenta il tipo di comando inviato. Fare riferimento al capitolo sugli **Enum**.
+- `commandTimestamp`: **stringa** contenente un **timestamp ISO8601**, per raggruppare le letture relative ad un singolo comando di **start recording**.
 
 ### Struttura interna [docker-compose.yaml](docker-compose.yaml) (semplificata)
 
@@ -80,6 +130,49 @@ cgb -- UDP 1700 --> out
 ```
 
 Per la versione [completa](assets/schema_docker_compose_completo.md).
+
+## GLI ENUM
+
+Per **ridurre** il **numero di dati** trasmessi, ma al contempo **mantenere la leggebilità**, sono stati creati diversi **IntEnum** per identificare diverse proprietà.
+
+### PayloadType
+
+Identifica i messaggi inviati.
+
+| Nome       | Valore |
+|------------|--------|
+| READING    |   0    |
+| START_REC  |   1    |
+| END_REC    |   2    |
+| KEEP_ALIVE |   3    |
+| CONFIRM    |   4    |
+
+### SensorState
+
+Rappresenta lo stato che può essere assunto dai vari sensori.
+
+| Nome          | Valore |
+|---------------|--------|
+| ERROR         |   0    |
+| READY         |   1    |
+| RUNNING       |   2    |
+| ALERT_READY   |   3    |
+| ALERT_RUNNING |   4    |
+
+Il **cambiamento di stato** varia secondo il seguente schema:
+
+```mermaid
+stateDiagram-v2
+  [*] --> READY
+  ERROR --> READY: KEEP_ALIVE
+  READY --> ERROR: TIMEOUT
+  READY --> RUNNING: START_REC
+  RUNNING --> READY: END_REC
+  RUNNING --> ALERT_RUNNING: dato >= MAX_TRESHOLD
+  ALERT_RUNNING --> RUNNING: CONFIRM
+  ALERT_RUNNING --> ALERT_READY: END_REC
+  ALERT_READY --> READY: CONFIRM
+```
 
 ## GATEWAY
 
@@ -123,7 +216,7 @@ Per aggiungere la lettura dei dati dai sensori è stato utilizzato il protocollo
 
 ## NODO
 
-Sul nodo, nel nostro caso un Rapsberry PI 2, gira uno script che si occupa di **gestire** le **letture** dei sensori e i comandi di **REC**.
+Sul nodo, nel nostro caso un Rapsberry PI 2, gira uno script che si occupa di **gestire** le **letture** dei sensori e i **comandi**.
 
 Per maggiori informazioni consultare la [documentazione](./node/node.md).
 

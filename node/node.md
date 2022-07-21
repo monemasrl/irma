@@ -9,8 +9,8 @@ flowchart LR
   msw[microservice_websocket]
 
   sensori <-- CAN --> node
-  node -- POST /&ltSENSOR_PATH&gt --> msw
-  msw -- MQTT /&ltSENSOR_PATH&gt/rec --> node
+  node -- POST --> msw
+  msw -- MQTT --> node
 ```
 
 ## Lo script
@@ -23,9 +23,11 @@ Questo script si occupa di gestire la lettura dei sensori e gestire lo stato di 
 flowchart TD
   A[\Start/] --> B[Caricamento configurazione]
   B --> C[Inizializzazione CAN e MQTT]
-  C --> D[Invio dati]
-  D --> E[/Attendo pubblicazione sul topic /&ltSENSOR_PATH&gt/rec/]
-  E --> F[Invio inizio registrazione]
+  C --> D[Invio KEEP_ALIVE]
+  D --> E[/Attendo pubblicazione sul topic /&ltAPPLICATION_ID&gt/&ltSENSOR_ID&gt/commands/]
+  E --> L{Ho ricevuto<br />START_REC?}
+  L -- SI --> F[Invio inizio registrazione]
+  L -- NO --> E
   F --> G[Leggo dati]
   G --> H[Invio dati]
   H --> I[Invio fine registrazione]
