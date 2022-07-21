@@ -394,8 +394,13 @@ def create_app():
 
 
     @jwt_required()
-    @app.route('/api/applications/<organizationID>')
-    def get_applications(organizationID: str):
+    @app.route('/api/applications/')
+    def get_applications():
+        organizationID: str = request.args.get('organizationID', '')
+
+        if organizationID == "":
+            return { 'message': 'Bad Request' }, 400
+
         applications = microservice.Application.objects(organization=organizationID) # type: ignore
 
         if len(applications) == 0:
@@ -404,8 +409,13 @@ def create_app():
         return jsonify(applications=applications)
 
     @jwt_required()
-    @app.route('/api/sensors/<applicationID>')
-    def get_sensors(applicationID: str):
+    @app.route('/api/sensors/')
+    def get_sensors():
+        applicationID: str = request.args.get('applicationID', '')
+
+        if applicationID == "":
+            return { 'message': 'Bad Request' }, 400
+
         sensors = microservice.Sensor.objects(application=applicationID) # type: ignore
 
         if len(sensors) == 0:
