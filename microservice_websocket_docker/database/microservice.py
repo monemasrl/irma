@@ -43,4 +43,5 @@ class Sensor(Document):
 class Reading(Document):
     sensor = ReferenceField(Sensor)  
     publishedAt = DateTimeField()
+    requestedAt = DateTimeField()
     data = DictField()

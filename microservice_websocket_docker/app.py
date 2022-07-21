@@ -7,7 +7,7 @@ from flask_mongoengine import MongoEngine
 from flask_socketio import SocketIO
 from flask_security import Security, MongoEngineUserDatastore, \
     UserMixin, RoleMixin, login_required, current_user, verify_password, login_user
-from enum import Enum, auto
+from enum import IntEnum, auto
 from os import environ
 
 from datetime import datetime
@@ -23,8 +23,6 @@ from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
-
-rec=""
 
 # valore teorico della soglia di pericolo del sensore
 MAX_TRESHOLD = int(environ.get("MAX_TRESHOLD", 20))
@@ -83,7 +81,7 @@ def decode_data(encoded_data: str) -> dict:
     raw_bytes = base64.b64decode(encoded_data)
 
     return {
-        "state": int.from_bytes(raw_bytes[:1], 'big'),
+        "payloadType": int.from_bytes(raw_bytes[:1], 'big'),
         "data": int.from_bytes(raw_bytes[1:5], 'big'),
         "mobius_sensorId": raw_bytes[5:16].decode(),
         "mobius_sensorPath": raw_bytes[16:].decode()
@@ -132,19 +130,26 @@ def to_irma_ui_data(
     }
 
 
-class State(Enum):
-    OFF=auto()
+class SensorState(IntEnum):
+    OFF=0
     OK=auto()
     REC=auto()
     ALERT=auto()
 
 
-def get_state(dato: int) -> State:
+class PayloadType(IntEnum):
+    READING=0
+    START_REC=auto()
+    END_REC=auto()
+    KEEP_ALIVE=auto()
+
+
+def get_state(dato: int) -> SensorState:
     if dato == 0:
-        return State.OFF
+        return SensorState.OFF
     elif dato < MAX_TRESHOLD:
-        return State.OK
-    return State.ALERT
+        return SensorState.OK
+    return SensorState.ALERT
 
 
 def get_data(sensorID: str) -> dict:
@@ -157,13 +162,30 @@ def get_data(sensorID: str) -> dict:
     total_average: float = 0.0
     monthly_average: float = 0.0
 
-    state: State = State.OFF
     #salvataggio del valore attuale del mese per il confronto
     current_month: int = datetime.now().month 
 
-    collect = Reading.objects(sensor=sensorID) # type: ignore
+    # TODO: better return
+    sensor = Sensor.objects(id=sensorID).first() # type: ignore
+
+    if sensor is None:
+        return {}
+
+    state: SensorState = sensor["state"]
+
+    collect = Reading.objects(sensor=sensorID).order_by("-publishedAt") # type: ignore
+
+    # TODO: better return
+    if len(collect) == 0:
+        return {}
+
+    requestedAt: SensorState = collect[0]["requestedAt"]
+    sensorName: str = collect[0]["sensorName"]
 
     for x in collect:
+        if x["requestedAt"] == requestedAt and not state in [SensorState.REC, SensorState.ALERT]:
+            state = x["state"]
+
         sensor_data: int = x['data']
         read_time: datetime = x['publishedAt']
         read_month: int = read_time.month
@@ -179,13 +201,6 @@ def get_data(sensorID: str) -> dict:
 
         if monthly_count != 0:
             monthly_average = monthly_sum / monthly_count
-
-    if len(collect) > 0:
-        sensorName: str = collect[-1]['sensor']['sensorName']
-        state: int = collect[-1]['sensor']['state']
-    else:
-        sensorName: str = ""
-        state: int = 0
 
     send: dict = to_irma_ui_data(
         sensorID=sensorID,
@@ -203,7 +218,7 @@ def get_data(sensorID: str) -> dict:
 
 
 def create_socketio(app: Flask):
-    # TODO: remove wildcard
+    # TODO: remove wildcard ?
     socketio: SocketIO = SocketIO(app, cors_allowed_origins="*")
 
     @socketio.on('connect')
@@ -219,7 +234,7 @@ def create_socketio(app: Flask):
         print('Changed')
 
         if cached_sensor_paths:
-            data: list[dict] = [get_data(x, rec) for x in cached_sensor_paths]
+            data: list[dict] = [get_data(x) for x in cached_sensor_paths]
             socketio.send(jsonify(data=data))
         else:
             socketio.send(jsonify({}))
@@ -406,13 +421,21 @@ def create_app():
             )
             sensor.save()
 
+        if record["data"]["payloadType"] == PayloadType.READING:
+            reading = microservice.Reading(
+                sensor=sensor["_id"],
+                publishedAt=iso8601.parse_date(record["publishedAt"]),
+                requestedAt=iso8601.parse_date(record["requestedAt"]),
+                data=record["data"]
+            )
+            reading.save()
 
-        reading = microservice.Reading(
-            sensor=sensor["_id"],
-            publishedAt=iso8601.parse_date(record["publishedAt"]),
-            data=record["data"]
-        )
-        reading.save()
+        elif record["data"]["payloadType"] == PayloadType.START_REC:
+            # TODO: update sensor state
+            pass
+        elif record["data"]["payloadType"] == PayloadType.END_REC:
+            # TODO: update sensor state
+            pass
 
 
         socketio.emit('change')

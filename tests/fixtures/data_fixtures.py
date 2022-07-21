@@ -182,5 +182,6 @@ def node_data() -> dict:
             "mobius_sensorPath": "bar",
         },
         "publishedAt": "time",
+        "payloadType": 1
     }
 

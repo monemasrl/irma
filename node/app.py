@@ -16,10 +16,11 @@ with open("config.yaml", "r") as file:
     config = loaded_yaml["settings"]
 
 
-class RecordingState(IntEnum):
-    NOT_RECORDING = 0
-    BEGIN_REC = auto()
-    END_REC = auto()
+class PayloadType(IntEnum):
+    READING=0
+    START_REC=auto()
+    END_REC=auto()
+    KEEP_ALIVE=auto()
 
 
 class Command(IntEnum):
@@ -28,15 +29,15 @@ class Command(IntEnum):
 
 """
 encoded data
-| 1 byte state | 4 byte data | 10 byte sensorId | 10 byte sensorPath |
+| 1 byte payload_type | 4 byte data | 10 byte sensorId | 10 byte sensorPath |
 """
 
-def encode_data(state: int, data: int,
+def encode_data(payload_type: int, data: int,
                 mobius_sensorId: str,
                 mobius_sensorPath: str) -> str:
 
     bytes = b''
-    bytes += state.to_bytes(1, 'big')
+    bytes += payload_type.to_bytes(1, 'big')
     bytes += data.to_bytes(4, 'big')
     bytes += mobius_sensorId.ljust(10).encode()
     bytes += mobius_sensorPath.ljust(10).encode()
@@ -51,18 +52,19 @@ def decode_mqtt_data(encoded_data: bytes) -> dict:
     }
 
 
-def send_data(data: int, recording_state: RecordingState, commandTimestamp: str = ""):
+def send_data(data: int, payload_type: PayloadType,
+              commandTimestamp: str = ""):
     payload: dict = {
         "sensorID": config["node_info"]["sensorID"],
         "sensorName": config["node_info"]["sensorName"],
         "applicationID": config["node_info"]["applicationID"],
         "organizationID": config["node_info"]["organizationID"],
-        "data": encode_data(recording_state.value,
+        "data": encode_data(payload_type.value,
                             data,
                             config["mobius"]["sensorId"],
                             config["mobius"]["sensorPath"]),
         "publishedAt": datetime.now().isoformat(),
-        "requestedAt": commandTimestamp
+        "requestedAt": commandTimestamp,
     }
 
     host = config["microservice"]["url"]
@@ -98,7 +100,7 @@ def read_and_send(commandTimestamp: str = ""):
     data: int = int.from_bytes(msg.data, byteorder='big', signed=False)
     print(f"CAN> {data}")
 
-    send_data(data, RecordingState.NOT_RECORDING, commandTimestamp)
+    send_data(data, PayloadType.READING, commandTimestamp)
 
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -124,7 +126,7 @@ def on_message(client, userdata, msg: mqtt.MQTTMessage):
 
         print("Received MQTT message, sending rec start...")
 
-        send_data(0, RecordingState.BEGIN_REC)
+        send_data(0, PayloadType.START_REC)
 
         print("Sleeping for 10 seconds...")
 
@@ -143,7 +145,7 @@ def on_message(client, userdata, msg: mqtt.MQTTMessage):
 
         print("Sending rec end...")
 
-        send_data(0, RecordingState.END_REC)
+        send_data(0, PayloadType.END_REC)
 
 
 if __name__ == "__main__":
