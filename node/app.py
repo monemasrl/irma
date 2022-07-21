@@ -21,10 +21,7 @@ class PayloadType(IntEnum):
     START_REC=auto()
     END_REC=auto()
     KEEP_ALIVE=auto()
-
-
-class Command(IntEnum):
-    START_RECORDING = 0
+    CONFIRM=auto()
 
 
 """
@@ -122,7 +119,7 @@ def on_message(client, userdata, msg: mqtt.MQTTMessage):
 
     command = decoded_data["command"]
 
-    if command == Command.START_RECORDING:
+    if command == PayloadType.START_REC:
 
         print("Received MQTT message, sending rec start...")
 

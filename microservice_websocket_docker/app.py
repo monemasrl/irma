@@ -131,10 +131,11 @@ def to_irma_ui_data(
 
 
 class SensorState(IntEnum):
-    OFF=0
-    OK=auto()
-    REC=auto()
-    ALERT=auto()
+    ERROR=0
+    READY=auto()
+    RUNNING=auto()
+    ALERT_READY=auto()
+    ALERT_RUNNING=auto()
 
 
 class PayloadType(IntEnum):
@@ -142,14 +143,36 @@ class PayloadType(IntEnum):
     START_REC=auto()
     END_REC=auto()
     KEEP_ALIVE=auto()
+    CONFIRM=auto()
 
 
-def get_state(dato: int) -> SensorState:
-    if dato == 0:
-        return SensorState.OFF
-    elif dato < MAX_TRESHOLD:
-        return SensorState.OK
-    return SensorState.ALERT
+def update_state(current_state: SensorState, typ: PayloadType, dato: int = 0):
+    if current_state == SensorState.ERROR:
+        if typ == PayloadType.KEEP_ALIVE:
+            return SensorState.READY
+
+    elif current_state == SensorState.READY:
+        if typ == PayloadType.START_REC:
+            return SensorState.RUNNING
+
+    elif current_state == SensorState.RUNNING:
+        if typ == PayloadType.READING:
+            if dato >= MAX_TRESHOLD:
+                return SensorState.ALERT_RUNNING
+        elif typ == PayloadType.END_REC:
+            return SensorState.READY
+
+    elif current_state == SensorState.ALERT_RUNNING:
+        if typ == PayloadType.CONFIRM:
+            return SensorState.RUNNING
+        elif typ == PayloadType.END_REC:
+            return SensorState.ALERT_READY
+
+    elif current_state == SensorState.ALERT_READY:
+        if typ == PayloadType.CONFIRM:
+            return SensorState.READY
+    else:
+        return current_state
 
 
 def get_data(sensorID: str) -> dict:
@@ -172,6 +195,7 @@ def get_data(sensorID: str) -> dict:
         return {}
 
     state: SensorState = sensor["state"]
+    sensorName: str = sensor["sensorName"]
 
     collect = Reading.objects(sensor=sensorID).order_by("-publishedAt") # type: ignore
 
@@ -179,14 +203,8 @@ def get_data(sensorID: str) -> dict:
     if len(collect) == 0:
         return {}
 
-    requestedAt: SensorState = collect[0]["requestedAt"]
-    sensorName: str = collect[0]["sensorName"]
-
     for x in collect:
-        if x["requestedAt"] == requestedAt and not state in [SensorState.REC, SensorState.ALERT]:
-            state = x["state"]
-
-        sensor_data: int = x['data']
+        sensor_data: int = x['data']['sensorData']
         read_time: datetime = x['publishedAt']
         read_month: int = read_time.month
 
@@ -411,31 +429,32 @@ def create_app():
         sensor =  microservice.Sensor.objects(sensorID=sensorID).first() # type: ignore
         application = microservice.Application.objects(_id=applicationID).first() # type: ignore
 
-        if sensor is None:
-            sensor = microservice.Sensor(
-                sensorID=record["sensorID"],
-                application=application["_id"],
-                organization=application["organization"],
-                sensorName=record["sensorName"],
-                state=record["state"]
-            )
-            sensor.save()
+        if sensor is None or application is None:
+            return { 'message': 'Not Found' }, 404
+            # sensor = microservice.Sensor(
+            #     sensorID=record["sensorID"],
+            #     application=application["_id"],
+            #     organization=application["organization"],
+            #     sensorName=record["sensorName"],
+            #     state=update_state()
+            # )
+            # sensor.save()
 
         if record["data"]["payloadType"] == PayloadType.READING:
             reading = microservice.Reading(
                 sensor=sensor["_id"],
                 publishedAt=iso8601.parse_date(record["publishedAt"]),
                 requestedAt=iso8601.parse_date(record["requestedAt"]),
-                data=record["data"]
+                data=record["data"]['sensorData']
             )
             reading.save()
 
-        elif record["data"]["payloadType"] == PayloadType.START_REC:
-            # TODO: update sensor state
-            pass
-        elif record["data"]["payloadType"] == PayloadType.END_REC:
-            # TODO: update sensor state
-            pass
+        sensor["state"] = update_state(
+            sensor["state"], 
+            record["data"]["payloadType"],
+            record["data"]['sensorData']
+        )
+        sensor.save()
 
 
         socketio.emit('change')
@@ -446,6 +465,16 @@ def create_app():
     @app.route('/api/<applicationID>/<sensorID>/commands', methods=['POST'])
     def sendMqtt(applicationID: str, sensorID: int): # alla ricezione di un post pubblica un messaggio sul topic
         received: dict = json.loads(request.data)
+
+        if received["command"] == PayloadType.CONFIRM:
+            sensor = Sensor.objects(id=sensorID).first() # type: ignore
+
+            if sensor is not None:
+                sensor["state"] = update_state(
+                    sensor["state"], 
+                    received["command"]
+                )
+                sensor.save()
 
         topic: str = f'{applicationID}/{sensorID}/commands'
 
