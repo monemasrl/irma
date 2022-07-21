@@ -82,7 +82,7 @@ def decode_data(encoded_data: str) -> dict:
 
     return {
         "payloadType": int.from_bytes(raw_bytes[:1], 'big'),
-        "data": int.from_bytes(raw_bytes[1:5], 'big'),
+        "sensorData": int.from_bytes(raw_bytes[1:5], 'big'),
         "mobius_sensorId": raw_bytes[5:16].decode(),
         "mobius_sensorPath": raw_bytes[16:].decode()
     }
@@ -417,7 +417,14 @@ def create_app():
     def create_record(applicationID: str, sensorID: int):
         # TODO: controllo header token
 
-        record: dict = json.loads(request.data)
+        app.logger.info(f'{request=}')
+        app.logger.info(f'{vars(request)=}')
+
+        data = request.data.decode()
+        # record: dict = json.loads(request.data.decode())
+
+        app.logger.info(f'{data=}')
+        record: dict = json.loads(data)
 
         record["data"] = decode_data(record["data"])
 
@@ -427,25 +434,29 @@ def create_app():
             pass 
             
         if MOBIUS_URL != "":
+            app.logger.info(f'{record=}')
             utils.insert(record)
 
-        sensor =  microservice.Sensor.objects(sensorID=sensorID).first() # type: ignore
-        application = microservice.Application.objects(_id=applicationID).first() # type: ignore
+        application = microservice.Application.objects(id=applicationID).first() # type: ignore
 
-        if sensor is None or application is None:
+        if application is None:
             return { 'message': 'Not Found' }, 404
-            # sensor = microservice.Sensor(
-            #     sensorID=record["sensorID"],
-            #     application=application["_id"],
-            #     organization=application["organization"],
-            #     sensorName=record["sensorName"],
-            #     state=update_state()
-            # )
-            # sensor.save()
+
+        sensor =  microservice.Sensor.objects(sensorID=sensorID).first() # type: ignore
+
+        if sensor is None:
+            sensor = microservice.Sensor(
+                sensorID=record["sensorID"],
+                application=application,
+                organization=application["organization"],
+                sensorName=record["sensorName"],
+                state=SensorState.READY
+            )
+            sensor.save()
 
         if record["data"]["payloadType"] == PayloadType.READING:
             reading = microservice.Reading(
-                sensor=sensor["_id"],
+                sensor=sensor,
                 publishedAt=iso8601.parse_date(record["publishedAt"]),
                 requestedAt=iso8601.parse_date(record["requestedAt"]),
                 data=record["data"]['sensorData']
