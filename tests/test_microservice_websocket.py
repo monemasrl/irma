@@ -5,7 +5,6 @@ from werkzeug.test import TestResponse
 from mock import patch
 from microservice_websocket_docker import app as websocket_app
 from microservice_websocket_docker.app import SensorState, PayloadType, MAX_TRESHOLD
-from microservice_websocket_docker.mobius.utils import to_mobius_payload
 import pytest
 import json
 from fixtures.data_fixtures import *
@@ -160,6 +159,7 @@ def test_to_irma_ui():
     dato1 = 0.0
     dato2 = 0.0
     dato3 = 0
+    unconfirmedAlertIDs = [1, 2, 3, 4]
 
     expected_value = {
         "sensorID": sensorID,
@@ -178,7 +178,8 @@ def test_to_irma_ui():
                 "titolo": titolo3,
                 "dato": dato3
             }
-        ]
+        ],
+        "unconfirmedAlertIDs": unconfirmedAlertIDs
     }
 
     assert websocket_app.to_irma_ui_data(
