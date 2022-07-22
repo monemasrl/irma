@@ -104,6 +104,7 @@ def to_irma_ui_data(
         dato1: float,
         dato2: float,
         dato3: int,
+        unconfirmedAlertIDs: list = []
     ) -> dict:
 
     return {
@@ -124,6 +125,7 @@ def to_irma_ui_data(
                 "dato": dato3
             },
         ],
+        "unconfirmedAlertIDs": unconfirmedAlertIDs
     }
 
 
@@ -214,23 +216,28 @@ def get_data(sensorID: str) -> dict:
     if len(collect) == 0:
         return {}
 
+    unconfirmedAlertIDs = microservice.Alert.objects(
+        sensor=sensor,
+        isConfirmed=False
+    )
+
     for x in collect:
         for data in x["data"]:
             sensor_data: int = data['sensorData']
             read_time: datetime = data['publishedAt']
-        read_month: int = read_time.month
+            read_month: int = read_time.month
 
-        total_sum += sensor_data
-        total_count += 1
+            total_sum += sensor_data
+            total_count += 1
 
-        if read_month == current_month:
-            monthly_sum += sensor_data
-            monthly_count += 1
+            if read_month == current_month:
+                monthly_sum += sensor_data
+                monthly_count += 1
 
-        total_average = total_sum / total_count
+            total_average = total_sum / total_count
 
-        if monthly_count != 0:
-            monthly_average = monthly_sum / monthly_count
+            if monthly_count != 0:
+                monthly_average = monthly_sum / monthly_count
 
     send: dict = to_irma_ui_data(
         sensorID=sensorID,
@@ -241,7 +248,8 @@ def get_data(sensorID: str) -> dict:
         titolo2="Media Letture Mensili",
         dato2=round(monthly_average, 3),
         titolo3="Letture eseguite nel mese",
-        dato3=monthly_count
+        dato3=monthly_count,
+        unconfirmedAlertIDs=unconfirmedAlertIDs
     )
 
     app.logger.info(f'{send=}')
@@ -482,15 +490,23 @@ def create_app():
             )
 
             if reading is None:
-            reading = microservice.Reading(
-                sensor=sensor,
+                reading = microservice.Reading(
+                    sensor=sensor,
                     requestedAt=requestedAt,
                     data=[data],
-            )
+                )
             else:
                 reading["data"].append(data)
 
             reading.save()
+
+            if data["sensorData"] >= MAX_TRESHOLD:
+                alert = microservice.Alert(
+                    reading=reading,
+                    sensor=sensor,
+                    isConfirmed=False
+                )
+                alert.save()
 
         sensor["state"] = update_state(
             sensor["state"], 
@@ -510,14 +526,38 @@ def create_app():
         received: dict = json.loads(request.data)
 
         if received["command"] == PayloadType.CONFIRM:
-            sensor = microservice.Sensor.objects(id=sensorID).first() # type: ignore
+            sensor = microservice.Sensor.objects(sensorID=sensorID).first() # type: ignore
+            if sensor is None: 
+                return { 'Message': 'Not Found' }, 404
 
-            if sensor is not None:
+            alertID = received["alertID"]
+            alert = microservice.Alert.objects(id=alertID).first()
+            if alert is None:
+                return { 'Message': 'Not Found' }, 404
+            
+            userID = received["userID"]
+            user = microservice.User.objects(id=userID).first()
+            if user is None:
+                return { 'Message': 'Not Found' }, 404
+            
+            alert["isConfirmed"] = True
+            alert["confirmedBy"] = user
+            alert["confirmNote"] = received["message"]
+            alert["confirmTimestamp"] = datetime.now()
+            alert.save()
+
+            if microservice.Alert.objects(
+                sensor=sensor,
+                isConfirmed=False
+            ).first() is None:
+
                 sensor["state"] = update_state(
                     sensor["state"], 
-                    received["command"]
+                    PayloadType.CONFIRM
                 )
                 sensor.save()
+        
+            return received
 
         topic: str = f'{applicationID}/{sensorID}/commands'
 

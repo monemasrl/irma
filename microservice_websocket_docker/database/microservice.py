@@ -53,3 +53,11 @@ class Reading(Document):
     sensor = ReferenceField(Sensor, required=True)  
     requestedAt = DateTimeField(required=True)
     data = EmbeddedDocumentListField(Data, required=True)
+
+class Alert(Document):
+    reading = ReferenceField(Reading, required=True)
+    sensor = ReferenceField(Sensor, required=True)
+    isConfirmed = BooleanField(required=True)
+    confirmedBy = ReferenceField(User)
+    confirmTime = DateTimeField()
+    confirmNote = StringField()
