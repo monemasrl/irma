@@ -173,9 +173,9 @@ def sensorData_Uplink(devEUI, applicationID, sensorId, isoTimestamp, latitude, l
 def node_data() -> dict:
     return {
         "sensorID": 1,
+        "sensorName": "irma-sensor",
         "applicationID": "foo",
         "organizationID": "bar",
-        # "deviceName": "irma-sensor",
         "data": {
             "state": 3,
             "sensorData": 4.5,
