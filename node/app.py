@@ -123,7 +123,7 @@ def on_connect(client, userdata, flags, rc):
     # TODO: riguardare
     applicationID = config["node_info"]["applicationID"]
     sensorID = config["node_info"]["sensorID"]
-    client.subscribe(f"{applicationID}/{sensorID}/commands")
+    client.subscribe(f"{applicationID}/{sensorID}/command")
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg: mqtt.MQTTMessage):

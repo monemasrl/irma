@@ -562,7 +562,7 @@ def create_app():
         if applicationID == "" or sensorID == "":
             return { 'Message': 'Bad Request' }, 400
 
-        topic: str = f'{applicationID}/{sensorID}/commands'
+        topic: str = f'{applicationID}/{sensorID}/command'
 
         data: bytes = encode_mqtt_data(received["command"], datetime.now().isoformat())
 
