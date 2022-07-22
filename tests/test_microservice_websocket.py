@@ -185,7 +185,8 @@ def test_to_irma_ui():
     assert websocket_app.to_irma_ui_data(
         sensorID, sensorName, state, 
         titolo1, titolo2, titolo3,
-        dato1, dato2, dato3
+        dato1, dato2, dato3,
+        unconfirmedAlertIDs
     ) == expected_value, "Error in `to_irma_ui_data`: output mismatch"
 
 
