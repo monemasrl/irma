@@ -1,12 +1,12 @@
 # microservice_websocket
 
-Questo servizio si occupa di interfacciarsi con la piattaforma **Mobius** (vedi [mock_mobius](../mock_mobius_docker)) e con la dashboard.
+Questo servizio si occupa di interfacciarsi con la piattaforma **Mobius** (vedi [mock_mobius](../mock_mobius_docker)), con il database [MongoDB](https://mongodb.com) e con la dashboard.
 
 ## Avvio
 
 Nel [docker-compose.yaml](../docker-compose.yaml) presente nella **root della repo**, microservice_websocket viene fatto partire **insieme** a tutti gli altri serivizi.
 
-Nel caso in cui si volesse avviare **standalone**, viene fornito il file **docker-compose.yaml** all'interno della cartella [microservice_websocket_docker](./docker-compose.yaml).
+Nel caso in cui lo si volesse avviare **standalone**, viene fornito il file **docker-compose.yaml** all'interno della cartella [microservice_websocket_docker](./docker-compose.yaml).
 
 Per i comandi di **docker-compose** fare riferimento al paragrafo **DEPLOYMENT** nel [README](../README.md).
 
@@ -29,7 +29,7 @@ Per i comandi di **docker-compose** fare riferimento al paragrafo **DEPLOYMENT**
 
 Corpo della **richiesta** (JSON):
 
-- `paths`: un array che contiene tutti i **sensor_paths** che si vogliono richiedere a **Mobius**.
+- `paths`: un array che contiene tutti i **sensorID** che si vogliono richiedere.
 
 Esempio:
 
@@ -44,15 +44,14 @@ Esempio:
 
 ---
 
-**microservice_websocket** procederà a fare una richiesta **GET** su **/<SENSOR_PATH>** a **Mobius** per ogni sensor_path ricevuto.
+**microservice_websocket** procederà ad interrogare il **database** per ogni **sensorID** ricevuto.
 
 Corpo della **risposta**:
 
-- `devEUI`: il **deviceEUI** del sensore.
-- `applicationID`: l'**applicationID** di cui fa parte il sensore.
-- `sensorId`: l'**id** del sensore.
-- `state`: lo **stato** del sensore. Le opzioni possibili sono: `off`, `ok`, `rec` e `alert`.
+- `sensorID`: l'**id** del sensore.
+- `state`: lo **stato** del sensore. Fare riferimento al paragrafo sugli **Enum** nel [README](../README.md).
 - `datiInterni`: **array di dati** da visualizzare nella dashboard.
+- `unconfirmedAlertIDs`: gli **id** delle **allerte non confermate**.
     
 Ogni elemento all'interno di `datiInerni` ha i seguenti attributi:
 
@@ -63,10 +62,8 @@ Esempio:
 
 ```jsonc
 {
-  "devEUI": "AgICAgICAgI=",
-  "applicationID": "1",
-  "sensorId": "LORA_sensor_01",
-  "state": "ok",
+  "sensorID": 1,
+  "state": 1,
   "datiInterni": [
     {
       "titolo": "Titolo1",
@@ -80,83 +77,46 @@ Esempio:
       "titolo": "Titolo3",
       "dato": 789
     }
+  ],
+  "unconfirmedAlertIDs": [
+    "123"
   ]
 }
 ```
 
-### Pubblicazione dati (POST /publish)
+### Pubblicazione dati (POST /\<applicationID\>/\<sensorID\>/publish)
 
-È possibile **pubblicare** dei dati mediante una **POST** su **/publish**.
+È possibile **pubblicare** dei dati mediante una **POST** su **/\<applicationID\>/\<sensorID\>/publish**.
 
-Il corpo della richiesta è quello che viene inviato di default da [Chirpstack](https://www.chirpstack.io/application-server/), con l'**aggiunta** di **due parametri**.
+Il corpo della richiesta può essre di due tipi: 
 
-Esempio di **richiesta**:
+- Quello inviato dal [nodo](../node/app.py).
+- Quello inviato di default da [Chirpstack](https://www.chirpstack.io/application-server/).
+
+> Le richieste di **chirpstack** vengono convertite a richieste del **nodo**.
+
+Esempio di **richiesta** dal **nodo**:
 
 ```jsonc
 {
-  "applicationID": "1",
-  "applicationName": "irma",
+  "sensorID": 1,
+  "applicationID": "foo",
+  "organizationID": "bar",
   "deviceName": "irma-sensor",
-  "devEUI": "AgICAgICAgI=",
-  "rxInfo": [
-    {
-      "gatewayID": "e45f01fffe7da7a8",
-      "time": null,
-      "timeSinceGPSEpoch": null,
-      "rssi": -61,
-      "loRaSNR": -2.8,
-      "channel": 7,
-      "rfChain": 0,
-      "board": 0,
-      "antenna": 0,
-      "location": {
-        "latitude": 45.7,
-        "longitude": 32.9,
-        "altitude": 0,
-        "source": "UNKNOWN",
-        "accuracy": 0
-      },
-      "fineTimestampType": "NONE",
-      "context": "XZ4gbA==",
-      "uplinkID": "76d9f46d-d799-491e-ac16-48f953077232",
-      "crcStatus": "CRC_OK"
-    }
-  ],
-  "txInfo": {
-    "frequency": 867900000,
-    "modulation": "LORA",
-    "loRaModulationInfo": {
-      "bandwidth": 125,
-      "spreadingFactor": 12,
-      "codeRate": "4/5",
-      "polarizationInversion": false
-    }
+  "data": {
+      "state": 3,
+      "sensorData": 4.5,
+      "mobius_sensorId": "foo",
+      "mobius_sensorPath": "bar",
   },
-  "adr": true,
-  "dr": 0,
-  "fCnt": 6,
-  "fPort": 2,
-  "data": "ABE=",
-  "objectJSON": {
-    "sensorData": 17
-  },
-  "tags": {
-    "sensorId": "LORA_sensor_01",
-    "sensor_path": "283923423"
-  },
-  "confirmedUplink": true,
-  "devAddr": "0021051c",
-  "publishedAt": "2013-03-31T16:21:17.528002Z",
-  "deviceProfileID": "be018f1b-c068-43c0-a276-a7665ff090b4",
-  "deviceProfileName": "device-OTAA"
+  "publishedAt": "time", // iso8601 timestamp
+  "payloadType": 1
 }
 ```
 
-L'aggiunta dei parametri deve essere effettuata dalla **dashboard di chirpstack**, sotto la sezione **tags** del **Device**.
-
 ---
 
-A questo punto la funzione `to_mobius_payload`, all'interno di [app.py](./app.py), convertirà il **payload** e lo invierà a **Mobius**.
+La funzione `to_mobius_payload`, all'interno di [app.py](./app.py), convertirà il **payload** e lo invierà a **Mobius**.
 
 Il **payload** che viene inviato a **Mobius** ha questa forma:
 
@@ -176,24 +136,150 @@ Il **payload** che viene inviato a **Mobius** ha questa forma:
 }
 ```
 
-### Invio segnale di downlink (POST /downlink)
+---
 
-È possibiale inviare una richiesta di downlink mediante una **POST** su **/downlink**.
+Il dato viene poi immagazzinato all'interno del **database** come **Reading**. Per maggiori informazioni sul database fare riferimento alla [documentazione](./database/database.md).
+
+### Invio comandi al sensore (POST /api/command)
+
+È possibile inviare comandi al sensore mediante una **POST** su **/api/command**.
 
 Corpo della richiesta (JSON):
 
-- `statoStaker`: indica il segnale da inviare al sensore: `1` corrisponde a `start` e `0` corrsponde a `stop`.
-- `applicationID`: l'ID dell'applicazione di cui fa parte il sensore.
-- `devEUI`: il deviceEUI del sensore a cui inviare il segnale (non decodificato).
+- `command`: il comando da inviare al **sensore**. Per maggiori informazioni fare riferimento al paragrafo sugli **Enum** del [README](../README.md).
+- `applicationID`: l'**id** dell'**applicazione** di cui fa parte il **sensore**.
+- `sensorID`: l'**id** del **sensore** a cui inviare il comando.
 
 Esempio:
 
 ```jsonc
 {
-  "statoStaker": 1,
-  "applicationID": "1",
-  "devEUI": "AgICAgICAgI="
+  "command": 0,
+  "applicationID": "13244",
+  "sensorID": 1
 }
 ```
 
-A questo punto **microservice_websocket** invierà il segnale di **downlink** a Chirpstack tramite **MQTT**.
+---
+
+A questo punto **microservice_websocket** pubblicherà sul **topic** `<applicationID>/<sensorID>/command` un **payload**.
+
+Per maggior informazioni sulla struttura del **payload**, fare riferimento al paragrafo **Encode e decode dei dati** del [README](../README.md).
+
+
+### Invio conferma alert (POST /api/alert/confirm)
+
+È possibile inviare la **conferma** di un **alert** mediante una **POST** su **/api/command**.
+
+Corpo della richiesta (JSON):
+
+- `alertID`: l'**id** dell'**alert**.
+- `confirmNote`: **messaggio** abbinato alla conferma.
+
+Esempio:
+
+```jsonc
+{
+  "alertID": "13244",
+  "confirmNote": "Falso allarme"
+}
+```
+
+---
+
+A questo punto **microservice_websocket** confermerà l'**alert**, registrando l'**utente** che ha dato la conferma, **quando** l'ha data e le eventuali **note**.
+
+Per maggior informazioni sulla struttura del **alert** nel database, fare riferimento alla sua [documentazione](./database/database.md).
+
+### Autenticazione (POST /api/authenticate)
+
+Per effettuare l'**autenticazione** ed ottene un **Token JWT**, è necessaro effettuare una **POST** su **/api/authenticate**.
+
+Corpo della richiesta (JSON):
+
+- `username`
+- `password`
+
+Esempio:
+
+```jsonc
+{
+  "username": "foo",
+  "password": "bar"
+}
+```
+
+---
+
+Nel caso in cui l'**utente** sia **registrato** otterà come risposta il **Token JWT**, altrimenti 401, "Wrong username or password".
+
+Corpo della risposta (JSON):
+
+- `acess_token`: il **Token JWT**.
+
+Esempio:
+
+```jsonc
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+}
+```
+
+### Lista organizzazioni (GET /api/organizations)
+
+Per ottenere la lista delle **organizzazioni** è necessario fare una **GET** su **/api/organizations**.
+
+Corpo della risposta (JSON):
+
+- `organizations`: la **lista** delle **organizzazioni**.
+
+Ogni **elemento** all'interno della **lista** è conforme alla struttura **Organization** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./database/database.md).
+
+Esempio:
+```jsonc
+{
+  "organizations": [ {}, {}, {}]
+}
+```
+
+### Lista applicazioni (GET /api/applications)
+
+Per ottenere la lista delle **applicazioni** è necessario fare una **GET** su **/api/applications**.
+
+Sono disponibili i seguenti **parametri**:
+
+- `organizationID`: l'**id** dell'**organizzazione** a cui devono appartenere le **applicazioni** (**OBBLIGATORIO**).
+
+Corpo della risposta (JSON):
+
+- `applications`: la **lista** delle **applicazioni**.
+
+Ogni **elemento** all'interno della **lista** è conforme alla struttura **Application** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./database/database.md).
+
+Esempio:
+```jsonc
+{
+  "applications": [ {}, {}, {}]
+}
+```
+
+### Lista dei sensori (GET /api/sensors)
+
+Per ottenere la lista dei **sensori** è necessario fare una **GET** su **/api/sensors**.
+
+Sono disponibili i seguenti **parametri**:
+
+- `applicationID`: l'**id** dell'**applicazione** a cui devono appartenere i **sensori** (**OBBLIGATORIO**).
+
+Corpo della risposta (JSON):
+
+- `sensors`: la **lista** dei **sensori**.
+
+Ogni **elemento** all'interno della **lista** è conforme alla struttura **Application** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./database/database.md).
+
+Esempio:
+```jsonc
+{
+  "applications": [ {}, {}, {}]
+}
+```
