@@ -147,6 +147,12 @@ Identifica i messaggi inviati.
 | KEEP_ALIVE |   3    |
 | CONFIRM    |   4    |
 
+
+### CommandType
+| Nome       | Valore |
+|------------|--------|
+| START_REC  |    0   |
+
 ### SensorState
 
 Rappresenta lo stato che può essere assunto dai vari sensori.

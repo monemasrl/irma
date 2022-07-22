@@ -27,6 +27,10 @@ class PayloadType(IntEnum):
     CONFIRM=auto()
 
 
+class CommandType(IntEnum):
+    START_REC=0
+
+
 """
 encoded data
 | 1 byte payload_type | 4 byte data | 10 byte sensorId | 10 byte sensorPath |
@@ -133,7 +137,7 @@ def on_message(client, userdata, msg: mqtt.MQTTMessage):
 
     command = decoded_data["command"]
 
-    if command == PayloadType.START_REC:
+    if command == CommandType.START_REC:
 
         print("Received MQTT message, sending rec start...")
 
