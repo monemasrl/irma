@@ -521,44 +521,47 @@ def create_app():
 
 
     @jwt_required()
-    @app.route('/api/<applicationID>/<sensorID>/commands', methods=['POST'])
-    def sendMqtt(applicationID: str, sensorID: int): # alla ricezione di un post pubblica un messaggio sul topic
+    @app.route('/api/alert/confirm', methods=['POST'])
+    def confirm_alert():
         received: dict = json.loads(request.data)
 
-        if received["command"] == PayloadType.CONFIRM:
-            sensor = microservice.Sensor.objects(sensorID=sensorID).first() # type: ignore
-            if sensor is None: 
-                return { 'Message': 'Not Found' }, 404
+        alertID = received["alertID"]
+        alert = microservice.Alert.objects(id=alertID).first()
+        if alert is None:
+            return { 'Message': 'Not Found' }, 404
 
-            alertID = received["alertID"]
-            alert = microservice.Alert.objects(id=alertID).first()
-            if alert is None:
-                return { 'Message': 'Not Found' }, 404
-            
-            userID = received["userID"]
-            user = microservice.User.objects(id=userID).first()
-            if user is None:
-                return { 'Message': 'Not Found' }, 404
-            
-            alert["isConfirmed"] = True
-            alert["confirmedBy"] = user
-            alert["confirmNote"] = received["message"]
-            alert["confirmTimestamp"] = datetime.now()
-            alert.save()
-
-            if microservice.Alert.objects(
-                sensor=sensor,
-                isConfirmed=False
-            ).first() is None:
-
-                sensor["state"] = update_state(
-                    sensor["state"], 
-                    PayloadType.CONFIRM
-                )
-                sensor.save()
+        sensor = alert["sensor"]
         
-            socketio.emit('change')
-            return received
+        alert["isConfirmed"] = True
+        alert["confirmedBy"] = current_user
+        alert["confirmNote"] = received["confirmNote"]
+        alert["confirmTimestamp"] = datetime.now()
+        alert.save()
+
+        if microservice.Alert.objects(
+            sensor=sensor,
+            isConfirmed=False
+        ).first() is None:
+
+            sensor["state"] = update_state(
+                sensor["state"], 
+                PayloadType.CONFIRM
+            )
+            sensor.save()
+    
+        socketio.emit('change')
+        return received
+
+    @jwt_required()
+    @app.route('/api/command', methods=['POST'])
+    def sendMqtt(): # alla ricezione di un post pubblica un messaggio sul topic
+        received: dict = json.loads(request.data)
+
+        applicationID = received["applicationID"]
+        sensorID = received["sensorID"]
+
+        if applicationID == "" or sensorID == "":
+            return { 'Message': 'Bad Request' }, 400
 
         topic: str = f'{applicationID}/{sensorID}/commands'
 
