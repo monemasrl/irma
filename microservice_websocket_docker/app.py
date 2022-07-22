@@ -201,7 +201,6 @@ def get_data(sensorID: str) -> dict:
     #salvataggio del valore attuale del mese per il confronto
     current_month: int = datetime.now().month 
 
-    # TODO: better return
     sensor = microservice.Sensor.objects(sensorID=sensorID).first() # type: ignore
 
     if sensor is None:
@@ -212,7 +211,6 @@ def get_data(sensorID: str) -> dict:
 
     collect = microservice.Reading.objects(sensor=sensor).order_by("-publishedAt") # type: ignore
 
-    # TODO: better return
     if len(collect) == 0:
         return {}
 
@@ -358,7 +356,7 @@ def create_app():
     @cross_origin()
     def home():
         sensorIDs: list = json.loads(request.data)["paths"]
-        data: list[dict] = [get_data(x) for x in sensorIDs]
+        data: list[dict] = [get_data(x) for x in sensorIDs if x]
         return jsonify(data=data)
 
     @jwt_required()
