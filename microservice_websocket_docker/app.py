@@ -557,6 +557,7 @@ def create_app():
                 )
                 sensor.save()
         
+            socketio.emit('change')
             return received
 
         topic: str = f'{applicationID}/{sensorID}/commands'
