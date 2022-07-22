@@ -1,7 +1,9 @@
 from __future__ import annotations
 from flask_mongoengine import Document
 from mongoengine import IntField
-from mongoengine.fields import DictField, StringField, FloatField, ReferenceField, ListField, BooleanField, DateTimeField
+from mongoengine.fields import StringField, \
+    ReferenceField, ListField, BooleanField, \
+    DateTimeField, EmbeddedDocumentListField, EmbeddedDocument
 from flask_security import Security, MongoEngineUserDatastore, \
     UserMixin, RoleMixin, login_required
 import json
@@ -40,8 +42,14 @@ class Sensor(Document):
     sensorName = StringField(default='', required=True)
     state = IntField(required=True)
 
+class Data(EmbeddedDocument):
+    payloadType = IntField(required=True)
+    sensorData = IntField(required=True)
+    publishedAt = DateTimeField(required=True)
+    mobius_sensorId = StringField(required=True)
+    mobius_sensorPath = StringField(required=True)
+
 class Reading(Document):
-    sensor = ReferenceField(Sensor)  
-    publishedAt = DateTimeField()
-    requestedAt = DateTimeField()
-    data = DictField()
+    sensor = ReferenceField(Sensor, required=True)  
+    requestedAt = DateTimeField(required=True)
+    data = EmbeddedDocumentListField(Data, required=True)

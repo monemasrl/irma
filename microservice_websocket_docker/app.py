@@ -215,8 +215,9 @@ def get_data(sensorID: str) -> dict:
         return {}
 
     for x in collect:
-        sensor_data: int = x['data']['sensorData']
-        read_time: datetime = x['publishedAt']
+        for data in x["data"]:
+            sensor_data: int = data['sensorData']
+            read_time: datetime = data['publishedAt']
         read_month: int = read_time.month
 
         total_sum += sensor_data
@@ -469,12 +470,26 @@ def create_app():
             sensor.save()
 
         if record["data"]["payloadType"] == PayloadType.READING:
+            requestedAt = iso8601.parse_date(record["requestedAt"])
+            reading = microservice.Reading.objects(requestedAt=requestedAt).first()
+
+            data = microservice.Data(
+                payloadType=record['data']['payloadType'],
+                sensorData=record['data']['sensorData'],
+                publishedAt=iso8601.parse_date(record['data']['publishedAt']),
+                mobius_sensorId=record['data']['mobius_sensorId'],
+                mobius_sensorPath=record['data']['mobius_sensorPath'],
+            )
+
+            if reading is None:
             reading = microservice.Reading(
                 sensor=sensor,
-                publishedAt=iso8601.parse_date(record["publishedAt"]),
-                requestedAt=iso8601.parse_date(record["requestedAt"]),
-                data=record["data"]
+                    requestedAt=requestedAt,
+                    data=[data],
             )
+            else:
+                reading["data"].append(data)
+
             reading.save()
 
         sensor["state"] = update_state(
