@@ -213,9 +213,6 @@ def get_data(sensorID: str) -> dict:
 
     collect = microservice.Reading.objects(sensor=sensor).order_by("-publishedAt") # type: ignore
 
-    if len(collect) == 0:
-        return {}
-
     unconfirmedAlertIDs = microservice.Alert.objects(
         sensor=sensor,
         isConfirmed=False
@@ -365,8 +362,10 @@ def create_app():
     @cross_origin()
     def home():
         sensorIDs: list = json.loads(request.data)["paths"]
-        data: list[dict] = [get_data(x) for x in sensorIDs if x]
-        return jsonify(data=data)
+        data: list[dict] = [get_data(x) for x in sensorIDs]
+
+        # Filtro via i dati vuoti (sensorID non valido)
+        return jsonify(data=[x for x in data if x])
 
     @jwt_required()
     @app.route('/api/organizations')
