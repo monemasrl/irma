@@ -98,7 +98,7 @@ def to_irma_ui_data(
         sensorID: str,
         sensorName: str,
         applicationID: str,
-        state: int,
+        state: str,
         titolo1: str,
         titolo2: str,
         titolo3: str,
