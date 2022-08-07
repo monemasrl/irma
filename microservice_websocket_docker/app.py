@@ -139,7 +139,7 @@ class SensorState(IntEnum):
     ALERT_RUNNING=auto()
 
     @classmethod
-    def to_irma_ui_state(_cls, n: int):
+    def to_irma_ui_state(cls, n: int) -> str:
         if n == 0:
             return 'off'
         elif n == 1:
