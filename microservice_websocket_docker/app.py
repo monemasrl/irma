@@ -459,12 +459,7 @@ def create_app():
             # TODO: portare a payload di node/app.py
             pass 
             
-        if MOBIUS_URL != "":
-            app.logger.info(f'{record=}')
-            utils.insert(record)
-
         application = microservice.Application.objects(id=applicationID).first() # type: ignore
-
 
         if application is None:
             app.logger.info(f'Not found')
@@ -484,6 +479,11 @@ def create_app():
             sensor.save()
 
         if record["data"]["payloadType"] == PayloadType.READING:
+
+            if MOBIUS_URL != "":
+                app.logger.info(f'Sending to mobius: {record=}')
+                utils.insert(record)
+
             requestedAt = iso8601.parse_date(record["requestedAt"])
             reading = microservice.Reading.objects(requestedAt=requestedAt).first()
 
