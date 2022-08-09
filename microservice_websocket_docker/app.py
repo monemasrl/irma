@@ -239,6 +239,7 @@ def get_data(sensorID: str) -> dict:
     send: dict = to_irma_ui_data(
         sensorID=sensorID,
         sensorName=sensorName,
+        applicationID=applicationID,
         state=SensorState.to_irma_ui_state(state),
         titolo1="Media Letture Totali",
         dato1=round(total_average, 3),
@@ -461,10 +462,12 @@ def create_app():
 
         application = microservice.Application.objects(id=applicationID).first() # type: ignore
 
+
         if application is None:
             return { 'message': 'Not Found' }, 404
 
         sensor =  microservice.Sensor.objects(sensorID=sensorID).first() # type: ignore
+
 
         if sensor is None:
             sensor = microservice.Sensor(
@@ -496,6 +499,7 @@ def create_app():
                 )
             else:
                 reading["data"].append(data)
+
 
             reading.save()
 
