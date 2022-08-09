@@ -152,7 +152,8 @@ def test_get_state():
 def test_to_irma_ui():
     sensorID = "2288300834"
     sensorName = "123"
-    state = 1
+    applicationID = "123234"
+    state = "ok"
     titolo1 = "Foo"
     titolo2 = "Bar"
     titolo3 = "Baz"
@@ -164,6 +165,7 @@ def test_to_irma_ui():
     expected_value = {
         "sensorID": sensorID,
         "sensorName": sensorName,
+        "applicationID": applicationID,
         "state": state,
         "datiInterni": [
             {
@@ -183,7 +185,7 @@ def test_to_irma_ui():
     }
 
     assert websocket_app.to_irma_ui_data(
-        sensorID, sensorName, state, 
+        sensorID, sensorName, applicationID, state,
         titolo1, titolo2, titolo3,
         dato1, dato2, dato3,
         unconfirmedAlertIDs
