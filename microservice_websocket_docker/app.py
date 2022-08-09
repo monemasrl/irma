@@ -80,8 +80,8 @@ def decode_data(encoded_data: str) -> dict:
     return {
         "payloadType": int.from_bytes(raw_bytes[:1], 'big'),
         "sensorData": int.from_bytes(raw_bytes[1:5], 'big'),
-        "mobius_sensorId": raw_bytes[5:16].decode(),
-        "mobius_sensorPath": raw_bytes[16:].decode()
+        "mobius_sensorId": raw_bytes[5:15].decode(),
+        "mobius_sensorPath": raw_bytes[15:].decode()
     }
 
 
