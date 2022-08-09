@@ -46,8 +46,8 @@ class ConfigClass(object):
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", 'pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw')
     # Flask-MongoEngine settings
     MONGODB_SETTINGS = {
-        'db': 'mobius',
-        'host': 'mongodb://mongo:27017/mobius'
+        'db': 'irma',
+        'host': 'mongodb://mongo:27017/irma'
     }
 
     # Flask-User settings
