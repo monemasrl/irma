@@ -97,6 +97,7 @@ def encode_mqtt_data(command: int, iso_timestamp: str) -> bytes:
 def to_irma_ui_data(
         sensorID: str,
         sensorName: str,
+        applicationID: str,
         state: int,
         titolo1: str,
         titolo2: str,
@@ -110,6 +111,7 @@ def to_irma_ui_data(
     return {
         "sensorID": sensorID,
         "sensorName": sensorName,
+        "applicationID": applicationID,
         "state": state,
         "datiInterni": [
             {
@@ -210,6 +212,7 @@ def get_data(sensorID: str) -> dict:
 
     state: SensorState = sensor["state"]
     sensorName: str = sensor["sensorName"]
+    applicationID: str = str(sensor["application"]["id"])
 
     collect = microservice.Reading.objects(sensor=sensor).order_by("-publishedAt") # type: ignore
 
@@ -464,6 +467,7 @@ def create_app():
 
 
         if application is None:
+            app.logger.info(f'Not found')
             return { 'message': 'Not Found' }, 404
 
         sensor =  microservice.Sensor.objects(sensorID=sensorID).first() # type: ignore
