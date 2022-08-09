@@ -90,7 +90,7 @@ def encode_mqtt_data(command: int, iso_timestamp: str) -> bytes:
     encoded_data += command.to_bytes(1, 'big')
     encoded_data += iso_timestamp.encode()
     
-    return encoded_data
+    return base64.b64encode(encoded_data)
 
 
 # Creazione payload per irma-ui
