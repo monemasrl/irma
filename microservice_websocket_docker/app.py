@@ -486,7 +486,7 @@ def create_app():
             data = microservice.Data(
                 payloadType=record['data']['payloadType'],
                 sensorData=record['data']['sensorData'],
-                publishedAt=iso8601.parse_date(record['data']['publishedAt']),
+                publishedAt=iso8601.parse_date(record['publishedAt']),
                 mobius_sensorId=record['data']['mobius_sensorId'],
                 mobius_sensorPath=record['data']['mobius_sensorPath'],
             )
