@@ -216,11 +216,12 @@ def get_data(sensorID: str) -> dict:
 
     collect = microservice.Reading.objects(sensor=sensor).order_by("-publishedAt") # type: ignore
 
-    unconfirmedAlertIDs = microservice.Alert.objects(
+    unconfirmedAlerts = microservice.Alert.objects(
         sensor=sensor,
         isConfirmed=False
     )
 
+    unconfirmedAlertIDs = [str(x["id"]) for x in unconfirmedAlerts]
     for x in collect:
         for data in x["data"]:
             sensor_data: int = data['sensorData']
@@ -542,7 +543,7 @@ def create_app():
         alert["isConfirmed"] = True
         alert["confirmedBy"] = current_user
         alert["confirmNote"] = received["confirmNote"]
-        alert["confirmTimestamp"] = datetime.now()
+        alert["confirmTime"] = datetime.now()
         alert.save()
 
         if microservice.Alert.objects(
