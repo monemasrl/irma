@@ -19,7 +19,7 @@ import base64
 from mobius import utils
 from database import microservice
 
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
 
@@ -222,6 +222,7 @@ def get_data(sensorID: str) -> dict:
     )
 
     unconfirmedAlertIDs = [str(x["id"]) for x in unconfirmedAlerts]
+
     for x in collect:
         for data in x["data"]:
             sensor_data: int = data['sensorData']
@@ -541,6 +542,7 @@ def create_app():
         sensor = alert["sensor"]
         
         alert["isConfirmed"] = True
+        app.logger.info(f'{get_jwt_identity()=}')
         alert["confirmedBy"] = current_user
         alert["confirmNote"] = received["confirmNote"]
         alert["confirmTime"] = datetime.now()
