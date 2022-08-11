@@ -139,13 +139,13 @@ Per **ridurre** il **numero di dati** trasmessi, ma al contempo **mantenere la l
 
 Identifica i messaggi inviati.
 
-| Nome       | Valore |
-|------------|--------|
-| READING    |   0    |
-| START_REC  |   1    |
-| END_REC    |   2    |
-| KEEP_ALIVE |   3    |
-| CONFIRM    |   4    |
+| Nome         | Valore |
+|--------------|--------|
+| READING      |   0    |
+| START_REC    |   1    |
+| END_REC      |   2    |
+| KEEP_ALIVE   |   3    |
+| HANDLE_ALERT |   4    |
 
 
 ### CommandType
@@ -175,9 +175,9 @@ stateDiagram-v2
   READY --> RUNNING: START_REC
   RUNNING --> READY: END_REC
   RUNNING --> ALERT_RUNNING: dato >= MAX_TRESHOLD
-  ALERT_RUNNING --> RUNNING: CONFIRM
+  ALERT_RUNNING --> RUNNING: HANDLE_ALERT
   ALERT_RUNNING --> ALERT_READY: END_REC
-  ALERT_READY --> READY: CONFIRM
+  ALERT_READY --> READY: HANDLE_ALERT
 ```
 
 ## GATEWAY
