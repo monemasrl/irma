@@ -540,10 +540,13 @@ def create_app():
             return { 'Message': 'Not Found' }, 404
 
         sensor = alert["sensor"]
+
+        user_id = get_jwt_identity()["_id"]["$oid"]
+
+        user = microservice.User.objects(id=user_id).first()
         
         alert["isConfirmed"] = True
-        app.logger.info(f'{get_jwt_identity()=}')
-        alert["confirmedBy"] = current_user
+        alert["confirmedBy"] = user
         alert["confirmNote"] = received["confirmNote"]
         alert["confirmTime"] = datetime.now()
         alert.save()
