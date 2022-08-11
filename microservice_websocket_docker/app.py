@@ -10,7 +10,7 @@ from flask_mongoengine import MongoEngine
 from flask_socketio import SocketIO
 from flask_security.core import Security
 from flask_security.datastore import MongoEngineUserDatastore
-from flask_security.utils import login_user
+from flask_security.utils import login_user, verify_password
 from flask_login import current_user, login_required
 from flask_jwt_extended import create_access_token, get_jwt_identity, \
     jwt_required, JWTManager
@@ -344,7 +344,7 @@ def create_app():
 
         user = user_datastore.find_user(email=username)
 
-        if flask_security.verify_password(password, user['password']):
+        if verify_password(password, user['password']):
             login_user(user=user, remember=False)
             access_token = create_access_token(identity=current_user)
             return jsonify(access_token=access_token)
