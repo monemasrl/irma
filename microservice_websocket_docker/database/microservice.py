@@ -55,7 +55,8 @@ class Reading(Document):
 class Alert(Document):
     reading = ReferenceField(Reading, required=True)
     sensor = ReferenceField(Sensor, required=True)
-    isConfirmed = BooleanField(required=True)
-    confirmedBy = ReferenceField(User)
-    confirmTime = DateTimeField()
-    confirmNote = StringField()
+    isHandled = BooleanField(required=True)
+    isConfirmed = BooleanField()
+    handledBy = ReferenceField(User)
+    handledAt = DateTimeField()
+    handleNote = StringField()

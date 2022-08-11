@@ -109,7 +109,8 @@ I campi disponibili sono:
 |-|-|-|
 | reading | Reference | Reading, required=True
 | sensor | Reference | Sensor, required=True
-| isConfirmed | Boolean | required=True
-| confirmedBy | Reference | User
-| confirmTime | DateTime | 
-| confirmNote | String | 
+| isHandled | Boolean | required=True
+| isConfirmed | Boolean |
+| handledBy | Reference | User
+| handledAt | DateTime |
+| handleNote | String |

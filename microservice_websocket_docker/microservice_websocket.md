@@ -51,7 +51,7 @@ Corpo della **risposta**:
 - `sensorID`: l'**id** del sensore.
 - `state`: lo **stato** del sensore. Fare riferimento al paragrafo sugli **Enum** nel [README](../README.md).
 - `datiInterni`: **array di dati** da visualizzare nella dashboard.
-- `unconfirmedAlertIDs`: gli **id** delle **allerte non confermate**.
+- `unhandledAlertIDs`: gli **id** delle **allerte non gestite**.
     
 Ogni elemento all'interno di `datiInerni` ha i seguenti attributi:
 
@@ -78,7 +78,7 @@ Esempio:
       "dato": 789
     }
   ],
-  "unconfirmedAlertIDs": [
+  "unhandledAlertIDs": [
     "123"
   ]
 }
@@ -167,27 +167,34 @@ A questo punto **microservice_websocket** pubblicherà sul **topic** `<applicati
 Per maggior informazioni sulla struttura del **payload**, fare riferimento al paragrafo **Encode e decode dei dati** del [README](../README.md).
 
 
-### Invio conferma alert (POST /api/alert/confirm)
+### Gestion alert (POST /api/alert/handle)
 
-È possibile inviare la **conferma** di un **alert** mediante una **POST** su **/api/command**.
+È possibile **gestire** un **alert** mediante una **POST** su **/api/alert/handle**.
 
 Corpo della richiesta (JSON):
 
 - `alertID`: l'**id** dell'**alert**.
-- `confirmNote`: **messaggio** abbinato alla conferma.
+- `isConfirmed`: **boolean**, indica se l'operatore **conferma** o no l'**alert**.
+- `handleNote`: **messaggio** abbinato alla gestione.
 
 Esempio:
 
 ```jsonc
 {
   "alertID": "13244",
-  "confirmNote": "Falso allarme"
+  "isConfirmed": false,
+  "handleNote": "Falso allarme"
 }
 ```
 
 ---
 
-A questo punto **microservice_websocket** confermerà l'**alert**, registrando l'**utente** che ha dato la conferma, **quando** l'ha data e le eventuali **note**.
+A questo punto **microservice_websocket** registrerà l'**alert** come **gestita**, registrando anche:
+
+- l'**utente** che l'ha gestita.
+- se l'utente **conferma** l'**alert**.
+- **quando** l'ha gestita
+- le eventuali **note**.
 
 Per maggior informazioni sulla struttura del **alert** nel database, fare riferimento alla sua [documentazione](./database/database.md).
 

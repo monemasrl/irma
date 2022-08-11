@@ -104,7 +104,7 @@ def to_irma_ui_data(
         dato1: float,
         dato2: float,
         dato3: int,
-        unconfirmedAlertIDs: list = []
+        unhandledAlertIDs: list = []
     ) -> dict:
 
     return {
@@ -126,7 +126,7 @@ def to_irma_ui_data(
                 "dato": dato3
             },
         ],
-        "unconfirmedAlertIDs": unconfirmedAlertIDs
+        "unhandledAlertIDs": unhandledAlertIDs
     }
 
 
@@ -156,7 +156,7 @@ class PayloadType(IntEnum):
     START_REC=auto()
     END_REC=auto()
     KEEP_ALIVE=auto()
-    CONFIRM=auto()
+    HANDLE_ALERT=auto()
 
 
 def update_state(current_state: SensorState, typ: PayloadType, dato: int = 0):
@@ -179,13 +179,13 @@ def update_state(current_state: SensorState, typ: PayloadType, dato: int = 0):
             return SensorState.READY
 
     elif current_state == SensorState.ALERT_RUNNING:
-        if typ == PayloadType.CONFIRM:
+        if typ == PayloadType.HANDLE_ALERT:
             return SensorState.RUNNING
         elif typ == PayloadType.END_REC:
             return SensorState.ALERT_READY
 
     elif current_state == SensorState.ALERT_READY:
-        if typ == PayloadType.CONFIRM:
+        if typ == PayloadType.HANDLE_ALERT:
             return SensorState.READY
 
     return current_state
@@ -215,12 +215,12 @@ def get_data(sensorID: str) -> dict:
 
     collect = microservice.Reading.objects(sensor=sensor).order_by("-publishedAt") # type: ignore
 
-    unconfirmedAlerts = microservice.Alert.objects(
+    unhandledAlerts = microservice.Alert.objects(
         sensor=sensor,
-        isConfirmed=False
+        isHandled=False
     )
 
-    unconfirmedAlertIDs = [str(x["id"]) for x in unconfirmedAlerts]
+    unhandledAlertIDs = [str(x["id"]) for x in unhandledAlerts]
 
     for x in collect:
         for data in x["data"]:
@@ -251,7 +251,7 @@ def get_data(sensorID: str) -> dict:
         dato2=round(monthly_average, 3),
         titolo3="Letture eseguite nel mese",
         dato3=monthly_count,
-        unconfirmedAlertIDs=unconfirmedAlertIDs
+        unhandledAlertIDs=unhandledAlertIDs
     )
 
     app.logger.info(f'{send=}')
@@ -512,7 +512,7 @@ def create_app():
                 alert = microservice.Alert(
                     reading=reading,
                     sensor=sensor,
-                    isConfirmed=False
+                    isHandled=False
                 )
                 alert.save()
 
@@ -528,9 +528,9 @@ def create_app():
         return record
 
 
-    @app.route('/api/alert/confirm', methods=['POST'])
+    @app.route('/api/alert/handle', methods=['POST'])
     @jwt_required()
-    def confirm_alert():
+    def handle_alert():
         received: dict = json.loads(request.data)
 
         alertID = received["alertID"]
@@ -544,20 +544,21 @@ def create_app():
 
         user = microservice.User.objects(id=user_id).first()
         
-        alert["isConfirmed"] = True
-        alert["confirmedBy"] = user
-        alert["confirmNote"] = received["confirmNote"]
-        alert["confirmTime"] = datetime.now()
+        alert["isConfirmed"] = received["isConfirmed"]
+        alert["isHandled"] = True
+        alert["handledBy"] = user
+        alert["handledAt"] = datetime.now()
+        alert["handleNote"] = received["handleNote"]
         alert.save()
 
         if microservice.Alert.objects(
             sensor=sensor,
-            isConfirmed=False
+            isHandled=False
         ).first() is None:
 
             sensor["state"] = update_state(
                 sensor["state"], 
-                PayloadType.CONFIRM
+                PayloadType.HANDLE_ALERT
             )
             sensor.save()
     

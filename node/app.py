@@ -24,7 +24,7 @@ class PayloadType(IntEnum):
     START_REC=auto()
     END_REC=auto()
     KEEP_ALIVE=auto()
-    CONFIRM=auto()
+    HANDLE_ALERT=auto()
 
 
 class CommandType(IntEnum):
