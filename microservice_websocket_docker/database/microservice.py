@@ -4,9 +4,7 @@ from mongoengine import IntField
 from mongoengine.fields import StringField, \
     ReferenceField, ListField, BooleanField, \
     DateTimeField, EmbeddedDocumentListField, EmbeddedDocument
-from flask_security import Security, MongoEngineUserDatastore, \
-    UserMixin, RoleMixin, login_required
-import json
+from flask_security.core import UserMixin, RoleMixin
 
 
 

@@ -1,37 +1,36 @@
 import json
 import os
+import iso8601
+import base64
+
 from flask import Flask, request, jsonify, render_template_string
 from flask_cors import cross_origin, CORS
 from flask_mqtt import Mqtt
 from flask_mongoengine import MongoEngine
 from flask_socketio import SocketIO
-from flask_security import Security, MongoEngineUserDatastore, login_required, current_user, login_user
-import flask_security
+from flask_security.core import Security
+from flask_security.datastore import MongoEngineUserDatastore
+from flask_security.utils import login_user
+from flask_login import current_user, login_required
+from flask_jwt_extended import create_access_token, get_jwt_identity, \
+    jwt_required, JWTManager
+
 from enum import IntEnum, auto
-from os import environ
-
 from datetime import datetime
-
-import iso8601
-import requests
-import base64
 
 from mobius import utils
 from database import microservice
 
-from flask_jwt_extended import create_access_token, get_jwt_identity
-from flask_jwt_extended import jwt_required
-from flask_jwt_extended import JWTManager
 
 # valore teorico della soglia di pericolo del sensore
-MAX_TRESHOLD = int(environ.get("MAX_TRESHOLD", 20))
+MAX_TRESHOLD = int(os.environ.get("MAX_TRESHOLD", 20))
 
 # mobius url
-MOBIUS_URL = environ.get("MOBIUS_URL", "http://localhost")
-MOBIUS_PORT = environ.get("MOBIUS_PORT", "5002")
+MOBIUS_URL = os.environ.get("MOBIUS_URL", "http://localhost")
+MOBIUS_PORT = os.environ.get("MOBIUS_PORT", "5002")
 
 # for testing purposes
-DISABLE_MQTT = False if environ.get("DISABLE_MQTT") != 1 else True
+DISABLE_MQTT = False if os.environ.get("DISABLE_MQTT") != 1 else True
 
 # Class-based application configuration
 class ConfigClass(object):
@@ -70,8 +69,8 @@ class ConfigClass(object):
     ################################################################
     #####configurazione dei dati relativi alla connessione MQTT#####
     ################################################################
-    MQTT_BROKER_URL = environ.get("MQTT_BROKER_URL", 'localhost')
-    MQTT_BROKER_PORT = int(environ.get("MQTT_BROKER_PORT", 1883))
+    MQTT_BROKER_URL = os.environ.get("MQTT_BROKER_URL", 'localhost')
+    MQTT_BROKER_PORT = int(os.environ.get("MQTT_BROKER_PORT", 1883))
     MQTT_TLS_ENABLED = False
 
 def decode_data(encoded_data: str) -> dict:
