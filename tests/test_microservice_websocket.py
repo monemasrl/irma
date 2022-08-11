@@ -116,7 +116,7 @@ def test_get_state():
     _test_update_state_case(SensorState.ERROR, PayloadType.START_REC, 0, SensorState.ERROR)
     _test_update_state_case(SensorState.ERROR, PayloadType.END_REC, 0, SensorState.ERROR)
     _test_update_state_case(SensorState.ERROR, PayloadType.KEEP_ALIVE, 0, SensorState.READY)
-    _test_update_state_case(SensorState.ERROR, PayloadType.CONFIRM, 0, SensorState.ERROR)
+    _test_update_state_case(SensorState.ERROR, PayloadType.HANDLE_ALERT, 0, SensorState.ERROR)
 
     # From ready
     _test_update_state_case(SensorState.READY, PayloadType.READING, 0, SensorState.READY)
@@ -124,7 +124,7 @@ def test_get_state():
     _test_update_state_case(SensorState.READY, PayloadType.START_REC, 0, SensorState.RUNNING)
     _test_update_state_case(SensorState.READY, PayloadType.END_REC, 0, SensorState.READY)
     _test_update_state_case(SensorState.READY, PayloadType.KEEP_ALIVE, 0, SensorState.READY)
-    _test_update_state_case(SensorState.READY, PayloadType.CONFIRM, 0, SensorState.READY)
+    _test_update_state_case(SensorState.READY, PayloadType.HANDLE_ALERT, 0, SensorState.READY)
 
     # From running
     _test_update_state_case(SensorState.RUNNING, PayloadType.READING, 0, SensorState.RUNNING)
@@ -132,21 +132,21 @@ def test_get_state():
     _test_update_state_case(SensorState.RUNNING, PayloadType.START_REC, 0, SensorState.RUNNING)
     _test_update_state_case(SensorState.RUNNING, PayloadType.END_REC, 0, SensorState.READY)
     _test_update_state_case(SensorState.RUNNING, PayloadType.KEEP_ALIVE, 0, SensorState.RUNNING)
-    _test_update_state_case(SensorState.RUNNING, PayloadType.CONFIRM, 0, SensorState.RUNNING)
+    _test_update_state_case(SensorState.RUNNING, PayloadType.HANDLE_ALERT, 0, SensorState.RUNNING)
 
     # From alert_ready
     _test_update_state_case(SensorState.ALERT_READY, PayloadType.READING, 0, SensorState.ALERT_READY)
     _test_update_state_case(SensorState.ALERT_READY, PayloadType.START_REC, 0, SensorState.ALERT_READY)
     _test_update_state_case(SensorState.ALERT_READY, PayloadType.END_REC, 0, SensorState.ALERT_READY)
     _test_update_state_case(SensorState.ALERT_READY, PayloadType.KEEP_ALIVE, 0, SensorState.ALERT_READY)
-    _test_update_state_case(SensorState.ALERT_READY, PayloadType.CONFIRM, 0, SensorState.READY)
+    _test_update_state_case(SensorState.ALERT_READY, PayloadType.HANDLE_ALERT, 0, SensorState.READY)
 
     # From alert_running
     _test_update_state_case(SensorState.ALERT_RUNNING, PayloadType.READING, 0, SensorState.ALERT_RUNNING)
     _test_update_state_case(SensorState.ALERT_RUNNING, PayloadType.START_REC, 0, SensorState.ALERT_RUNNING)
     _test_update_state_case(SensorState.ALERT_RUNNING, PayloadType.END_REC, 0, SensorState.ALERT_READY)
     _test_update_state_case(SensorState.ALERT_RUNNING, PayloadType.KEEP_ALIVE, 0, SensorState.ALERT_RUNNING)
-    _test_update_state_case(SensorState.ALERT_RUNNING, PayloadType.CONFIRM, 0, SensorState.RUNNING)
+    _test_update_state_case(SensorState.ALERT_RUNNING, PayloadType.HANDLE_ALERT, 0, SensorState.RUNNING)
 
 
 def test_to_irma_ui():
@@ -160,7 +160,7 @@ def test_to_irma_ui():
     dato1 = 0.0
     dato2 = 0.0
     dato3 = 0
-    unconfirmedAlertIDs = [1, 2, 3, 4]
+    unhandledAlertIDs = [1, 2, 3, 4]
 
     expected_value = {
         "sensorID": sensorID,
@@ -181,14 +181,14 @@ def test_to_irma_ui():
                 "dato": dato3
             }
         ],
-        "unconfirmedAlertIDs": unconfirmedAlertIDs
+        "unhandledAlertIDs": unhandledAlertIDs
     }
 
     assert websocket_app.to_irma_ui_data(
         sensorID, sensorName, applicationID, state,
         titolo1, titolo2, titolo3,
         dato1, dato2, dato3,
-        unconfirmedAlertIDs
+        unhandledAlertIDs
     ) == expected_value, "Error in `to_irma_ui_data`: output mismatch"
 
 
