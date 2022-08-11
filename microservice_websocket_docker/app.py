@@ -373,8 +373,8 @@ def create_app():
         # Filtro via i dati vuoti (sensorID non valido)
         return jsonify(data=[x for x in data if x])
 
-    @jwt_required()
     @app.route('/api/organizations')
+    @jwt_required()
     def get_organizations():
         organizations = microservice.Organization.objects() # type: ignore
 
@@ -383,8 +383,8 @@ def create_app():
 
         return jsonify(organizations=organizations)
 
-    @jwt_required()
     @app.route('/api/organizations', methods=['POST'])
+    @jwt_required()
     def create_organization():
         record: dict = json.loads(request.data)
 
@@ -393,8 +393,8 @@ def create_app():
 
         return jsonify(organization.to_json())
 
-    @jwt_required()
     @app.route('/api/applications/<organizationID>', methods=['POST'])
+    @jwt_required()
     def create_application(organizationID):
         record: dict = json.loads(request.data)
 
@@ -411,8 +411,8 @@ def create_app():
 
 
 
-    @jwt_required()
     @app.route('/api/applications')
+    @jwt_required()
     def get_applications():
         organizationID: str = request.args.get('organizationID', '')
 
@@ -426,8 +426,8 @@ def create_app():
 
         return jsonify(applications=applications)
 
-    @jwt_required()
     @app.route('/api/sensors')
+    @jwt_required()
     def get_sensors():
         applicationID: str = request.args.get('applicationID', '')
 
@@ -529,8 +529,8 @@ def create_app():
         return record
 
 
-    @jwt_required()
     @app.route('/api/alert/confirm', methods=['POST'])
+    @jwt_required()
     def confirm_alert():
         received: dict = json.loads(request.data)
 
@@ -562,8 +562,8 @@ def create_app():
         socketio.emit('change')
         return received
 
-    @jwt_required()
     @app.route('/api/command', methods=['POST'])
+    @jwt_required()
     def sendMqtt(): # alla ricezione di un post pubblica un messaggio sul topic
         received: dict = json.loads(request.data)
 
