@@ -321,7 +321,7 @@ def create_app():
     @jwt.user_identity_loader
     def user_identity_lookup(user):
         app.logger.info(f'{user=}')
-        return user_datastore.find_user(email=user.email)
+        return user_datastore.find_user(email=user["email"])
 
     # Register a callback function that loads a user from your database whenever
     # a protected route is accessed. This should return any python object on a
