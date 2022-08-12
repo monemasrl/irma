@@ -10,13 +10,13 @@ from flask_mongoengine import MongoEngine
 from flask_socketio import SocketIO
 from flask_security.core import Security
 from flask_security.datastore import MongoEngineUserDatastore
-from flask_security.utils import login_user, verify_password
+from flask_security.utils import login_user, verify_password, logout_user
 from flask_login import current_user, login_required
 from flask_jwt_extended import create_access_token, get_jwt_identity, \
-    jwt_required, JWTManager
+    jwt_required, JWTManager, create_refresh_token
 
 from enum import IntEnum, auto
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from mobius import utils
 from database import microservice
@@ -42,7 +42,11 @@ class ConfigClass(object):
     # Generate a good salt using: secrets.SystemRandom().getrandbits(128)
     SECURITY_PASSWORD_SALT = os.environ.get("SECURITY_PASSWORD_SALT", '146585145368132386173505678016728509634')
 
+    # JWT SETTINGS
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", 'pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw')
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(weeks=1)
+
     # Flask-MongoEngine settings
     MONGODB_SETTINGS = {
         'db': 'irma',
@@ -337,7 +341,7 @@ def create_app():
 
     # Create a route to authenticate your users and return JWTs. The
     # create_access_token() function is used to actually generate the JWT.
-    @app.route("/api/authenticate", methods=["POST"])
+    @app.route("/api/login", methods=["POST"])
     def custom_login():
         username = request.json.get("username", None)
         password = request.json.get("password", None)
@@ -347,9 +351,26 @@ def create_app():
         if verify_password(password, user['password']):
             login_user(user=user, remember=False)
             access_token = create_access_token(identity=current_user)
-            return jsonify(access_token=access_token)
+            refresh_token = create_refresh_token(identity=current_user)
+            return jsonify(access_token=access_token, refresh_token=refresh_token)
 
-        return jsonify("Wrong username or password"), 401
+        return jsonify({ "message": "wrong username or password"}), 401
+
+
+    @app.route("/api/logout", methods=["POST"])
+    def logout():
+        logout_user()
+        response = jsonify({ 'message': 'logout successful' })
+        return response
+
+
+    @app.route("/api/refresh", methods=["POST"])
+    @jwt_required(refresh=True)
+    def refresh_token():
+        identity = get_jwt_identity()
+        access_token = create_access_token(identity=identity)
+        return jsonify(access_token=access_token)
+
 
     @app.route("/api/jwttest")
     @jwt_required()
