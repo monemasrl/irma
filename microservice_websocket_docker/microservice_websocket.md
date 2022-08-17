@@ -88,6 +88,8 @@ Esempio:
 
 È possibile **pubblicare** dei dati mediante una **POST** su **/\<applicationID\>/\<sensorID\>/publish**.
 
+A differenza delle altre route che sono protette da **Token JWT**, questa è protetta da un **API Token** statico (si consiglia un **UUID**) che deve essere **inserito** all'interno di *microservice_websocket_docker/api-tokens.txt*.
+
 Il corpo della richiesta può essre di due tipi: 
 
 - Quello inviato dal [nodo](../node/app.py).

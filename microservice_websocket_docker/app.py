@@ -491,6 +491,7 @@ def create_app():
         return jsonify(sensors=sensors)
 
     @app.route('/api/<applicationID>/<sensorID>/publish', methods=['POST'])
+    @api_token_required
     def create_record(applicationID: str, sensorID: int):
         # TODO: controllo header token
 
