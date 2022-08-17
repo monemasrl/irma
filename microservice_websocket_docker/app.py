@@ -3,7 +3,7 @@ import os
 import iso8601
 import base64
 
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template_string, make_response
 from flask_cors import cross_origin, CORS
 from flask_mqtt import Mqtt
 from flask_mongoengine import MongoEngine
@@ -17,6 +17,7 @@ from flask_jwt_extended import create_access_token, get_jwt_identity, \
 
 from enum import IntEnum, auto
 from datetime import datetime, timedelta
+from functools import wraps
 
 from mobius import utils
 from database import microservice
@@ -76,6 +77,28 @@ class ConfigClass(object):
     MQTT_BROKER_URL = os.environ.get("MQTT_BROKER_URL", 'localhost')
     MQTT_BROKER_PORT = int(os.environ.get("MQTT_BROKER_PORT", 1883))
     MQTT_TLS_ENABLED = False
+
+
+def api_token_required(f):
+    @wraps(f)
+    def decorator(*args, **kwargs):
+        if not 'Authorization' in request.headers:
+            return make_response(
+                jsonify({ "message": "No API Token Provided" }), 401)
+
+
+        token: str = request.headers["Authorization"].split(" ")[1]
+
+        with open("./api-tokens.txt", "r") as file:
+            tokens: list[str] = [x.strip() for x in file.readlines()]
+
+            if not token in tokens:
+                return make_response(
+                    jsonify({ "message": "Invalid Token" }), 401)
+
+        return f(*args, **kwargs)
+    return decorator
+
 
 def decode_data(encoded_data: str) -> dict:
     raw_bytes = base64.b64decode(encoded_data)
@@ -377,6 +400,12 @@ def create_app():
     def jwttest():
         """View protected by jwt test. If necessary, exempt it from csrf protection. See flask_wtf.csrf for more info"""
         return jsonify({"foo": "bar", "baz": "qux"})
+
+
+    @app.route("/api/api-token-test")
+    @api_token_required
+    def api_token_test():
+        return jsonify({ "message": "Valid API Token!"} )
 
     # Views
     @app.route('/')
