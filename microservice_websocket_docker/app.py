@@ -2,6 +2,7 @@ import json
 import os
 import iso8601
 import base64
+import database as db
 
 from flask import Flask, request, jsonify, render_template_string, make_response
 from flask_cors import cross_origin, CORS
@@ -20,7 +21,6 @@ from datetime import datetime, timedelta
 from functools import wraps
 
 from mobius import utils
-from database import microservice
 
 
 # valore teorico della soglia di pericolo del sensore
@@ -231,7 +231,7 @@ def get_data(sensorID: str) -> dict:
     #salvataggio del valore attuale del mese per il confronto
     current_month: int = datetime.now().month 
 
-    sensor = microservice.Sensor.objects(sensorID=sensorID).first() # type: ignore
+    sensor = db.Sensor.objects(sensorID=sensorID).first()
 
     if sensor is None:
         return {}
@@ -240,12 +240,9 @@ def get_data(sensorID: str) -> dict:
     sensorName: str = sensor["sensorName"]
     applicationID: str = str(sensor["application"]["id"])
 
-    collect = microservice.Reading.objects(sensor=sensor).order_by("-publishedAt") # type: ignore
+    collect = db.Reading.objects(sensor=sensor).order_by("-publishedAt")
 
-    unhandledAlerts = microservice.Alert.objects(
-        sensor=sensor,
-        isHandled=False
-    )
+    unhandledAlerts = db.Alert.objects(sensor=sensor, isHandled=False)
 
     unhandledAlertIDs = [str(x["id"]) for x in unhandledAlerts]
 
@@ -327,8 +324,8 @@ def create_app():
     app.config.from_object(__name__+'.ConfigClass')
     socketio = create_socketio(app)
 
-    db = MongoEngine()
-    db.init_app(app)
+    databse = MongoEngine()
+    databse.init_app(app)
 
     CORS(app)
 
@@ -425,7 +422,7 @@ def create_app():
     @app.route('/api/organizations')
     @jwt_required()
     def get_organizations():
-        organizations = microservice.Organization.objects() # type: ignore
+        organizations = db.Organization.objects()
 
         if len(organizations) == 0:
             return { 'message': 'Not Found' }, 404
@@ -437,7 +434,7 @@ def create_app():
     def create_organization():
         record: dict = json.loads(request.data)
 
-        organization = microservice.Organization(organizationName=record['name'])
+        organization = db.Organization(organizationName=record['name'])
         organization.save()
 
         return jsonify(organization.to_json())
@@ -447,11 +444,12 @@ def create_app():
     def create_application(organizationID):
         record: dict = json.loads(request.data)
 
-        organizations = microservice.Organization.objects(id=organizationID) # type: ignore
+        organizations = db.Organization.objects(id=organizationID)
 
         if len(organizations) > 0: 
             organization = organizations[0]
-            application = microservice.Application(applicationName=record['name'], organization=organization)
+            application = db.Application(
+                applicationName=record['name'], organization=organization)
             application.save()
             return application.to_json()
         else:
@@ -468,7 +466,7 @@ def create_app():
         if organizationID == "":
             return { 'message': 'Bad Request' }, 400
 
-        applications = microservice.Application.objects(organization=organizationID) # type: ignore
+        applications = db.Application.objects(organization=organizationID)
 
         if len(applications) == 0:
             return { 'message': 'Not Found' }, 404
@@ -483,7 +481,7 @@ def create_app():
         if applicationID == "":
             return { 'message': 'Bad Request' }, 400
 
-        sensors = microservice.Sensor.objects(application=applicationID) # type: ignore
+        sensors = db.Sensor.objects(application=applicationID)
 
         if len(sensors) == 0:
             return { 'message': 'Not Found' }, 404
@@ -511,17 +509,17 @@ def create_app():
             # TODO: portare a payload di node/app.py
             pass 
             
-        application = microservice.Application.objects(id=applicationID).first() # type: ignore
+        application = db.Application.objects(id=applicationID).first()
 
         if application is None:
             app.logger.info(f'Not found')
             return { 'message': 'Not Found' }, 404
 
-        sensor =  microservice.Sensor.objects(sensorID=sensorID).first() # type: ignore
+        sensor =  db.Sensor.objects(sensorID=sensorID).first()
 
 
         if sensor is None:
-            sensor = microservice.Sensor(
+            sensor = db.Sensor(
                 sensorID=record["sensorID"],
                 application=application,
                 organization=application["organization"],
@@ -537,9 +535,9 @@ def create_app():
                 utils.insert(record)
 
             requestedAt = iso8601.parse_date(record["requestedAt"])
-            reading = microservice.Reading.objects(requestedAt=requestedAt).first()
+            reading = db.Reading.objects(requestedAt=requestedAt).first()
 
-            data = microservice.Data(
+            data = db.Data(
                 payloadType=record['data']['payloadType'],
                 sensorData=record['data']['sensorData'],
                 publishedAt=iso8601.parse_date(record['publishedAt']),
@@ -548,7 +546,7 @@ def create_app():
             )
 
             if reading is None:
-                reading = microservice.Reading(
+                reading = db.Reading(
                     sensor=sensor,
                     requestedAt=requestedAt,
                     data=[data],
@@ -560,7 +558,7 @@ def create_app():
             reading.save()
 
             if data["sensorData"] >= MAX_TRESHOLD:
-                alert = microservice.Alert(
+                alert = db.Alert(
                     reading=reading,
                     sensor=sensor,
                     isHandled=False
@@ -585,15 +583,15 @@ def create_app():
         received: dict = json.loads(request.data)
 
         alertID = received["alertID"]
-        alert = microservice.Alert.objects(id=alertID).first()
+        alert = db.Alert.objects(id=alertID).first()
         if alert is None:
-            return { 'Message': 'Not Found' }, 404
+            return { 'message': 'Not Found' }, 404
 
         sensor = alert["sensor"]
 
         user_id = get_jwt_identity()["_id"]["$oid"]
 
-        user = microservice.User.objects(id=user_id).first()
+        user = db.User.objects(id=user_id).first()
         
         alert["isConfirmed"] = received["isConfirmed"]
         alert["isHandled"] = True
@@ -602,7 +600,7 @@ def create_app():
         alert["handleNote"] = received["handleNote"]
         alert.save()
 
-        if microservice.Alert.objects(
+        if db.Alert.objects(
             sensor=sensor,
             isHandled=False
         ).first() is None:
@@ -621,11 +619,11 @@ def create_app():
     def sendMqtt(): # alla ricezione di un post pubblica un messaggio sul topic
         received: dict = json.loads(request.data)
 
-        applicationID = received["applicationID"]
-        sensorID = received["sensorID"]
+        applicationID = received.get("applicationID", None)
+        sensorID = received.get("sensorID", None)
 
-        if applicationID == "" or sensorID == "":
-            return { 'Message': 'Bad Request' }, 400
+        if applicationID is None or sensorID is None:
+            return { 'message': 'Bad Request' }, 400
 
         topic: str = f'{applicationID}/{sensorID}/command'
 
