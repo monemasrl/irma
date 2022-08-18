@@ -200,9 +200,9 @@ A questo punto **microservice_websocket** registrerà l'**alert** come **gestita
 
 Per maggior informazioni sulla struttura del **alert** nel database, fare riferimento alla sua [documentazione](./database/database.md).
 
-### Autenticazione (POST /api/login)
+### Autenticazione (POST /api/authenticate)
 
-Per effettuare l'**autenticazione** ed ottene un **Token JWT** e il relativo **Token JWT di refresh**, è necessaro effettuare una **POST** su **/api/login**.
+Per effettuare l'**autenticazione** ed ottene un **Token JWT** e il relativo **Token JWT di refresh**, è necessario effettuare una **POST** su **/api/authenticate**.
 
 Corpo della richiesta (JSON):
 
@@ -235,14 +235,6 @@ Esempio:
   "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 }
 ```
-
-### Logout (POST /api/logout)
-
-Per effettuare il **logout**, è necessaro effettuare una **POST** su **/api/login**.
-
-Effettua il logout nel backend. Il meccanismo di login/logout nel backend non è ancora sfruttato.
-
-Il server risponde con `{ "message": "logout successfull" }`.
 
 ### Refresh (POST /api/refresh)
 
