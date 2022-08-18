@@ -4,15 +4,11 @@ import iso8601
 import base64
 import database as db
 
-from flask import Flask, request, jsonify, render_template_string, make_response
+from flask import Flask, request, jsonify, make_response
 from flask_cors import cross_origin, CORS
 from flask_mqtt import Mqtt
 from flask_mongoengine import MongoEngine
 from flask_socketio import SocketIO
-from flask_security.core import Security
-from flask_security.datastore import MongoEngineUserDatastore
-from flask_security.utils import login_user, verify_password, logout_user
-from flask_login import current_user, login_required
 from flask_jwt_extended import create_access_token, get_jwt_identity, \
     jwt_required, JWTManager, create_refresh_token
 
@@ -21,6 +17,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 
 from mobius import utils
+from database import user_manager
 
 
 # valore teorico della soglia di pericolo del sensore
@@ -39,9 +36,6 @@ class ConfigClass(object):
 
     # Generate a nice key using secrets.token_urlsafe()
     SECRET_KEY = os.environ.get("SECRET_KEY", 'pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw')
-    # Bcrypt is set as default SECURITY_PASSWORD_HASH, which requires a salt
-    # Generate a good salt using: secrets.SystemRandom().getrandbits(128)
-    SECURITY_PASSWORD_SALT = os.environ.get("SECURITY_PASSWORD_SALT", '146585145368132386173505678016728509634')
 
     # JWT SETTINGS
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", 'pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw')
@@ -333,15 +327,12 @@ def create_app():
     if not DISABLE_MQTT:
         mqtt: Mqtt = create_mqtt(app)
 
-    user_datastore = MongoEngineUserDatastore(db, microservice.User, microservice.Role)
-    security = Security(app, user_datastore)
-
     # Register a callback function that takes whatever object is passed in as the
     # identity when creating JWTs and converts it to a JSON serializable format.
     @jwt.user_identity_loader
     def user_identity_lookup(user):
-        app.logger.info(f'{user=}')
-        return user_datastore.find_user(email=user["email"])
+        app.logger.info(f'Looking up: {user=}')
+        return user_manager.get_user(user["email"])
 
     # Register a callback function that loads a user from your database whenever
     # a protected route is accessed. This should return any python object on a
@@ -351,37 +342,39 @@ def create_app():
     def user_lookup_callback(_jwt_header, jwt_data):
         identity = jwt_data["sub"]
         app.logger.info(f'{identity=}')
-        return user_datastore.find_user(email=identity['email'])
+        return user_manager.get_user(identity['email'])
 
     # Create a user to test with
     @app.before_first_request
     def create_user():
         app.logger.info('Creo utente')
-        user_datastore.create_user(email='bettarini@monema.it', password='password')
+        user_manager.create_user(
+            email='bettarini@monema.it',
+            password='password'
+        )
 
     # Create a route to authenticate your users and return JWTs. The
     # create_access_token() function is used to actually generate the JWT.
     @app.route("/api/login", methods=["POST"])
-    def custom_login():
-        username = request.json.get("username", None)
-        password = request.json.get("password", None)
+    def authenticate():
+        json_payload = json.loads(request.data)
+        username = json_payload.get("username", None)
+        password = json_payload.get("password", None)
 
-        user = user_datastore.find_user(email=username)
+        if username is None or password is None:
+            return jsonify({ "message": "Bad Request"}), 400
 
-        if verify_password(password, user['password']):
-            login_user(user=user, remember=False)
-            access_token = create_access_token(identity=current_user)
-            refresh_token = create_refresh_token(identity=current_user)
+        user = user_manager.get_user(username)
+
+        if user is None:
+            return jsonify({ "message": "User not found" }), 404
+
+        if user_manager.verify(user, password):
+            access_token = create_access_token(identity=user)
+            refresh_token = create_refresh_token(identity=user)
             return jsonify(access_token=access_token, refresh_token=refresh_token)
 
         return jsonify({ "message": "wrong username or password"}), 401
-
-
-    @app.route("/api/logout", methods=["POST"])
-    def logout():
-        logout_user()
-        response = jsonify({ 'message': 'logout successful' })
-        return response
 
 
     @app.route("/api/refresh", methods=["POST"])
@@ -404,11 +397,6 @@ def create_app():
     def api_token_test():
         return jsonify({ "message": "Valid API Token!"} )
 
-    # Views
-    @app.route('/')
-    @login_required
-    def webhome():
-        return render_template_string("Hello {{ current_user.email }}")
 
     @app.route('/', methods=['POST'])
     @cross_origin()
