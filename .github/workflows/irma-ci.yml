@@ -40,7 +40,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Run unit tests
         run: |
-          coverage run --branch python -m pytest tests/ --import-mode=append \
+          coverage run --branch -m pytest tests/ --import-mode=append \
             --html-report=/reports/index.html \
             --title='IRMA UNIT TEST REPORT ${{ matrix.python-version }}'
           coverage html -d /reports/coverage
