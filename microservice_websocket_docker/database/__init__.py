@@ -39,6 +39,7 @@ class Sensor(Document):
     organization = ReferenceField(Organization, required=True)
     sensorName = StringField(default='', required=True)
     state = IntField(required=True)
+    lastSeenAt = DateTimeField(required=True)
 
 
 class Data(EmbeddedDocument):
