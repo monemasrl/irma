@@ -72,6 +72,7 @@ I campi disponibili sono:
 | organization | Reference | Organization, required=True
 | sensorName | String | default='', required=True
 | state | Int | required=True
+| lastSeenAt | Datetime | required=True
 
 ## Data
 
