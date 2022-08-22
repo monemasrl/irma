@@ -3,6 +3,7 @@ from flask import Flask
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
 from mock import patch
+from datetime import datetime
 from microservice_websocket_docker import app as websocket_app
 from microservice_websocket_docker.app import SensorState, PayloadType, MAX_TRESHOLD
 import pytest
@@ -102,51 +103,56 @@ class TestFlaskApp:
     #     "Invalid structure of returned json: doesn't match `to_irma_ui_data()` \
     #     function, in `data_conversion.py`. Check stdout log."
 
-def _test_update_state_case(current: SensorState, typ: PayloadType,
-                           dato: int, expected: SensorState):
+def _test_update_state_case(
+        current: SensorState,
+        lastSeenAt: datetime,
+        typ: PayloadType,
+        dato: int, expected: SensorState):
 
-    assert websocket_app.update_state(current, typ, dato) == expected, \
-    f"Error from state '{current}' with typ '{typ}' and dato '{dato}'. Expected {expected}\
-     but got {websocket_app.update_state(current, typ, dato)}"
+    assert (got := websocket_app.update_state(current, lastSeenAt, typ, dato)) == expected, \
+    f"Error from state '{current}' with timedelta '{datetime.now() - lastSeenAt}',\
+    typ '{typ}' and dato '{dato}'. Expected {expected} but got {got}"
 
 def test_get_state():
     # From error
-    _test_update_state_case(SensorState.ERROR, PayloadType.READING, 0, SensorState.ERROR)
-    _test_update_state_case(SensorState.ERROR, PayloadType.READING, MAX_TRESHOLD, SensorState.ERROR)
-    _test_update_state_case(SensorState.ERROR, PayloadType.START_REC, 0, SensorState.ERROR)
-    _test_update_state_case(SensorState.ERROR, PayloadType.END_REC, 0, SensorState.ERROR)
-    _test_update_state_case(SensorState.ERROR, PayloadType.KEEP_ALIVE, 0, SensorState.READY)
-    _test_update_state_case(SensorState.ERROR, PayloadType.HANDLE_ALERT, 0, SensorState.ERROR)
+    _test_update_state_case(SensorState.ERROR, datetime.now(), PayloadType.READING, 0, SensorState.ERROR)
+    _test_update_state_case(SensorState.ERROR, datetime.now(), PayloadType.READING, MAX_TRESHOLD, SensorState.ERROR)
+    _test_update_state_case(SensorState.ERROR, datetime.now(), PayloadType.START_REC, 0, SensorState.ERROR)
+    _test_update_state_case(SensorState.ERROR, datetime.now(), PayloadType.END_REC, 0, SensorState.ERROR)
+    _test_update_state_case(SensorState.ERROR, datetime.now(), PayloadType.KEEP_ALIVE, 0, SensorState.READY)
+    _test_update_state_case(SensorState.ERROR, datetime.now(), PayloadType.HANDLE_ALERT, 0, SensorState.ERROR)
 
     # From ready
-    _test_update_state_case(SensorState.READY, PayloadType.READING, 0, SensorState.READY)
-    _test_update_state_case(SensorState.READY, PayloadType.READING, MAX_TRESHOLD, SensorState.ALERT_READY)
-    _test_update_state_case(SensorState.READY, PayloadType.START_REC, 0, SensorState.RUNNING)
-    _test_update_state_case(SensorState.READY, PayloadType.END_REC, 0, SensorState.READY)
-    _test_update_state_case(SensorState.READY, PayloadType.KEEP_ALIVE, 0, SensorState.READY)
-    _test_update_state_case(SensorState.READY, PayloadType.HANDLE_ALERT, 0, SensorState.READY)
+    _test_update_state_case(SensorState.READY, datetime.now(), PayloadType.READING, 0, SensorState.READY)
+    _test_update_state_case(SensorState.READY, datetime.now(), PayloadType.READING, MAX_TRESHOLD, SensorState.ALERT_READY)
+    _test_update_state_case(SensorState.READY, datetime.now(), PayloadType.START_REC, 0, SensorState.RUNNING)
+    _test_update_state_case(SensorState.READY, datetime.now(), PayloadType.END_REC, 0, SensorState.READY)
+    _test_update_state_case(SensorState.READY, datetime.now(), PayloadType.KEEP_ALIVE, 0, SensorState.READY)
+    _test_update_state_case(SensorState.READY, datetime.now(), PayloadType.HANDLE_ALERT, 0, SensorState.READY)
+    _test_update_state_case(SensorState.READY, datetime(2020, 6, 1, 3, 2, 1), PayloadType.HANDLE_ALERT, 0, SensorState.ERROR)
 
     # From running
-    _test_update_state_case(SensorState.RUNNING, PayloadType.READING, 0, SensorState.RUNNING)
-    _test_update_state_case(SensorState.RUNNING, PayloadType.READING, MAX_TRESHOLD, SensorState.ALERT_RUNNING)
-    _test_update_state_case(SensorState.RUNNING, PayloadType.START_REC, 0, SensorState.RUNNING)
-    _test_update_state_case(SensorState.RUNNING, PayloadType.END_REC, 0, SensorState.READY)
-    _test_update_state_case(SensorState.RUNNING, PayloadType.KEEP_ALIVE, 0, SensorState.RUNNING)
-    _test_update_state_case(SensorState.RUNNING, PayloadType.HANDLE_ALERT, 0, SensorState.RUNNING)
+    _test_update_state_case(SensorState.RUNNING, datetime.now(), PayloadType.READING, 0, SensorState.RUNNING)
+    _test_update_state_case(SensorState.RUNNING, datetime.now(), PayloadType.READING, MAX_TRESHOLD, SensorState.ALERT_RUNNING)
+    _test_update_state_case(SensorState.RUNNING, datetime.now(), PayloadType.START_REC, 0, SensorState.RUNNING)
+    _test_update_state_case(SensorState.RUNNING, datetime.now(), PayloadType.END_REC, 0, SensorState.READY)
+    _test_update_state_case(SensorState.RUNNING, datetime.now(), PayloadType.KEEP_ALIVE, 0, SensorState.RUNNING)
+    _test_update_state_case(SensorState.RUNNING, datetime.now(), PayloadType.HANDLE_ALERT, 0, SensorState.RUNNING)
 
     # From alert_ready
-    _test_update_state_case(SensorState.ALERT_READY, PayloadType.READING, 0, SensorState.ALERT_READY)
-    _test_update_state_case(SensorState.ALERT_READY, PayloadType.START_REC, 0, SensorState.ALERT_READY)
-    _test_update_state_case(SensorState.ALERT_READY, PayloadType.END_REC, 0, SensorState.ALERT_READY)
-    _test_update_state_case(SensorState.ALERT_READY, PayloadType.KEEP_ALIVE, 0, SensorState.ALERT_READY)
-    _test_update_state_case(SensorState.ALERT_READY, PayloadType.HANDLE_ALERT, 0, SensorState.READY)
+    _test_update_state_case(SensorState.ALERT_READY, datetime.now(), PayloadType.READING, 0, SensorState.ALERT_READY)
+    _test_update_state_case(SensorState.ALERT_READY, datetime.now(), PayloadType.START_REC, 0, SensorState.ALERT_READY)
+    _test_update_state_case(SensorState.ALERT_READY, datetime.now(), PayloadType.END_REC, 0, SensorState.ALERT_READY)
+    _test_update_state_case(SensorState.ALERT_READY, datetime.now(), PayloadType.KEEP_ALIVE, 0, SensorState.ALERT_READY)
+    _test_update_state_case(SensorState.ALERT_READY, datetime.now(), PayloadType.HANDLE_ALERT, 0, SensorState.READY)
+    _test_update_state_case(SensorState.ALERT_READY, datetime(2020, 6, 1, 3, 2, 1), PayloadType.HANDLE_ALERT, 0, SensorState.ERROR)
 
     # From alert_running
-    _test_update_state_case(SensorState.ALERT_RUNNING, PayloadType.READING, 0, SensorState.ALERT_RUNNING)
-    _test_update_state_case(SensorState.ALERT_RUNNING, PayloadType.START_REC, 0, SensorState.ALERT_RUNNING)
-    _test_update_state_case(SensorState.ALERT_RUNNING, PayloadType.END_REC, 0, SensorState.ALERT_READY)
-    _test_update_state_case(SensorState.ALERT_RUNNING, PayloadType.KEEP_ALIVE, 0, SensorState.ALERT_RUNNING)
-    _test_update_state_case(SensorState.ALERT_RUNNING, PayloadType.HANDLE_ALERT, 0, SensorState.RUNNING)
+    _test_update_state_case(SensorState.ALERT_RUNNING, datetime.now(), PayloadType.READING, 0, SensorState.ALERT_RUNNING)
+    _test_update_state_case(SensorState.ALERT_RUNNING, datetime.now(), PayloadType.START_REC, 0, SensorState.ALERT_RUNNING)
+    _test_update_state_case(SensorState.ALERT_RUNNING, datetime.now(), PayloadType.END_REC, 0, SensorState.ALERT_READY)
+    _test_update_state_case(SensorState.ALERT_RUNNING, datetime.now(), PayloadType.KEEP_ALIVE, 0, SensorState.ALERT_RUNNING)
+    _test_update_state_case(SensorState.ALERT_RUNNING, datetime.now(), PayloadType.HANDLE_ALERT, 0, SensorState.RUNNING)
 
 
 def test_to_irma_ui():

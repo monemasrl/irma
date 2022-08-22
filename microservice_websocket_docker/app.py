@@ -30,6 +30,9 @@ MOBIUS_PORT = os.environ.get("MOBIUS_PORT", "5002")
 # for testing purposes
 DISABLE_MQTT = False if os.environ.get("DISABLE_MQTT") != 1 else True
 
+# for sensor timeout
+SENSORS_TIMEOUT_INTERVAL = timedelta(hours=1)
+
 # Class-based application configuration
 class ConfigClass(object):
     """ Flask application config """
@@ -180,7 +183,14 @@ class PayloadType(IntEnum):
     HANDLE_ALERT=auto()
 
 
-def update_state(current_state: SensorState, typ: PayloadType, dato: int = 0):
+def update_state(
+        current_state: SensorState,
+        lastSeenAt: datetime,
+        typ: PayloadType | None = None,
+        dato: int = 0):
+
+    is_timed_out: bool = (datetime.now() - lastSeenAt) > SENSORS_TIMEOUT_INTERVAL
+
     if current_state == SensorState.ERROR:
         if typ == PayloadType.KEEP_ALIVE:
             return SensorState.READY
@@ -191,6 +201,8 @@ def update_state(current_state: SensorState, typ: PayloadType, dato: int = 0):
         elif typ == PayloadType.READING:
             if dato >= MAX_TRESHOLD:
                 return SensorState.ALERT_READY
+        elif is_timed_out:
+            return SensorState.ERROR
 
     elif current_state == SensorState.RUNNING:
         if typ == PayloadType.READING:
@@ -207,7 +219,10 @@ def update_state(current_state: SensorState, typ: PayloadType, dato: int = 0):
 
     elif current_state == SensorState.ALERT_READY:
         if typ == PayloadType.HANDLE_ALERT:
-            return SensorState.READY
+            if is_timed_out:
+                return SensorState.ERROR
+            else:
+                return SensorState.READY
 
     return current_state
 
@@ -512,7 +527,8 @@ def create_app():
                 application=application,
                 organization=application["organization"],
                 sensorName=record["sensorName"],
-                state=SensorState.READY
+                state=SensorState.READY,
+                lastSeenAt=datetime.now(),
             )
             sensor.save()
 
@@ -553,8 +569,10 @@ def create_app():
                 )
                 alert.save()
 
+        sensor["lastSeenAt"] = datetime.now()
         sensor["state"] = update_state(
             sensor["state"], 
+            sensor["lastSeenAt"],
             record["data"]["payloadType"],
             record["data"]['sensorData']
         )
