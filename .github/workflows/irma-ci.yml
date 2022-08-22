@@ -33,16 +33,33 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-          
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
+          pip install flake8 pytest pytest-cov pycobertura pytest-html-reporter coverage
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Run unit tests
         run: |
-          python -m pytest tests/ --import-mode=append
-
+          coverage run --branch python -m pytest tests/ --import-mode=append \
+            --html-report=/reports/index.html \
+            --title='IRMA UNIT TEST REPORT ${{ matrix.python-version }}'
+          coverage html -d /reports/coverage
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v1.2
+        if: success() || failure()        # run this step even if previous step failed
+        with:
+          publish-dir: '/reports'
+          production-branch: master
+          alias: ${{ github.head_ref }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions"
+          enable-pull-request-comment: false
+          enable-commit-comment: true
+          overwrites-pull-request-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 1
   build-mock_mobius_docker:
     runs-on: self-hosted
     steps:
