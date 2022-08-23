@@ -3,5 +3,5 @@
         "db": "mobius",
         "host": "mongo",
         "port": 27017
-    } 
+    }
 }
