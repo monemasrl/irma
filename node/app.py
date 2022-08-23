@@ -13,12 +13,6 @@ from can.interface import Bus
 
 BYPASS_CAN = bool(environ.get("BYPASS_CAN", 0))
 
-config: dict = {}
-
-with open("config.yaml", "r") as file:
-    loaded_yaml = yaml.load(file, Loader=yaml.Loader)
-    config = loaded_yaml["settings"]
-
 
 class PayloadType(IntEnum):
     READING = 0
@@ -59,93 +53,106 @@ def decode_mqtt_data(encoded_string: str) -> dict:
     }
 
 
-def send_data(data: int, payload_type: PayloadType, commandTimestamp: str = ""):
-    payload: dict = {
-        "sensorID": config["node_info"]["sensorID"],
-        "sensorName": config["node_info"]["sensorName"],
-        "applicationID": config["node_info"]["applicationID"],
-        "organizationID": config["node_info"]["organizationID"],
-        "data": encode_data(
-            payload_type.value,
-            data,
-            config["mobius"]["sensorId"],
-            config["mobius"]["sensorPath"],
-        ),
-        "publishedAt": datetime.now().isoformat(),
-        "requestedAt": commandTimestamp,
-    }
+class Node:
+    def __init__(self):
+        with open("config.yaml", "r") as file:
+            loaded_yaml = yaml.load(file, Loader=yaml.Loader)
+            self.config = loaded_yaml["settings"]
 
-    host = config["microservice"]["url"]
-    port = config["microservice"]["port"]
-    api_key = config["microservice"]["api_key"]
-    sensorID = config["node_info"]["sensorID"]
-    applicationID = config["node_info"]["applicationID"]
+        if not BYPASS_CAN:
+            bustype = self.config["can"]["bustype"]
+            channel = self.config["can"]["channel"]
+            bitrate = self.config["can"]["bitrate"]
 
-    requests.post(
-        url=f"{host}:{port}/api/{applicationID}/{sensorID}/publish",
-        json=payload,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-    )
+            self.bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate) # type: ignore
+            print(f"Can type '{bustype}', on channel '{channel}' @{bitrate}")
 
+        self.send_keep_alive()
+        self.init_mqtt_client()
 
-def send_keep_alive():
-    send_data(0, PayloadType.KEEP_ALIVE)
+    def init_mqtt_client(self):
+        self.client = mqtt.Client()
 
+        def on_connect(client, userdata, flags, rc):
+            print("Connected with result code "+str(rc))
 
-def init_can(bustype, channel, bitrate):
-    global bus
-    bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate)  # type: ignore
+            applicationID = self.config["node_info"]["applicationID"]
+            sensorID = self.config["node_info"]["sensorID"]
+            client.subscribe(f"{applicationID}/{sensorID}/command")
 
-    print(f"Can type '{bustype}', on channel '{channel}' @{bitrate}")
+        def on_message(client, userdata, msg: mqtt.MQTTMessage):
+            print(msg.topic+" -> "+str(msg.payload))
 
+            decoded_data = decode_mqtt_data(msg.payload.decode())
 
-def read_and_send(commandTimestamp: str = ""):
-    if BYPASS_CAN:
-        data = int(input("Inserisci un dato: "))
-        send_data(data, PayloadType.READING, commandTimestamp)
-        return
+            command = decoded_data["command"]
 
-    global bus
+            if command == CommandType.START_REC:
+                self.start_rec(decoded_data["commandTimestamp"])
 
-    msg: Union[None, Message] = None
+        self.client.on_connect = on_connect
+        self.client.on_message = on_message
 
-    while msg is None:
-        msg = bus.recv(timeout=0.5)
+        self.client.connect(self.config['mqtt']['url'], self.config['mqtt']['port'], 60)
 
-    data: int = int.from_bytes(msg.data, byteorder="big", signed=False)
-    print(f"CAN> {data}")
+    def loop_forever(self):
+        return self.client.loop_forever()
 
-    send_data(data, PayloadType.READING, commandTimestamp)
+    def send_data(self, data: int, payload_type: PayloadType,
+                  commandTimestamp: str = ""):
+        payload: dict = {
+            "sensorID": self.config["node_info"]["sensorID"],
+            "sensorName": self.config["node_info"]["sensorName"],
+            "applicationID": self.config["node_info"]["applicationID"],
+            "organizationID": self.config["node_info"]["organizationID"],
+            "data": encode_data(payload_type.value,
+                                data,
+                                self.config["mobius"]["sensorId"],
+                                self.config["mobius"]["sensorPath"]),
+            "publishedAt": datetime.now().isoformat(),
+            "requestedAt": commandTimestamp,
+        }
 
+        host = self.config["microservice"]["url"]
+        port = self.config["microservice"]["port"]
+        api_key = self.config["microservice"]["api_key"]
+        sensorID = self.config["node_info"]["sensorID"]
+        applicationID = self.config["node_info"]["applicationID"]
 
-# The callback for when the client receives a CONNACK response from the server.
-def on_connect(client, userdata, flags, rc):
-    print("Connected with result code " + str(rc))
+        requests.post(
+            url=f'{host}:{port}/api/{applicationID}/{sensorID}/publish',
+            json=payload,
+            headers={
+                "Authorization": f'Bearer {api_key}',
+                "Content-Type": "application/json"
+            }
+        )
 
-    # Subscribing in on_connect() means that if we lose the connection and
-    # reconnect then subscriptions will be renewed.
-    # TODO: riguardare
-    applicationID = config["node_info"]["applicationID"]
-    sensorID = config["node_info"]["sensorID"]
-    client.subscribe(f"{applicationID}/{sensorID}/command")
+    def send_keep_alive(self):
+        self.send_data(0, PayloadType.KEEP_ALIVE)
 
+    def read_and_send(self, commandTimestamp: str = ""):
+        if BYPASS_CAN:
+            data = int(input("Inserisci un dato: "))
+            self.send_data(data, PayloadType.READING, commandTimestamp)
+            return
 
-# The callback for when a PUBLISH message is received from the server.
-def on_message(client, userdata, msg: mqtt.MQTTMessage):
-    print(msg.topic + " -> " + str(msg.payload))
+        self.bus
 
-    decoded_data = decode_mqtt_data(msg.payload.decode())
+        msg: Union[None, Message] = None
 
-    command = decoded_data["command"]
+        while msg is None:
+            msg = self.bus.recv(timeout=0.5)
 
-    if command == CommandType.START_REC:
+        data: int = int.from_bytes(msg.data, byteorder='big', signed=False)
+        print(f"CAN> {data}")
 
+        self.send_data(data, PayloadType.READING, commandTimestamp)
+
+    def start_rec(self, commandTimestamp: str):
         print("Received MQTT message, sending rec start...")
 
-        send_data(0, PayloadType.START_REC)
+        self.send_data(0, PayloadType.START_REC)
 
         print("Sleeping for 10 seconds...")
 
@@ -157,27 +164,18 @@ def on_message(client, userdata, msg: mqtt.MQTTMessage):
 
         print("Sending readings...")
 
-        read_and_send(decoded_data["commandTimestamp"])
-        read_and_send(decoded_data["commandTimestamp"])
-        read_and_send(decoded_data["commandTimestamp"])
-        read_and_send(decoded_data["commandTimestamp"])
+        self.read_and_send(commandTimestamp)
+        self.read_and_send(commandTimestamp)
+        self.read_and_send(commandTimestamp)
+        self.read_and_send(commandTimestamp)
 
         print("Sending rec end...")
 
-        send_data(0, PayloadType.END_REC)
+        self.send_data(0, PayloadType.END_REC)
 
 
 if __name__ == "__main__":
+    node = Node()
 
-    if not BYPASS_CAN:
-        init_can("socketcan", "can0", 12500)
+    node.loop_forever()
 
-    send_keep_alive()
-
-    client = mqtt.Client()
-    client.on_connect = on_connect
-    client.on_message = on_message
-
-    client.connect(config["mqtt"]["url"], config["mqtt"]["port"], 60)
-
-    client.loop_forever()

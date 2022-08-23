@@ -11,6 +11,10 @@ settings:
   mqtt:
     url: "localhost"
     port: 1883
+  can:
+    bustype: 'socketcan'
+    channel: 'can0'
+    bitrate: 12500
   mobius:
     sensorId: ""
     sensorPath: ""
