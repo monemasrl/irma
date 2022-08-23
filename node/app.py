@@ -1,5 +1,6 @@
 import base64
-from datetime import datetime
+import threading
+from datetime import datetime, timedelta
 from time import sleep
 from typing import Union
 from can import Message
@@ -87,6 +88,16 @@ def send_data(data: int, payload_type: PayloadType,
         }
     )
 
+def launch_keep_alive_daemon():
+    thread = threading.Thread(target=periodically_send_keep_alive, daemon=True)
+    thread.start()
+
+def periodically_send_keep_alive():
+    seconds = config["microservice"]["keep_alive_seconds"]
+    while True:
+        sleep(seconds)
+        send_keep_alive()
+
 
 def send_keep_alive():
     send_data(0, PayloadType.KEEP_ALIVE)
@@ -169,6 +180,7 @@ if __name__ == "__main__":
         init_can('socketcan', 'can0', 12500)
 
     send_keep_alive()
+    launch_keep_alive_daemon()
 
     client = mqtt.Client()
     client.on_connect = on_connect
