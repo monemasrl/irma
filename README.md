@@ -1,5 +1,14 @@
 # PROGETTO IRMA ![testing on branch master](https://github.com/monemasrl/irma/actions/workflows/irma-ci.yml/badge.svg?branch=master)
 
+I risultati dei test al seguente url:
+
+* [https://irma-tests.netlify.app/](https://irma-tests.netlify.app/)
+
+Per visualizzare la copertura del codice:
+
+* [https://irma-tests.netlify.app/coverage](https://irma-tests.netlify.app/coverage)
+
+
 ## DESCRIZIONE PROGETTO
 
 Rete di comunicazione a lunga gittata tramite protocollo LoRa per la trasmissione di dati raccolti da sensori verso il server che raccoglie e elabora i dati ritrasmettendoli tramite un web-service a una dashboard.
