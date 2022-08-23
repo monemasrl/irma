@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from fixtures.data_fixtures import node_data  # noqa
 
 import pytest
 from flask import Flask
