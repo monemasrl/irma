@@ -81,7 +81,7 @@ Per agevolare la trasmissione, i dati vengono codificati in **stringhe base64**.
 - `mobius_sensorId`: **stringa** di 10 caratteri, padding a **destra**, richiesta per l'inserimento della lettura sulla piattaforma **Mobius**.
 - `mobius_sensorPath`: **stringa** di 10 caratteri, padding a **destra**, richiesta per l'inserimento della lettura sulla piattaforma **Mobius**.
 
-Esempio di **payload base64**: `AQAAAAdtb2JpdXNJZG1vYml1c1BhdGg=`
+Esempio di **payload base64**: `AQAAAAdtb2JpdXNJZCAgbW9iaXVzUGF0aA==`
 
 Lo stesso payload **decodificato**:
 
