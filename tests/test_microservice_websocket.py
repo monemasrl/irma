@@ -302,6 +302,30 @@ def test_get_state():
     )
 
 
+def test_decode_data():
+    encoded_data: str = "AQAAAAdtb2JpdXNJZCAgbW9iaXVzUGF0aA=="
+
+    expected_output = {
+        "payloadType": 1,
+        "sensorData": 7,
+        "mobius_sensorId": "mobiusId",
+        "mobius_sensorPath": "mobiusPath"
+    }
+
+    assert websocket_app.decode_data(encoded_data) == expected_output, \
+    "Error in `decode_data`: output mismatch"
+
+
+def test_encode_mqtt_data():
+    command: int = 1
+    iso_timestamp: str = "2022-08-23T11:06:00.676497"
+
+    expected_output: bytes = b'ATIwMjItMDgtMjNUMTE6MDY6MDAuNjc2NDk3'
+
+    assert websocket_app.encode_mqtt_data(command, iso_timestamp) == expected_output, \
+    "Error in `encode_mqtt_data`: output mismatch"
+
+
 def test_to_irma_ui():
     sensorID = "2288300834"
     sensorName = "123"
