@@ -1,24 +1,26 @@
+import base64
 import json
 import os
-import iso8601
-import base64
-import database as db
-
-from flask import Flask, request, jsonify, make_response
-from flask_cors import cross_origin, CORS
-from flask_mqtt import Mqtt
-from flask_mongoengine import MongoEngine
-from flask_socketio import SocketIO
-from flask_jwt_extended import create_access_token, get_jwt_identity, \
-    jwt_required, JWTManager, create_refresh_token
-
-from enum import IntEnum, auto
 from datetime import datetime, timedelta
+from enum import IntEnum, auto
 from functools import wraps
 
-from mobius import utils
+import database as db
+import iso8601
 from database import user_manager
-
+from flask import Flask, jsonify, make_response, request
+from flask_cors import CORS, cross_origin
+from flask_jwt_extended import (
+    JWTManager,
+    create_access_token,
+    create_refresh_token,
+    get_jwt_identity,
+    jwt_required,
+)
+from flask_mongoengine import MongoEngine
+from flask_mqtt import Mqtt
+from flask_socketio import SocketIO
+from mobius import utils
 
 # valore teorico della soglia di pericolo del sensore
 MAX_TRESHOLD = int(os.environ.get("MAX_TRESHOLD", 20))
@@ -35,43 +37,44 @@ SENSORS_TIMEOUT_INTERVAL = timedelta(hours=1)
 
 # Class-based application configuration
 class ConfigClass(object):
-    """ Flask application config """
+    """Flask application config"""
 
     # Generate a nice key using secrets.token_urlsafe()
-    SECRET_KEY = os.environ.get("SECRET_KEY", 'pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw')
+    SECRET_KEY = os.environ.get(
+        "SECRET_KEY", "pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw"
+    )
 
     # JWT SETTINGS
-    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", 'pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw')
+    JWT_SECRET_KEY = os.environ.get(
+        "JWT_SECRET_KEY", "pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw"
+    )
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(weeks=1)
 
     # Flask-MongoEngine settings
-    MONGODB_SETTINGS = {
-        'db': 'irma',
-        'host': 'mongodb://mongo:27017/irma'
-    }
+    MONGODB_SETTINGS = {"db": "irma", "host": "mongodb://mongo:27017/irma"}
 
     # Flask-User settings
-    USER_APP_NAME = "Flask-User MongoDB App"      # Shown in and email templates and page footers
-    USER_ENABLE_EMAIL = False      # Disable email authentication
-    USER_ENABLE_USERNAME = True    # Enable username authentication
-    USER_REQUIRE_RETYPE_PASSWORD = False    # Simplify register form
-
+    USER_APP_NAME = (
+        "Flask-User MongoDB App"  # Shown in and email templates and page footers
+    )
+    USER_ENABLE_EMAIL = False  # Disable email authentication
+    USER_ENABLE_USERNAME = True  # Enable username authentication
+    USER_REQUIRE_RETYPE_PASSWORD = False  # Simplify register form
 
     ###########################################################################################
     #####configurazione dei dati relativi al cors per la connessione da una pagina esterna#####
     ###########################################################################################
     CORS_SETTINGS = {
-        'Content-Type':'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': 'true'
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": "true",
     }
-
 
     ################################################################
     #####configurazione dei dati relativi alla connessione MQTT#####
     ################################################################
-    MQTT_BROKER_URL = os.environ.get("MQTT_BROKER_URL", 'localhost')
+    MQTT_BROKER_URL = os.environ.get("MQTT_BROKER_URL", "localhost")
     MQTT_BROKER_PORT = int(os.environ.get("MQTT_BROKER_PORT", 1883))
     MQTT_TLS_ENABLED = False
 
@@ -79,10 +82,8 @@ class ConfigClass(object):
 def api_token_required(f):
     @wraps(f)
     def decorator(*args, **kwargs):
-        if not 'Authorization' in request.headers:
-            return make_response(
-                jsonify({ "message": "No API Token Provided" }), 401)
-
+        if not "Authorization" in request.headers:
+            return make_response(jsonify({"message": "No API Token Provided"}), 401)
 
         token: str = request.headers["Authorization"].split(" ")[1]
 
@@ -90,10 +91,10 @@ def api_token_required(f):
             tokens: list[str] = [x.strip() for x in file.readlines()]
 
             if not token in tokens:
-                return make_response(
-                    jsonify({ "message": "Invalid Token" }), 401)
+                return make_response(jsonify({"message": "Invalid Token"}), 401)
 
         return f(*args, **kwargs)
+
     return decorator
 
 
@@ -101,35 +102,35 @@ def decode_data(encoded_data: str) -> dict:
     raw_bytes = base64.b64decode(encoded_data)
 
     return {
-        "payloadType": int.from_bytes(raw_bytes[:1], 'big'),
-        "sensorData": int.from_bytes(raw_bytes[1:5], 'big'),
+        "payloadType": int.from_bytes(raw_bytes[:1], "big"),
+        "sensorData": int.from_bytes(raw_bytes[1:5], "big"),
         "mobius_sensorId": raw_bytes[5:15].decode(),
-        "mobius_sensorPath": raw_bytes[15:].decode()
+        "mobius_sensorPath": raw_bytes[15:].decode(),
     }
 
 
 def encode_mqtt_data(command: int, iso_timestamp: str) -> bytes:
-    encoded_data = b''
-    encoded_data += command.to_bytes(1, 'big')
+    encoded_data = b""
+    encoded_data += command.to_bytes(1, "big")
     encoded_data += iso_timestamp.encode()
-    
+
     return base64.b64encode(encoded_data)
 
 
 # Creazione payload per irma-ui
 def to_irma_ui_data(
-        sensorID: str,
-        sensorName: str,
-        applicationID: str,
-        state: str,
-        titolo1: str,
-        titolo2: str,
-        titolo3: str,
-        dato1: float,
-        dato2: float,
-        dato3: int,
-        unhandledAlertIDs: list = []
-    ) -> dict:
+    sensorID: str,
+    sensorName: str,
+    applicationID: str,
+    state: str,
+    titolo1: str,
+    titolo2: str,
+    titolo3: str,
+    dato1: float,
+    dato2: float,
+    dato3: int,
+    unhandledAlertIDs: list = [],
+) -> dict:
 
     return {
         "sensorID": sensorID,
@@ -137,57 +138,49 @@ def to_irma_ui_data(
         "applicationID": applicationID,
         "state": state,
         "datiInterni": [
-            {
-                "titolo": titolo1,
-                "dato": dato1
-            },
-            {
-                "titolo": titolo2,
-                "dato": dato2
-            },
-            {
-                "titolo": titolo3,
-                "dato": dato3
-            },
+            {"titolo": titolo1, "dato": dato1},
+            {"titolo": titolo2, "dato": dato2},
+            {"titolo": titolo3, "dato": dato3},
         ],
-        "unhandledAlertIDs": unhandledAlertIDs
+        "unhandledAlertIDs": unhandledAlertIDs,
     }
 
 
 class SensorState(IntEnum):
-    ERROR=0
-    READY=auto()
-    RUNNING=auto()
-    ALERT_READY=auto()
-    ALERT_RUNNING=auto()
+    ERROR = 0
+    READY = auto()
+    RUNNING = auto()
+    ALERT_READY = auto()
+    ALERT_RUNNING = auto()
 
     @classmethod
     def to_irma_ui_state(cls, n: int) -> str:
         if n == 0:
-            return 'off'
+            return "off"
         elif n == 1:
-            return 'ok'
+            return "ok"
         elif n == 2:
-            return 'rec'
+            return "rec"
         elif n >= 3:
-            return 'alert'
+            return "alert"
         else:
-            return 'undefined'
+            return "undefined"
 
 
 class PayloadType(IntEnum):
-    READING=0
-    START_REC=auto()
-    END_REC=auto()
-    KEEP_ALIVE=auto()
-    HANDLE_ALERT=auto()
+    READING = 0
+    START_REC = auto()
+    END_REC = auto()
+    KEEP_ALIVE = auto()
+    HANDLE_ALERT = auto()
 
 
 def update_state(
-        current_state: SensorState,
-        lastSeenAt: datetime,
-        typ: PayloadType | None = None,
-        dato: int = 0):
+    current_state: SensorState,
+    lastSeenAt: datetime,
+    typ: PayloadType | None = None,
+    dato: int = 0,
+):
 
     is_timed_out: bool = (datetime.now() - lastSeenAt) > SENSORS_TIMEOUT_INTERVAL
 
@@ -237,8 +230,8 @@ def get_data(sensorID: str) -> dict:
     total_average: float = 0.0
     monthly_average: float = 0.0
 
-    #salvataggio del valore attuale del mese per il confronto
-    current_month: int = datetime.now().month 
+    # salvataggio del valore attuale del mese per il confronto
+    current_month: int = datetime.now().month
 
     sensor = db.Sensor.objects(sensorID=sensorID).first()
 
@@ -257,8 +250,8 @@ def get_data(sensorID: str) -> dict:
 
     for x in collect:
         for data in x["data"]:
-            sensor_data: int = data['sensorData']
-            read_time: datetime = data['publishedAt']
+            sensor_data: int = data["sensorData"]
+            read_time: datetime = data["publishedAt"]
             read_month: int = read_time.month
 
             total_sum += sensor_data
@@ -284,10 +277,10 @@ def get_data(sensorID: str) -> dict:
         dato2=round(monthly_average, 3),
         titolo3="Letture eseguite nel mese",
         dato3=monthly_count,
-        unhandledAlertIDs=unhandledAlertIDs
+        unhandledAlertIDs=unhandledAlertIDs,
     )
 
-    app.logger.info(f'{send=}')
+    app.logger.info(f"{send=}")
 
     return send
 
@@ -296,17 +289,17 @@ def create_socketio(app: Flask):
     # TODO: remove wildcard ?
     socketio: SocketIO = SocketIO(app, cors_allowed_origins="*")
 
-    @socketio.on('connect')
+    @socketio.on("connect")
     def connected():
-        print('Connected')
+        print("Connected")
 
-    @socketio.on('disconnect')
+    @socketio.on("disconnect")
     def disconnected():
-        print('Disconnected')
+        print("Disconnected")
 
-    @socketio.on('change')
+    @socketio.on("change")
     def onChange():
-        print('Changed')
+        print("Changed")
 
     return socketio
 
@@ -316,21 +309,18 @@ def create_mqtt(app: Flask) -> Mqtt:
 
     @mqtt.on_connect()
     def handle_connect(client, userdata, flags, rc):
-        mqtt.subscribe('application')
+        mqtt.subscribe("application")
 
     @mqtt.on_message()
     def handle_mqtt_message(client, userdata, message):
-        data = dict(
-            topic=message.topic,
-            payload=message.payload.decode()
-        )
+        data = dict(topic=message.topic, payload=message.payload.decode())
 
     return mqtt
 
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(__name__+'.ConfigClass')
+    app.config.from_object(__name__ + ".ConfigClass")
     socketio = create_socketio(app)
 
     databse = MongoEngine()
@@ -346,7 +336,7 @@ def create_app():
     # identity when creating JWTs and converts it to a JSON serializable format.
     @jwt.user_identity_loader
     def user_identity_lookup(user):
-        app.logger.info(f'Looking up: {user=}')
+        app.logger.info(f"Looking up: {user=}")
         return user_manager.get_user(user["email"])
 
     # Register a callback function that loads a user from your database whenever
@@ -356,17 +346,14 @@ def create_app():
     @jwt.user_lookup_loader
     def user_lookup_callback(_jwt_header, jwt_data):
         identity = jwt_data["sub"]
-        app.logger.info(f'{identity=}')
-        return user_manager.get_user(identity['email'])
+        app.logger.info(f"{identity=}")
+        return user_manager.get_user(identity["email"])
 
     # Create a user to test with
     @app.before_first_request
     def create_user():
-        app.logger.info('Creo utente')
-        user_manager.create_user(
-            email='bettarini@monema.it',
-            password='password'
-        )
+        app.logger.info("Creo utente")
+        user_manager.create_user(email="bettarini@monema.it", password="password")
 
     # Create a route to authenticate your users and return JWTs. The
     # create_access_token() function is used to actually generate the JWT.
@@ -377,20 +364,19 @@ def create_app():
         password = json_payload.get("password", None)
 
         if username is None or password is None:
-            return jsonify({ "message": "Bad Request"}), 400
+            return jsonify({"message": "Bad Request"}), 400
 
         user = user_manager.get_user(username)
 
         if user is None:
-            return jsonify({ "message": "User not found" }), 404
+            return jsonify({"message": "User not found"}), 404
 
         if user_manager.verify(user, password):
             access_token = create_access_token(identity=user)
             refresh_token = create_refresh_token(identity=user)
             return jsonify(access_token=access_token, refresh_token=refresh_token)
 
-        return jsonify({ "message": "wrong username or password"}), 401
-
+        return jsonify({"message": "wrong username or password"}), 401
 
     @app.route("/api/refresh", methods=["POST"])
     @jwt_required(refresh=True)
@@ -399,21 +385,18 @@ def create_app():
         access_token = create_access_token(identity=identity)
         return jsonify(access_token=access_token)
 
-
     @app.route("/api/jwttest")
     @jwt_required()
     def jwttest():
         """View protected by jwt test. If necessary, exempt it from csrf protection. See flask_wtf.csrf for more info"""
         return jsonify({"foo": "bar", "baz": "qux"})
 
-
     @app.route("/api/api-token-test")
     @api_token_required
     def api_token_test():
-        return jsonify({ "message": "Valid API Token!"} )
+        return jsonify({"message": "Valid API Token!"})
 
-
-    @app.route('/', methods=['POST'])
+    @app.route("/", methods=["POST"])
     @cross_origin()
     def home():
         sensorIDs: list = json.loads(request.data)["paths"]
@@ -422,87 +405,85 @@ def create_app():
         # Filtro via i dati vuoti (sensorID non valido)
         return jsonify(data=[x for x in data if x])
 
-    @app.route('/api/organizations')
+    @app.route("/api/organizations")
     @jwt_required()
     def get_organizations():
         organizations = db.Organization.objects()
 
         if len(organizations) == 0:
-            return { 'message': 'Not Found' }, 404
+            return {"message": "Not Found"}, 404
 
         return jsonify(organizations=organizations)
 
-    @app.route('/api/organizations', methods=['POST'])
+    @app.route("/api/organizations", methods=["POST"])
     @jwt_required()
     def create_organization():
         record: dict = json.loads(request.data)
 
-        organization = db.Organization(organizationName=record['name'])
+        organization = db.Organization(organizationName=record["name"])
         organization.save()
 
         return jsonify(organization.to_json())
 
-    @app.route('/api/applications/<organizationID>', methods=['POST'])
+    @app.route("/api/applications/<organizationID>", methods=["POST"])
     @jwt_required()
     def create_application(organizationID):
         record: dict = json.loads(request.data)
 
         organizations = db.Organization.objects(id=organizationID)
 
-        if len(organizations) > 0: 
+        if len(organizations) > 0:
             organization = organizations[0]
             application = db.Application(
-                applicationName=record['name'], organization=organization)
+                applicationName=record["name"], organization=organization
+            )
             application.save()
             return application.to_json()
         else:
-            return { 'message': 'Not Found' }, 404
+            return {"message": "Not Found"}, 404
 
-
-
-
-    @app.route('/api/applications')
+    @app.route("/api/applications")
     @jwt_required()
     def get_applications():
-        organizationID: str = request.args.get('organizationID', '')
+        organizationID: str = request.args.get("organizationID", "")
 
         if organizationID == "":
-            return { 'message': 'Bad Request' }, 400
+            return {"message": "Bad Request"}, 400
 
         applications = db.Application.objects(organization=organizationID)
 
         if len(applications) == 0:
-            return { 'message': 'Not Found' }, 404
+            return {"message": "Not Found"}, 404
 
         return jsonify(applications=applications)
 
-    @app.route('/api/sensors')
+    @app.route("/api/sensors")
     @jwt_required()
     def get_sensors():
-        applicationID: str = request.args.get('applicationID', '')
+        applicationID: str = request.args.get("applicationID", "")
 
         if applicationID == "":
-            return { 'message': 'Bad Request' }, 400
+            return {"message": "Bad Request"}, 400
 
         sensors = db.Sensor.objects(application=applicationID)
 
         if len(sensors) == 0:
-            return { 'message': 'Not Found' }, 404
+            return {"message": "Not Found"}, 404
 
         return jsonify(sensors=sensors)
 
-    @app.route('/api/<applicationID>/<sensorID>/publish', methods=['POST'])
+    @app.route("/api/<applicationID>/<sensorID>/publish", methods=["POST"])
     @api_token_required
     def create_record(applicationID: str, sensorID: int):
         # TODO: controllo header token
 
-        app.logger.info(f'{request=}')
-        app.logger.info(f'{vars(request)=}')
+        app.logger.info(f"{request=}")
+        app.logger.info(f"{vars(request)=}")
 
         data = request.data.decode()
         # record: dict = json.loads(request.data.decode())
 
-        app.logger.info(f'{data=}')
+        app.logger.info(f"{data=}")
         record: dict = json.loads(data)
 
         record["data"] = decode_data(record["data"])
@@ -510,16 +491,15 @@ def create_app():
         # Vero se arriva da chirpstack
         if "txInfo" in record:
             # TODO: portare a payload di node/app.py
-            pass 
-            
+            pass
+
         application = db.Application.objects(id=applicationID).first()
 
         if application is None:
-            app.logger.info(f'Not found')
-            return { 'message': 'Not Found' }, 404
+            app.logger.info(f"Not found")
+            return {"message": "Not Found"}, 404
 
-        sensor =  db.Sensor.objects(sensorID=sensorID).first()
-
+        sensor = db.Sensor.objects(sensorID=sensorID).first()
 
         if sensor is None:
             sensor = db.Sensor(
@@ -535,18 +515,18 @@ def create_app():
         if record["data"]["payloadType"] == PayloadType.READING:
 
             if MOBIUS_URL != "":
-                app.logger.info(f'Sending to mobius: {record=}')
+                app.logger.info(f"Sending to mobius: {record=}")
                 utils.insert(record)
 
             requestedAt = iso8601.parse_date(record["requestedAt"])
             reading = db.Reading.objects(requestedAt=requestedAt).first()
 
             data = db.Data(
-                payloadType=record['data']['payloadType'],
-                sensorData=record['data']['sensorData'],
-                publishedAt=iso8601.parse_date(record['publishedAt']),
-                mobius_sensorId=record['data']['mobius_sensorId'],
-                mobius_sensorPath=record['data']['mobius_sensorPath'],
+                payloadType=record["data"]["payloadType"],
+                sensorData=record["data"]["sensorData"],
+                publishedAt=iso8601.parse_date(record["publishedAt"]),
+                mobius_sensorId=record["data"]["mobius_sensorId"],
+                mobius_sensorPath=record["data"]["mobius_sensorPath"],
             )
 
             if reading is None:
@@ -558,32 +538,25 @@ def create_app():
             else:
                 reading["data"].append(data)
 
-
             reading.save()
 
             if data["sensorData"] >= MAX_TRESHOLD:
-                alert = db.Alert(
-                    reading=reading,
-                    sensor=sensor,
-                    isHandled=False
-                )
+                alert = db.Alert(reading=reading, sensor=sensor, isHandled=False)
                 alert.save()
 
         sensor["lastSeenAt"] = datetime.now()
         sensor["state"] = update_state(
-            sensor["state"], 
+            sensor["state"],
             sensor["lastSeenAt"],
             record["data"]["payloadType"],
-            record["data"]['sensorData']
+            record["data"]["sensorData"],
         )
         sensor.save()
 
-
-        socketio.emit('change')
+        socketio.emit("change")
         return record
 
-
-    @app.route('/api/alert/handle', methods=['POST'])
+    @app.route("/api/alert/handle", methods=["POST"])
     @jwt_required()
     def handle_alert():
         received: dict = json.loads(request.data)
@@ -591,14 +564,14 @@ def create_app():
         alertID = received["alertID"]
         alert = db.Alert.objects(id=alertID).first()
         if alert is None:
-            return { 'message': 'Not Found' }, 404
+            return {"message": "Not Found"}, 404
 
         sensor = alert["sensor"]
 
         user_id = get_jwt_identity()["_id"]["$oid"]
 
         user = db.User.objects(id=user_id).first()
-        
+
         alert["isConfirmed"] = received["isConfirmed"]
         alert["isHandled"] = True
         alert["handledBy"] = user
@@ -606,32 +579,26 @@ def create_app():
         alert["handleNote"] = received["handleNote"]
         alert.save()
 
-        if db.Alert.objects(
-            sensor=sensor,
-            isHandled=False
-        ).first() is None:
+        if db.Alert.objects(sensor=sensor, isHandled=False).first() is None:
 
-            sensor["state"] = update_state(
-                sensor["state"], 
-                PayloadType.HANDLE_ALERT
-            )
+            sensor["state"] = update_state(sensor["state"], PayloadType.HANDLE_ALERT)
             sensor.save()
-    
-        socketio.emit('change')
+
+        socketio.emit("change")
         return received
 
-    @app.route('/api/command', methods=['POST'])
+    @app.route("/api/command", methods=["POST"])
     @jwt_required()
-    def sendMqtt(): # alla ricezione di un post pubblica un messaggio sul topic
+    def sendMqtt():  # alla ricezione di un post pubblica un messaggio sul topic
         received: dict = json.loads(request.data)
 
         applicationID = received.get("applicationID", None)
         sensorID = received.get("sensorID", None)
 
         if applicationID is None or sensorID is None:
-            return { 'message': 'Bad Request' }, 400
+            return {"message": "Bad Request"}, 400
 
-        topic: str = f'{applicationID}/{sensorID}/command'
+        topic: str = f"{applicationID}/{sensorID}/command"
 
         data: bytes = encode_mqtt_data(received["command"], datetime.now().isoformat())
 
@@ -642,6 +609,7 @@ def create_app():
         return received
 
     return app, socketio
+
 
 if __name__ == "__main__":
     app, socketio = create_app()

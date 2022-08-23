@@ -1,7 +1,9 @@
-import can, time
+import time
 
-if __name__ == '__main__':
-    bus = can.Bus(interface='socketcan', channel='can0') # type: ignore
+import can
+
+if __name__ == "__main__":
+    bus = can.Bus(interface="socketcan", channel="can0")  # type: ignore
     try:
         while True:
             message = can.Message(

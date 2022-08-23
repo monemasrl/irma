@@ -44,4 +44,3 @@ Dopo aver inizializzato l'interfaccia CAN (fare riferimento al [readme principal
 ### Configurare lo script
 
 È possibile configurare lo script mediante il file [config.yaml](./config.yaml).
-

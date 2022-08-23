@@ -1,16 +1,16 @@
 from __future__ import annotations
-from flask_mongoengine import Document
-from mongoengine.fields import DictField, StringField, FloatField
+
 import json
 
-
+from flask_mongoengine import Document
+from mongoengine.fields import DictField, FloatField, StringField
 
 
 #####################################################################
 #####definizione della struttura del documento inserito in mongo#####
 #####################################################################
 class Reading(Document):
-    readingId=StringField(max_length=100, required=True)
+    readingId = StringField(max_length=100, required=True)
     sensorPath = StringField(max_length=100, required=True)
     sensorId = StringField(max_length=100, required=True)
     readingTimestamp = StringField(max_length=100, required=True)
@@ -22,7 +22,7 @@ class Reading(Document):
         return {
             "pi": "",
             "ri": self.readingId,
-            "ct": self.readingTimestamp, # ?
+            "ct": self.readingTimestamp,  # ?
             "con": {
                 "metadata": {
                     "sensorId": self.sensorId,
@@ -31,7 +31,7 @@ class Reading(Document):
                     "longitude": self.longitude,
                 },
             },
-            "sensorData": self.sensorData
+            "sensorData": self.sensorData,
         }
 
     @classmethod
@@ -40,7 +40,9 @@ class Reading(Document):
         print(s_dict)
         new_p = Reading()
         new_p.sensorId = s_dict["m2m:cin"]["con"]["metadata"]["sensorId"]
-        new_p.readingTimestamp = s_dict["m2m:cin"]["con"]["metadata"]["readingTimestamp"]
+        new_p.readingTimestamp = s_dict["m2m:cin"]["con"]["metadata"][
+            "readingTimestamp"
+        ]
         new_p.sensorData = s_dict["m2m:cin"]["sensorData"]
 
         return new_p

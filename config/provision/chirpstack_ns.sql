@@ -536,7 +536,7 @@ COPY public.multicast_queue (id, created_at, schedule_at, emit_at_time_since_gps
 --
 
 COPY public.routing_profile (created_at, updated_at, routing_profile_id, as_id, ca_cert, tls_cert, tls_key) FROM stdin;
-2022-07-07 15:22:20.402499+00	2022-07-07 15:22:25.530279+00	6d5db27e-4ce2-4b2b-b5d7-91f069397978	chirpstack-application-server:8001			
+2022-07-07 15:22:20.402499+00	2022-07-07 15:22:25.530279+00	6d5db27e-4ce2-4b2b-b5d7-91f069397978	chirpstack-application-server:8001
 \.
 
 
@@ -970,4 +970,3 @@ ALTER TABLE ONLY public.multicast_queue
 --
 -- PostgreSQL database dump complete
 --
-

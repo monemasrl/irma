@@ -9,7 +9,7 @@ services:
       - ./config/db-data:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: "postgres"
-  
+
   mqtt:
     image: eclipse-mosquitto
     restart: unless-stopped
