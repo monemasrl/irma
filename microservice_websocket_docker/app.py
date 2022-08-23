@@ -35,6 +35,7 @@ DISABLE_MQTT = False if os.environ.get("DISABLE_MQTT") != 1 else True
 # for sensor timeout
 SENSORS_TIMEOUT_INTERVAL = timedelta(hours=1)
 
+
 # Class-based application configuration
 class ConfigClass(object):
     """Flask application config"""
@@ -62,18 +63,18 @@ class ConfigClass(object):
     USER_ENABLE_USERNAME = True  # Enable username authentication
     USER_REQUIRE_RETYPE_PASSWORD = False  # Simplify register form
 
-    ###########################################################################################
-    #####configurazione dei dati relativi al cors per la connessione da una pagina esterna#####
-    ###########################################################################################
+    #####################################################################################
+    # configurazione dei dati relativi al cors per la connessione da una pagina esterna #
+    #####################################################################################
     CORS_SETTINGS = {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Credentials": "true",
     }
 
-    ################################################################
-    #####configurazione dei dati relativi alla connessione MQTT#####
-    ################################################################
+    ##########################################################
+    # configurazione dei dati relativi alla connessione MQTT #
+    ##########################################################
     MQTT_BROKER_URL = os.environ.get("MQTT_BROKER_URL", "localhost")
     MQTT_BROKER_PORT = int(os.environ.get("MQTT_BROKER_PORT", 1883))
     MQTT_TLS_ENABLED = False
@@ -82,7 +83,7 @@ class ConfigClass(object):
 def api_token_required(f):
     @wraps(f)
     def decorator(*args, **kwargs):
-        if not "Authorization" in request.headers:
+        if "Authorization" not in request.headers:
             return make_response(jsonify({"message": "No API Token Provided"}), 401)
 
         token: str = request.headers["Authorization"].split(" ")[1]
@@ -90,7 +91,7 @@ def api_token_required(f):
         with open("./api-tokens.txt", "r") as file:
             tokens: list[str] = [x.strip() for x in file.readlines()]
 
-            if not token in tokens:
+            if token not in tokens:
                 return make_response(jsonify({"message": "Invalid Token"}), 401)
 
         return f(*args, **kwargs)
@@ -104,8 +105,8 @@ def decode_data(encoded_data: str) -> dict:
     return {
         "payloadType": int.from_bytes(raw_bytes[:1], "big"),
         "sensorData": int.from_bytes(raw_bytes[1:5], "big"),
-        "mobius_sensorId": raw_bytes[5:15].decode(),
-        "mobius_sensorPath": raw_bytes[15:].decode(),
+        "mobius_sensorId": raw_bytes[5:15].decode().strip(),
+        "mobius_sensorPath": raw_bytes[15:].decode().strip(),
     }
 
 
@@ -313,7 +314,7 @@ def create_mqtt(app: Flask) -> Mqtt:
 
     @mqtt.on_message()
     def handle_mqtt_message(client, userdata, message):
-        data = dict(topic=message.topic, payload=message.payload.decode())
+        pass
 
     return mqtt
 
@@ -496,7 +497,7 @@ def create_app():
         application = db.Application.objects(id=applicationID).first()
 
         if application is None:
-            app.logger.info(f"Not found")
+            app.logger.info("Not found")
             return {"message": "Not Found"}, 404
 
         sensor = db.Sensor.objects(sensorID=sensorID).first()
@@ -581,7 +582,9 @@ def create_app():
 
         if db.Alert.objects(sensor=sensor, isHandled=False).first() is None:
 
-            sensor["state"] = update_state(sensor["state"], PayloadType.HANDLE_ALERT)
+            sensor["state"] = update_state(
+                sensor["state"], sensor["lastSeenAt"], PayloadType.HANDLE_ALERT
+            )
             sensor.save()
 
         socketio.emit("change")

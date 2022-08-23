@@ -64,7 +64,7 @@ class Node:
             channel = self.config["can"]["channel"]
             bitrate = self.config["can"]["bitrate"]
 
-            self.bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate) # type: ignore
+            self.bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate)  # type: ignore
             print(f"Can type '{bustype}', on channel '{channel}' @{bitrate}")
 
         self.send_keep_alive()
@@ -74,14 +74,14 @@ class Node:
         self.client = mqtt.Client()
 
         def on_connect(client, userdata, flags, rc):
-            print("Connected with result code "+str(rc))
+            print("Connected with result code " + str(rc))
 
             applicationID = self.config["node_info"]["applicationID"]
             sensorID = self.config["node_info"]["sensorID"]
             client.subscribe(f"{applicationID}/{sensorID}/command")
 
         def on_message(client, userdata, msg: mqtt.MQTTMessage):
-            print(msg.topic+" -> "+str(msg.payload))
+            print(msg.topic + " -> " + str(msg.payload))
 
             decoded_data = decode_mqtt_data(msg.payload.decode())
 
@@ -93,22 +93,25 @@ class Node:
         self.client.on_connect = on_connect
         self.client.on_message = on_message
 
-        self.client.connect(self.config['mqtt']['url'], self.config['mqtt']['port'], 60)
+        self.client.connect(self.config["mqtt"]["url"], self.config["mqtt"]["port"], 60)
 
     def loop_forever(self):
         return self.client.loop_forever()
 
-    def send_data(self, data: int, payload_type: PayloadType,
-                  commandTimestamp: str = ""):
+    def send_data(
+        self, data: int, payload_type: PayloadType, commandTimestamp: str = ""
+    ):
         payload: dict = {
             "sensorID": self.config["node_info"]["sensorID"],
             "sensorName": self.config["node_info"]["sensorName"],
             "applicationID": self.config["node_info"]["applicationID"],
             "organizationID": self.config["node_info"]["organizationID"],
-            "data": encode_data(payload_type.value,
-                                data,
-                                self.config["mobius"]["sensorId"],
-                                self.config["mobius"]["sensorPath"]),
+            "data": encode_data(
+                payload_type.value,
+                data,
+                self.config["mobius"]["sensorId"],
+                self.config["mobius"]["sensorPath"],
+            ),
             "publishedAt": datetime.now().isoformat(),
             "requestedAt": commandTimestamp,
         }
@@ -120,12 +123,12 @@ class Node:
         applicationID = self.config["node_info"]["applicationID"]
 
         requests.post(
-            url=f'{host}:{port}/api/{applicationID}/{sensorID}/publish',
+            url=f"{host}:{port}/api/{applicationID}/{sensorID}/publish",
             json=payload,
             headers={
-                "Authorization": f'Bearer {api_key}',
-                "Content-Type": "application/json"
-            }
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
         )
 
     def send_keep_alive(self):
@@ -144,7 +147,7 @@ class Node:
         while msg is None:
             msg = self.bus.recv(timeout=0.5)
 
-        data: int = int.from_bytes(msg.data, byteorder='big', signed=False)
+        data: int = int.from_bytes(msg.data, byteorder="big", signed=False)
         print(f"CAN> {data}")
 
         self.send_data(data, PayloadType.READING, commandTimestamp)
@@ -178,4 +181,3 @@ if __name__ == "__main__":
     node = Node()
 
     node.loop_forever()
-
