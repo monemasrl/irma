@@ -1,3 +1,5 @@
+from fixtures.data_fixtures import node_data  # noqa
+
 from microservice_websocket_docker.mobius.utils import to_mobius_payload
 
 
