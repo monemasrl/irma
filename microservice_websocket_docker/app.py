@@ -245,6 +245,9 @@ def get_data(sensorID: str) -> dict:
     if sensor is None:
         return {}
 
+    sensor["state"] = update_state(sensor["state"], sensor["lastSeenAt"])
+    sensor.save()
+
     state: SensorState = sensor["state"]
     sensorName: str = sensor["sensorName"]
     applicationID: str = str(sensor["application"]["id"])
