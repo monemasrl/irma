@@ -26,23 +26,21 @@ class CommandType(IntEnum):
     START_REC = 0
 
 
-"""
-encoded data
-| 1 byte payload_type | 4 byte data | 10 byte sensorId | 10 byte sensorPath |
-"""
+#                           ENCODED DATA
+# | 1 byte payload_type | 4 byte data | 10 byte sensorId | 10 byte sensorPath |
 
 
 def encode_data(
     payload_type: int, data: int, mobius_sensorId: str, mobius_sensorPath: str
 ) -> str:
 
-    bytes = b""
-    bytes += payload_type.to_bytes(1, "big")
-    bytes += data.to_bytes(4, "big")
-    bytes += mobius_sensorId.ljust(10).encode()
-    bytes += mobius_sensorPath.ljust(10).encode()
+    byts = b""
+    byts += payload_type.to_bytes(1, "big")
+    byts += data.to_bytes(4, "big")
+    byts += mobius_sensorId.ljust(10).encode()
+    byts += mobius_sensorPath.ljust(10).encode()
 
-    return base64.b64encode(bytes).decode()
+    return base64.b64encode(byts).decode()
 
 
 def decode_mqtt_data(encoded_string: str) -> dict:
@@ -139,8 +137,6 @@ class Node:
             data = int(input("Inserisci un dato: "))
             self.send_data(data, PayloadType.READING, commandTimestamp)
             return
-
-        self.bus
 
         msg: Union[None, Message] = None
 

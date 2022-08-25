@@ -7,6 +7,7 @@ from flask_api import status
 MOBIUS_URL = environ.get("MOBIUS_URL", "http://localhost")
 MOBIUS_PORT = environ.get("MOBIUS_PORT", "5002")
 
+
 # Conversione payload chirpstack in payload per mobius
 def to_mobius_payload(record: dict) -> dict:
     sensorId = record["data"]["mobius_sensorId"]

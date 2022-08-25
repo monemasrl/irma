@@ -6,9 +6,9 @@ from flask_mongoengine import Document
 from mongoengine.fields import DictField, FloatField, StringField
 
 
-#####################################################################
-#####definizione della struttura del documento inserito in mongo#####
-#####################################################################
+###############################################################
+# definizione della struttura del documento inserito in mongo #
+###############################################################
 class Reading(Document):
     readingId = StringField(max_length=100, required=True)
     sensorPath = StringField(max_length=100, required=True)

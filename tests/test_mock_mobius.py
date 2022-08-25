@@ -1,6 +1,5 @@
 import json
 from datetime import datetime
-from fixtures.data_fixtures import node_data  # noqa
 
 import pytest
 from flask import Flask
@@ -102,7 +101,8 @@ class TestFlaskApp:
 
         assert (
             len(decoded_response["m2m:rsp"]["m2m:cin"]) == 3
-        ), f"Invalid response from server, expected 3 results but got {len(decoded_response['m2m:rsp']['m2m:cin'])}"
+        ), f"Invalid response from server, expected 3 results \
+            but got {len(decoded_response['m2m:rsp']['m2m:cin'])}"
 
         response = app_client.get(
             f"/{node_data['data']['mobius_sensorPath']}?crb={sup_limit}&cra={inf_limit}&lim=2"
@@ -110,7 +110,8 @@ class TestFlaskApp:
 
         assert status.is_success(
             response.status_code
-        ), "Invalid response code from server when querying with time limits and quantity limits"
+        ), "Invalid response code from server when querying \
+            with time limits and quantity limits"
 
         decoded_response: dict = json.loads(response.data)
         assert (
@@ -119,7 +120,8 @@ class TestFlaskApp:
 
         assert (
             len(decoded_response["m2m:rsp"]["m2m:cin"]) == 2
-        ), f"Invalid response from server, expected 2 results but got {len(decoded_response['m2m:rsp']['m2m:cin'])}"
+        ), f"Invalid response from server, expected 2 results \
+            but got {len(decoded_response['m2m:rsp']['m2m:cin'])}"
 
     def test_db_query_last(self, app_client, node_data: dict):
         response: TestResponse = app_client.get(

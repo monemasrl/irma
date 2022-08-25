@@ -116,8 +116,9 @@ def _test_update_state_case(
 
     assert (
         got := websocket_app.update_state(current, lastSeenAt, typ, dato)
-    ) == expected, f"Error from state '{current}' with timedelta '{datetime.now() - lastSeenAt}',\
-    typ '{typ}' and dato '{dato}'. Expected {expected} but got {got}"
+    ) == expected, f"Error from state '{current}' with timedelta \
+    '{datetime.now() - lastSeenAt}', typ '{typ}' and dato '{dato}'. \
+    Expected {expected} but got {got}"
 
 
 def test_get_state():
@@ -309,21 +310,23 @@ def test_decode_data():
         "payloadType": 1,
         "sensorData": 7,
         "mobius_sensorId": "mobiusId",
-        "mobius_sensorPath": "mobiusPath"
+        "mobius_sensorPath": "mobiusPath",
     }
 
-    assert websocket_app.decode_data(encoded_data) == expected_output, \
-    "Error in `decode_data`: output mismatch"
+    assert (
+        websocket_app.decode_data(encoded_data) == expected_output
+    ), "Error in `decode_data`: output mismatch"
 
 
 def test_encode_mqtt_data():
     command: int = 1
     iso_timestamp: str = "2022-08-23T11:06:00.676497"
 
-    expected_output: bytes = b'ATIwMjItMDgtMjNUMTE6MDY6MDAuNjc2NDk3'
+    expected_output: bytes = b"ATIwMjItMDgtMjNUMTE6MDY6MDAuNjc2NDk3"
 
-    assert websocket_app.encode_mqtt_data(command, iso_timestamp) == expected_output, \
-    "Error in `encode_mqtt_data`: output mismatch"
+    assert (
+        websocket_app.encode_mqtt_data(command, iso_timestamp) == expected_output
+    ), "Error in `encode_mqtt_data`: output mismatch"
 
 
 def test_to_irma_ui():

@@ -1,20 +1,21 @@
 from __future__ import annotations
+
 from flask_mongoengine import Document
 from mongoengine import IntField
 from mongoengine.fields import (
-    StringField,
-    ReferenceField,
-    ListField,
     BooleanField,
     DateTimeField,
-    EmbeddedDocumentListField,
     EmbeddedDocument,
+    EmbeddedDocumentListField,
+    ListField,
+    ReferenceField,
+    StringField,
 )
 
 
-#####################################################################
-#####definizione della struttura del documento inserito in mongo#####
-#####################################################################
+###############################################################
+# definizione della struttura del documento inserito in mongo #
+###############################################################
 class Organization(Document):
     organizationName = StringField(max_length=100, required=True)
 

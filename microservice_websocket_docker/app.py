@@ -130,7 +130,7 @@ def to_irma_ui_data(
     dato1: float,
     dato2: float,
     dato3: int,
-    unhandledAlertIDs: list = [],
+    unhandledAlertIDs: list,
 ) -> dict:
 
     return {
@@ -389,7 +389,10 @@ def create_app():
     @app.route("/api/jwttest")
     @jwt_required()
     def jwttest():
-        """View protected by jwt test. If necessary, exempt it from csrf protection. See flask_wtf.csrf for more info"""
+        """
+        View protected by jwt test. If necessary, exempt it from csrf protection.
+        See flask_wtf.csrf for more info
+        """
         return jsonify({"foo": "bar", "baz": "qux"})
 
     @app.route("/api/api-token-test")
