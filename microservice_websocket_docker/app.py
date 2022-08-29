@@ -1,6 +1,21 @@
 import base64
 import json
 import os
+import threading
+from time import sleep
+import iso8601
+import base64
+import database as db
+
+from flask import Flask, request, jsonify, make_response
+from flask_cors import cross_origin, CORS
+from flask_mqtt import Mqtt
+from flask_mongoengine import MongoEngine
+from flask_socketio import SocketIO
+from flask_jwt_extended import create_access_token, get_jwt_identity, \
+    jwt_required, JWTManager, create_refresh_token
+
+from enum import IntEnum, auto
 from datetime import datetime, timedelta
 from enum import IntEnum, auto
 from functools import wraps
@@ -33,7 +48,10 @@ MOBIUS_PORT = os.environ.get("MOBIUS_PORT", "5002")
 DISABLE_MQTT = False if os.environ.get("DISABLE_MQTT") != 1 else True
 
 # for sensor timeout
-SENSORS_TIMEOUT_INTERVAL = timedelta(hours=1)
+SENSORS_TIMEOUT_INTERVAL = timedelta(minutes=2)
+
+# interval for checking sensor timeout
+SENSORS_UPDATE_INTERVAL = timedelta(seconds=10)
 
 
 # Class-based application configuration
@@ -219,6 +237,30 @@ def update_state(
                 return SensorState.READY
 
     return current_state
+
+
+def launch_update_state_daemon():
+    thread = threading.Thread(target=periodically_update_state, daemon=True)
+    thread.start()
+
+
+def periodically_update_state():
+    while True:
+        sleep(SENSORS_UPDATE_INTERVAL)
+        sensors = db.Sensor.objects()
+
+        update_frontend = False
+
+        for sensor in sensors:
+            new_state = update_state(sensor["state"], sensor["lastSeenAt"])
+
+            if sensor["state"] != new_state:
+                update_frontend = True
+                sensor["state"] = new_state
+                sensor.save()
+
+        if update_frontend:
+            socketio.emit('change')
 
 
 def get_data(sensorID: str) -> dict:

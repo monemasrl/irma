@@ -8,6 +8,7 @@ settings:
     url: "http://localhost"
     port: 5000
     api_key: "verysecret"
+    keep_alive_seconds: 30
   mqtt:
     url: "localhost"
     port: 1883
