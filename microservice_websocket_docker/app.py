@@ -2,23 +2,10 @@ import base64
 import json
 import os
 import threading
-from time import sleep
-import iso8601
-import base64
-import database as db
-
-from flask import Flask, request, jsonify, make_response
-from flask_cors import cross_origin, CORS
-from flask_mqtt import Mqtt
-from flask_mongoengine import MongoEngine
-from flask_socketio import SocketIO
-from flask_jwt_extended import create_access_token, get_jwt_identity, \
-    jwt_required, JWTManager, create_refresh_token
-
-from enum import IntEnum, auto
 from datetime import datetime, timedelta
 from enum import IntEnum, auto
 from functools import wraps
+from time import sleep
 
 import database as db
 import iso8601
@@ -260,7 +247,7 @@ def periodically_update_state():
                 sensor.save()
 
         if update_frontend:
-            socketio.emit('change')
+            socketio.emit("change")
 
 
 def get_data(sensorID: str) -> dict:
@@ -445,11 +432,11 @@ def create_app():
     @app.route("/", methods=["POST"])
     @cross_origin()
     def home():
-        sensorIDs: list = json.loads(request.data)["paths"]
+        sensorIDs: list = json.loads(request.data)["IDs"]
         data: list[dict] = [get_data(x) for x in sensorIDs]
 
         # Filtro via i dati vuoti (sensorID non valido)
-        return jsonify(data=[x for x in data if x])
+        return jsonify(readings=[x for x in data if x])
 
     @app.route("/api/organizations")
     @jwt_required()
