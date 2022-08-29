@@ -1,5 +1,5 @@
 from microservice_websocket_docker.mobius.utils import to_mobius_payload
-from tests.fixtures.data_fixtures import *
+
 
 def test_to_mobius_payload(node_data: dict):
     """
@@ -10,14 +10,14 @@ def test_to_mobius_payload(node_data: dict):
         "m2m:cin": {
             "con": {
                 "metadata": {
-                    "sensorId": node_data['data']['mobius_sensorId'],
-                    "readingTimestamp": node_data['publishedAt'],
+                    "sensorId": node_data["data"]["mobius_sensorId"],
+                    "readingTimestamp": node_data["publishedAt"],
                 }
             },
             "sensorData": node_data,
         }
     }
 
-    assert to_mobius_payload(node_data) == expected_value, \
-    "Error in `to_mobius_payload`: output mismatch"
-
+    assert (
+        to_mobius_payload(node_data) == expected_value
+    ), "Error in `to_mobius_payload`: output mismatch"

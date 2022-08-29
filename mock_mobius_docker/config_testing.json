@@ -5,5 +5,5 @@
         "db": "mongoenginetest",
         "host": "mongomock://localhost",
         "port": 27017
-    } 
+    }
 }

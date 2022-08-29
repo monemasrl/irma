@@ -58,8 +58,9 @@ def devEUI() -> str:
 
 
 @pytest.fixture()
-def sensorData_noUplink(sensorId, applicationID, isoTimestamp,
-                        latitude, longitude, devEUI) -> dict:
+def sensorData_noUplink(
+    sensorId, applicationID, isoTimestamp, latitude, longitude, devEUI
+) -> dict:
     return {
         "applicationID": applicationID,
         "applicationName": "temperature-sensor",
@@ -79,11 +80,11 @@ def sensorData_noUplink(sensorId, applicationID, isoTimestamp,
                 "location": {
                     "latitude": latitude,
                     "longitude": longitude,
-                    "altitude": 10.5
+                    "altitude": 10.5,
                 },
                 "fineTimestampType": "NONE",
                 "context": "9u/uvA==",
-                "uplinkID": "jhMh8Gq6RAOChSKbi83RHQ=="
+                "uplinkID": "jhMh8Gq6RAOChSKbi83RHQ==",
             }
         ],
         "txInfo": {
@@ -93,23 +94,23 @@ def sensorData_noUplink(sensorId, applicationID, isoTimestamp,
                 "bandwidth": 125,
                 "spreadingFactor": 11,
                 "codeRate": "4/5",
-                "polarizationInversion": False
-            }
+                "polarizationInversion": False,
+            },
         },
         "adr": True,
         "dr": 1,
         "fCnt": 10,
         "fPort": 5,
         "data": "...",
-        "objectJSON": "{\"temperatureSensor\":25,\"humiditySensor\":32}",
-        "tags": {
-            "sensorId": sensorId,
-            "sensor_path": "433423432"
-        }
+        "objectJSON": '{"temperatureSensor":25,"humiditySensor":32}',
+        "tags": {"sensorId": sensorId, "sensor_path": "433423432"},
     }
 
+
 @pytest.fixture()
-def sensorData_Uplink(devEUI, applicationID, sensorId, isoTimestamp, latitude, longitude) -> dict:
+def sensorData_Uplink(
+    devEUI, applicationID, sensorId, isoTimestamp, latitude, longitude
+) -> dict:
     return {
         "applicationID": applicationID,
         "applicationName": "irma",
@@ -131,12 +132,12 @@ def sensorData_Uplink(devEUI, applicationID, sensorId, isoTimestamp, latitude, l
                     "longitude": longitude,
                     "altitude": 0,
                     "source": "UNKNOWN",
-                    "accuracy": 0
+                    "accuracy": 0,
                 },
                 "fineTimestampType": "NONE",
                 "context": "XZ4gbA==",
                 "uplinkID": "76d9f46d-d799-491e-ac16-48f953077232",
-                "crcStatus": "CRC_OK"
+                "crcStatus": "CRC_OK",
             }
         ],
         "txInfo": {
@@ -146,26 +147,21 @@ def sensorData_Uplink(devEUI, applicationID, sensorId, isoTimestamp, latitude, l
                 "bandwidth": 125,
                 "spreadingFactor": 12,
                 "codeRate": "4/5",
-                "polarizationInversion": False
-            }
+                "polarizationInversion": False,
+            },
         },
         "adr": True,
         "dr": 0,
         "fCnt": 6,
         "fPort": 2,
         "data": "ABE=",
-        "objectJSON": {
-            "sensorData": 17
-        },
-        "tags": {
-            "sensorId": sensorId,
-            "sensor_path": "283923423"
-        },
+        "objectJSON": {"sensorData": 17},
+        "tags": {"sensorId": sensorId, "sensor_path": "283923423"},
         "confirmedUplink": True,
         "devAddr": "0021051c",
         "publishedAt": isoTimestamp,
         "deviceProfileID": "be018f1b-c068-43c0-a276-a7665ff090b4",
-        "deviceProfileName": "device-OTAA"
+        "deviceProfileName": "device-OTAA",
     }
 
 
@@ -183,6 +179,5 @@ def node_data() -> dict:
             "mobius_sensorPath": "bar",
         },
         "publishedAt": "time",
-        "payloadType": 1
+        "payloadType": 1,
     }
-

@@ -25,7 +25,7 @@ Per i comandi di **docker-compose** fare riferimento al paragrafo **DEPLOYMENT**
 
 ### Richiesta dati (POST /)
 
-È possibile **richiedere** dati mediante una **POST** su **/**. 
+È possibile **richiedere** dati mediante una **POST** su **/**.
 
 Corpo della **richiesta** (JSON):
 
@@ -52,7 +52,7 @@ Corpo della **risposta**:
 - `state`: lo **stato** del sensore. Fare riferimento al paragrafo sugli **Enum** nel [README](../README.md).
 - `datiInterni`: **array di dati** da visualizzare nella dashboard.
 - `unhandledAlertIDs`: gli **id** delle **allerte non gestite**.
-    
+
 Ogni elemento all'interno di `datiInerni` ha i seguenti attributi:
 
 - `titolo`: **titolo** del dato.
@@ -90,7 +90,7 @@ Esempio:
 
 A differenza delle altre route che sono protette da **Token JWT**, questa è protetta da un **API Token** statico (si consiglia un **UUID**) che deve essere **inserito** all'interno di *microservice_websocket_docker/api-tokens.txt*.
 
-Il corpo della richiesta può essre di due tipi: 
+Il corpo della richiesta può essre di due tipi:
 
 - Quello inviato dal [nodo](../node/app.py).
 - Quello inviato di default da [Chirpstack](https://www.chirpstack.io/application-server/).
