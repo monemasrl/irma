@@ -1,6 +1,8 @@
 import base64
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime
+from enum import IntEnum, auto
+from os import environ
 from time import sleep
 from typing import Union
 
@@ -64,7 +66,7 @@ class Node:
             self.bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate)  # type: ignore
             print(f"Can type '{bustype}', on channel '{channel}' @{bitrate}")
 
-        self.send_keep_alive()
+        self.launch_keep_alive_daemon()
         self.init_mqtt_client()
 
     def init_mqtt_client(self):
@@ -113,16 +115,11 @@ class Node:
             "requestedAt": commandTimestamp,
         }
 
-def launch_keep_alive_daemon():
-    thread = threading.Thread(target=periodically_send_keep_alive, daemon=True)
-    thread.start()
-
-def periodically_send_keep_alive():
-    seconds = config["microservice"]["keep_alive_seconds"]
-    while True:
-        sleep(seconds)
-        send_keep_alive()
-
+        host = self.config["microservice"]["url"]
+        port = self.config["microservice"]["port"]
+        api_key = self.config["microservice"]["api_key"]
+        sensorID = self.config["node_info"]["sensorID"]
+        applicationID = self.config["node_info"]["applicationID"]
 
         requests.post(
             url=f"{host}:{port}/api/{applicationID}/{sensorID}/publish",
@@ -133,8 +130,15 @@ def periodically_send_keep_alive():
             },
         )
 
-    def send_keep_alive(self):
-        self.send_data(0, PayloadType.KEEP_ALIVE)
+    def launch_keep_alive_daemon(self):
+        thread = threading.Thread(target=self.periodically_send_keep_alive, daemon=True)
+        thread.start()
+
+    def periodically_send_keep_alive(self):
+        seconds = self.config["microservice"]["keep_alive_seconds"]
+        while True:
+            self.send_data(0, PayloadType.KEEP_ALIVE)
+            sleep(seconds)
 
     def read_and_send(self, commandTimestamp: str = ""):
         if BYPASS_CAN:
