@@ -233,7 +233,7 @@ def launch_update_state_daemon():
 
 def periodically_update_state():
     while True:
-        sleep(SENSORS_UPDATE_INTERVAL)
+        sleep(SENSORS_UPDATE_INTERVAL.total_seconds())
         sensors = db.Sensor.objects()
 
         update_frontend = False
