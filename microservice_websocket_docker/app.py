@@ -1,16 +1,16 @@
 import base64
 import json
 import os
-import threading
 from datetime import datetime, timedelta
 from enum import IntEnum, auto
 from functools import wraps
-from time import sleep
 
 import database as db
 import iso8601
+import requests
 from database import user_manager
 from flask import Flask, jsonify, make_response, request
+from flask_apscheduler import APScheduler
 from flask_cors import CORS, cross_origin
 from flask_jwt_extended import (
     JWTManager,
@@ -35,7 +35,7 @@ MOBIUS_PORT = os.environ.get("MOBIUS_PORT", "5002")
 DISABLE_MQTT = False if os.environ.get("DISABLE_MQTT") != 1 else True
 
 # for sensor timeout
-SENSORS_TIMEOUT_INTERVAL = timedelta(minutes=2)
+SENSORS_TIMEOUT_INTERVAL = timedelta(seconds=30)
 
 # interval for checking sensor timeout
 SENSORS_UPDATE_INTERVAL = timedelta(seconds=10)
@@ -83,6 +83,12 @@ class ConfigClass(object):
     MQTT_BROKER_URL = os.environ.get("MQTT_BROKER_URL", "localhost")
     MQTT_BROKER_PORT = int(os.environ.get("MQTT_BROKER_PORT", 1883))
     MQTT_TLS_ENABLED = False
+
+    ##############
+    # APS Config #
+    ##############
+
+    SCHEDULER_API_ENABLED = True
 
 
 def api_token_required(f):
@@ -226,30 +232,6 @@ def update_state(
     return current_state
 
 
-def launch_update_state_daemon():
-    thread = threading.Thread(target=periodically_update_state, daemon=True)
-    thread.start()
-
-
-def periodically_update_state():
-    while True:
-        sleep(SENSORS_UPDATE_INTERVAL.total_seconds())
-        sensors = db.Sensor.objects()
-
-        update_frontend = False
-
-        for sensor in sensors:
-            new_state = update_state(sensor["state"], sensor["lastSeenAt"])
-
-            if sensor["state"] != new_state:
-                update_frontend = True
-                sensor["state"] = new_state
-                sensor.save()
-
-        if update_frontend:
-            socketio.emit("change")
-
-
 def get_data(sensorID: str) -> dict:
     total_sum: int = 0
     monthly_sum: int = 0
@@ -348,6 +330,20 @@ def create_mqtt(app: Flask) -> Mqtt:
     return mqtt
 
 
+def init_scheduler(app: Flask):
+    scheduler = APScheduler()
+    scheduler.init_app(app)
+
+    @scheduler.task(
+        "interval", id="update_state", seconds=SENSORS_UPDATE_INTERVAL.total_seconds()
+    )
+    def periodically_get_route():
+        app.logger.info(
+            f"Periodic get every {SENSORS_UPDATE_INTERVAL.total_seconds()} seconds!"
+        )
+        requests.get("http://localhost:5000/api/check")
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(__name__ + ".ConfigClass")
@@ -437,6 +433,26 @@ def create_app():
 
         # Filtro via i dati vuoti (sensorID non valido)
         return jsonify(readings=[x for x in data if x])
+
+    @app.route("/api/check")
+    def check_for_updates():
+        sensors = db.Sensor.objects()
+
+        update_frontend = False
+
+        for sensor in sensors:
+            new_state = update_state(sensor["state"], sensor["lastSeenAt"])
+
+            if sensor["state"] != new_state:
+                update_frontend = True
+                sensor["state"] = new_state
+                sensor.save()
+
+        if update_frontend:
+            app.logger.info("Detected sensor-state change(s), emitting 'change'")
+            socketio.emit("change")
+
+        return jsonify(message=("Changed" if update_frontend else "Not Changed"))
 
     @app.route("/api/organizations")
     @jwt_required()
