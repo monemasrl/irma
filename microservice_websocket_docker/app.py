@@ -41,56 +41,6 @@ SENSORS_TIMEOUT_INTERVAL = timedelta(seconds=30)
 SENSORS_UPDATE_INTERVAL = timedelta(seconds=10)
 
 
-# Class-based application configuration
-class ConfigClass(object):
-    """Flask application config"""
-
-    # Generate a nice key using secrets.token_urlsafe()
-    SECRET_KEY = os.environ.get(
-        "SECRET_KEY", "pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw"
-    )
-
-    # JWT SETTINGS
-    JWT_SECRET_KEY = os.environ.get(
-        "JWT_SECRET_KEY", "pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw"
-    )
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(weeks=1)
-
-    # Flask-MongoEngine settings
-    MONGODB_SETTINGS = {"db": "irma", "host": "mongodb://mongo:27017/irma"}
-
-    # Flask-User settings
-    USER_APP_NAME = (
-        "Flask-User MongoDB App"  # Shown in and email templates and page footers
-    )
-    USER_ENABLE_EMAIL = False  # Disable email authentication
-    USER_ENABLE_USERNAME = True  # Enable username authentication
-    USER_REQUIRE_RETYPE_PASSWORD = False  # Simplify register form
-
-    #####################################################################################
-    # configurazione dei dati relativi al cors per la connessione da una pagina esterna #
-    #####################################################################################
-    CORS_SETTINGS = {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": "true",
-    }
-
-    ##########################################################
-    # configurazione dei dati relativi alla connessione MQTT #
-    ##########################################################
-    MQTT_BROKER_URL = os.environ.get("MQTT_BROKER_URL", "localhost")
-    MQTT_BROKER_PORT = int(os.environ.get("MQTT_BROKER_PORT", 1883))
-    MQTT_TLS_ENABLED = False
-
-    ##############
-    # APS Config #
-    ##############
-
-    SCHEDULER_API_ENABLED = True
-
-
 def api_token_required(f):
     @wraps(f)
     def decorator(*args, **kwargs):
@@ -348,8 +298,8 @@ def init_scheduler(app: Flask):
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(__name__ + ".ConfigClass")
     socketio = create_socketio(app)
+    app.config.from_file("./config.json", load=json.load)
 
     init_scheduler(app)
 
