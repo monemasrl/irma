@@ -3,17 +3,13 @@ import json
 import os
 from datetime import datetime, timedelta
 from enum import IntEnum, auto
-from functools import wraps
 
 import database as db
 import iso8601
-import requests
 from database import user_manager
-from flask import Flask, jsonify, make_response, request
-from flask_apscheduler import APScheduler
+from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
 from flask_jwt_extended import (
-    JWTManager,
     create_access_token,
     create_refresh_token,
     get_jwt_identity,
@@ -21,8 +17,13 @@ from flask_jwt_extended import (
 )
 from flask_mongoengine import MongoEngine
 from flask_mqtt import Mqtt
-from flask_socketio import SocketIO
 from mobius import utils
+from services.jwt import init_jwt
+from services.mqtt import create_mqtt
+from services.scheduler import init_scheduler
+from services.socketio import create_socketio
+
+from utils.api_token import api_token_required
 
 # valore teorico della soglia di pericolo del sensore
 MAX_TRESHOLD = int(os.environ.get("MAX_TRESHOLD", 20))
@@ -39,25 +40,6 @@ SENSORS_TIMEOUT_INTERVAL = timedelta(seconds=30)
 
 # interval for checking sensor timeout
 SENSORS_UPDATE_INTERVAL = timedelta(seconds=10)
-
-
-def api_token_required(f):
-    @wraps(f)
-    def decorator(*args, **kwargs):
-        if "Authorization" not in request.headers:
-            return make_response(jsonify({"message": "No API Token Provided"}), 401)
-
-        token: str = request.headers["Authorization"].split(" ")[1]
-
-        with open("./api-tokens.txt", "r") as file:
-            tokens: list[str] = [x.strip() for x in file.readlines()]
-
-            if token not in tokens:
-                return make_response(jsonify({"message": "Invalid Token"}), 401)
-
-        return f(*args, **kwargs)
-
-    return decorator
 
 
 def decode_data(encoded_data: str) -> dict:
@@ -247,87 +229,21 @@ def get_data(sensorID: str) -> dict:
     return send
 
 
-def create_socketio(app: Flask):
-    # TODO: remove wildcard ?
-    socketio: SocketIO = SocketIO(app, cors_allowed_origins="*")
-
-    @socketio.on("connect")
-    def connected():
-        print("Connected")
-
-    @socketio.on("disconnect")
-    def disconnected():
-        print("Disconnected")
-
-    @socketio.on("change")
-    def onChange():
-        print("Changed")
-
-    return socketio
-
-
-def create_mqtt(app: Flask) -> Mqtt:
-    mqtt = Mqtt(app)
-
-    @mqtt.on_connect()
-    def handle_connect(client, userdata, flags, rc):
-        mqtt.subscribe("application")
-
-    @mqtt.on_message()
-    def handle_mqtt_message(client, userdata, message):
-        pass
-
-    return mqtt
-
-
-def init_scheduler(app: Flask):
-    scheduler = APScheduler()
-    scheduler.init_app(app)
-
-    @scheduler.task(
-        "interval", id="update_state", seconds=SENSORS_UPDATE_INTERVAL.total_seconds()
-    )
-    def periodically_get_route():
-        app.logger.info(
-            f"Periodic get every {SENSORS_UPDATE_INTERVAL.total_seconds()} seconds!"
-        )
-        requests.get("http://localhost:5000/api/check")
-
-    scheduler.start()
-
-
 def create_app():
     app = Flask(__name__)
-    socketio = create_socketio(app)
     app.config.from_file("./config.json", load=json.load)
 
-    init_scheduler(app)
+    socketio = create_socketio(app)
+    init_scheduler(app, SENSORS_UPDATE_INTERVAL.total_seconds())
+    init_jwt(app)
 
-    databse = MongoEngine()
-    databse.init_app(app)
+    database = MongoEngine()
+    database.init_app(app)
 
     CORS(app)
 
-    jwt = JWTManager(app)
     if not DISABLE_MQTT:
         mqtt: Mqtt = create_mqtt(app)
-
-    # Register a callback function that takes whatever object is passed in as the
-    # identity when creating JWTs and converts it to a JSON serializable format.
-    @jwt.user_identity_loader
-    def user_identity_lookup(user):
-        app.logger.info(f"Looking up: {user=}")
-        return user_manager.get_user(user["email"])
-
-    # Register a callback function that loads a user from your database whenever
-    # a protected route is accessed. This should return any python object on a
-    # successful lookup, or None if the lookup failed for any reason (for example
-    # if the user has been deleted from the database).
-    @jwt.user_lookup_loader
-    def user_lookup_callback(_jwt_header, jwt_data):
-        identity = jwt_data["sub"]
-        app.logger.info(f"{identity=}")
-        return user_manager.get_user(identity["email"])
 
     # Create a user to test with
     @app.before_first_request
