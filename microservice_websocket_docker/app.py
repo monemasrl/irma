@@ -343,11 +343,15 @@ def init_scheduler(app: Flask):
         )
         requests.get("http://localhost:5000/api/check")
 
+    scheduler.start()
+
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(__name__ + ".ConfigClass")
     socketio = create_socketio(app)
+
+    init_scheduler(app)
 
     databse = MongoEngine()
     databse.init_app(app)
