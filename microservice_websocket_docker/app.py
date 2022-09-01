@@ -16,9 +16,9 @@ from flask_jwt_extended import (
 )
 from flask_mongoengine import MongoEngine
 from flask_mqtt import Mqtt
-from mobius import utils
 from services.database import user_manager
 from services.jwt import init_jwt
+from services.mobius import utils
 from services.mqtt import create_mqtt
 from services.scheduler import init_scheduler
 from services.socketio import create_socketio
