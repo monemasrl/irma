@@ -1,10 +1,7 @@
-import base64
 import json
 import os
 from datetime import datetime, timedelta
-from enum import IntEnum, auto
 
-import iso8601
 import services.database as db
 from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
@@ -16,152 +13,23 @@ from flask_jwt_extended import (
 )
 from flask_mongoengine import MongoEngine
 from flask_mqtt import Mqtt
+from routes import define_routes
 from services.database import user_manager
 from services.jwt import init_jwt
-from services.mobius import utils
 from services.mqtt import create_mqtt
 from services.scheduler import init_scheduler
 from services.socketio import create_socketio
 
 from utils.api_token import api_token_required
-
-# valore teorico della soglia di pericolo del sensore
-MAX_TRESHOLD = int(os.environ.get("MAX_TRESHOLD", 20))
-
-# mobius url
-MOBIUS_URL = os.environ.get("MOBIUS_URL", "http://localhost")
-MOBIUS_PORT = os.environ.get("MOBIUS_PORT", "5002")
-
-# for testing purposes
-DISABLE_MQTT = False if os.environ.get("DISABLE_MQTT") != 1 else True
-
-# for sensor timeout
-SENSORS_TIMEOUT_INTERVAL = timedelta(seconds=30)
+from utils.data import to_dashboard_data
+from utils.enums import SensorState
 
 # interval for checking sensor timeout
 SENSORS_UPDATE_INTERVAL = timedelta(seconds=10)
 
-
-def decode_data(encoded_data: str) -> dict:
-    raw_bytes = base64.b64decode(encoded_data)
-
-    return {
-        "payloadType": int.from_bytes(raw_bytes[:1], "big"),
-        "sensorData": int.from_bytes(raw_bytes[1:5], "big"),
-        "mobius_sensorId": raw_bytes[5:15].decode().strip(),
-        "mobius_sensorPath": raw_bytes[15:].decode().strip(),
-    }
-
-
-def encode_mqtt_data(command: int, iso_timestamp: str) -> bytes:
-    encoded_data = b""
-    encoded_data += command.to_bytes(1, "big")
-    encoded_data += iso_timestamp.encode()
-
-    return base64.b64encode(encoded_data)
-
-
-# Creazione payload per irma-ui
-def to_irma_ui_data(
-    sensorID: str,
-    sensorName: str,
-    applicationID: str,
-    state: str,
-    titolo1: str,
-    titolo2: str,
-    titolo3: str,
-    dato1: float,
-    dato2: float,
-    dato3: int,
-    unhandledAlertIDs: list,
-) -> dict:
-
-    return {
-        "sensorID": sensorID,
-        "sensorName": sensorName,
-        "applicationID": applicationID,
-        "state": state,
-        "datiInterni": [
-            {"titolo": titolo1, "dato": dato1},
-            {"titolo": titolo2, "dato": dato2},
-            {"titolo": titolo3, "dato": dato3},
-        ],
-        "unhandledAlertIDs": unhandledAlertIDs,
-    }
-
-
-class SensorState(IntEnum):
-    ERROR = 0
-    READY = auto()
-    RUNNING = auto()
-    ALERT_READY = auto()
-    ALERT_RUNNING = auto()
-
-    @classmethod
-    def to_irma_ui_state(cls, n: int) -> str:
-        if n == 0:
-            return "off"
-        elif n == 1:
-            return "ok"
-        elif n == 2:
-            return "rec"
-        elif n >= 3:
-            return "alert"
-        else:
-            return "undefined"
-
-
-class PayloadType(IntEnum):
-    READING = 0
-    START_REC = auto()
-    END_REC = auto()
-    KEEP_ALIVE = auto()
-    HANDLE_ALERT = auto()
-
-
-def update_state(
-    current_state: SensorState,
-    lastSeenAt: datetime,
-    typ: PayloadType | None = None,
-    dato: int = 0,
-):
-
-    is_timed_out: bool = (datetime.now() - lastSeenAt) > SENSORS_TIMEOUT_INTERVAL
-
-    if current_state == SensorState.ERROR:
-        if typ == PayloadType.KEEP_ALIVE:
-            return SensorState.READY
-
-    elif current_state == SensorState.READY:
-        if typ == PayloadType.START_REC:
-            return SensorState.RUNNING
-        elif typ == PayloadType.READING:
-            if dato >= MAX_TRESHOLD:
-                return SensorState.ALERT_READY
-        elif is_timed_out:
-            return SensorState.ERROR
-
-    elif current_state == SensorState.RUNNING:
-        if typ == PayloadType.READING:
-            if dato >= MAX_TRESHOLD:
-                return SensorState.ALERT_RUNNING
-        elif typ == PayloadType.END_REC:
-            return SensorState.READY
-
-    elif current_state == SensorState.ALERT_RUNNING:
-        if typ == PayloadType.HANDLE_ALERT:
-            return SensorState.RUNNING
-        elif typ == PayloadType.END_REC:
-            return SensorState.ALERT_READY
-
-    elif current_state == SensorState.ALERT_READY:
-        if typ == PayloadType.HANDLE_ALERT:
-            if is_timed_out:
-                return SensorState.ERROR
-            else:
-                return SensorState.READY
-
-    return current_state
+# for testing purposes
+# TODO: move to config file
+DISABLE_MQTT = False if os.environ.get("DISABLE_MQTT") != 1 else True
 
 
 def get_data(sensorID: str) -> dict:
@@ -210,7 +78,7 @@ def get_data(sensorID: str) -> dict:
             if monthly_count != 0:
                 monthly_average = monthly_sum / monthly_count
 
-    send: dict = to_irma_ui_data(
+    send: dict = to_dashboard_data(
         sensorID=sensorID,
         sensorName=sensorName,
         applicationID=applicationID,
@@ -304,230 +172,7 @@ def create_app():
         # Filtro via i dati vuoti (sensorID non valido)
         return jsonify(readings=[x for x in data if x])
 
-    @app.route("/api/check")
-    def check_for_updates():
-        sensors = db.Sensor.objects()
-
-        update_frontend = False
-
-        for sensor in sensors:
-            new_state = update_state(sensor["state"], sensor["lastSeenAt"])
-
-            if sensor["state"] != new_state:
-                update_frontend = True
-                sensor["state"] = new_state
-                sensor.save()
-
-        if update_frontend:
-            app.logger.info("Detected sensor-state change(s), emitting 'change'")
-            socketio.emit("change")
-
-        return jsonify(message=("Changed" if update_frontend else "Not Changed"))
-
-    @app.route("/api/organizations")
-    @jwt_required()
-    def get_organizations():
-        organizations = db.Organization.objects()
-
-        if len(organizations) == 0:
-            return {"message": "Not Found"}, 404
-
-        return jsonify(organizations=organizations)
-
-    @app.route("/api/organizations", methods=["POST"])
-    @jwt_required()
-    def create_organization():
-        record: dict = json.loads(request.data)
-
-        organization = db.Organization(organizationName=record["name"])
-        organization.save()
-
-        return jsonify(organization.to_json())
-
-    @app.route("/api/applications/<organizationID>", methods=["POST"])
-    @jwt_required()
-    def create_application(organizationID):
-        record: dict = json.loads(request.data)
-
-        organizations = db.Organization.objects(id=organizationID)
-
-        if len(organizations) > 0:
-            organization = organizations[0]
-            application = db.Application(
-                applicationName=record["name"], organization=organization
-            )
-            application.save()
-            return application.to_json()
-        else:
-            return {"message": "Not Found"}, 404
-
-    @app.route("/api/applications")
-    @jwt_required()
-    def get_applications():
-        organizationID: str = request.args.get("organizationID", "")
-
-        if organizationID == "":
-            return {"message": "Bad Request"}, 400
-
-        applications = db.Application.objects(organization=organizationID)
-
-        if len(applications) == 0:
-            return {"message": "Not Found"}, 404
-
-        return jsonify(applications=applications)
-
-    @app.route("/api/sensors")
-    @jwt_required()
-    def get_sensors():
-        applicationID: str = request.args.get("applicationID", "")
-
-        if applicationID == "":
-            return {"message": "Bad Request"}, 400
-
-        sensors = db.Sensor.objects(application=applicationID)
-
-        if len(sensors) == 0:
-            return {"message": "Not Found"}, 404
-
-        return jsonify(sensors=sensors)
-
-    @app.route("/api/<applicationID>/<sensorID>/publish", methods=["POST"])
-    @api_token_required
-    def create_record(applicationID: str, sensorID: int):
-        # TODO: controllo header token
-
-        app.logger.info(f"{request=}")
-        app.logger.info(f"{vars(request)=}")
-
-        data = request.data.decode()
-        # record: dict = json.loads(request.data.decode())
-
-        app.logger.info(f"{data=}")
-        record: dict = json.loads(data)
-
-        record["data"] = decode_data(record["data"])
-
-        # Vero se arriva da chirpstack
-        if "txInfo" in record:
-            # TODO: portare a payload di node/app.py
-            pass
-
-        application = db.Application.objects(id=applicationID).first()
-
-        if application is None:
-            app.logger.info("Not found")
-            return {"message": "Not Found"}, 404
-
-        sensor = db.Sensor.objects(sensorID=sensorID).first()
-
-        if sensor is None:
-            sensor = db.Sensor(
-                sensorID=record["sensorID"],
-                application=application,
-                organization=application["organization"],
-                sensorName=record["sensorName"],
-                state=SensorState.READY,
-                lastSeenAt=datetime.now(),
-            )
-            sensor.save()
-
-        if record["data"]["payloadType"] == PayloadType.READING:
-
-            if MOBIUS_URL != "":
-                app.logger.info(f"Sending to mobius: {record=}")
-                utils.insert(record)
-
-            requestedAt = iso8601.parse_date(record["requestedAt"])
-            reading = db.Reading.objects(requestedAt=requestedAt).first()
-
-            data = db.Data(
-                payloadType=record["data"]["payloadType"],
-                sensorData=record["data"]["sensorData"],
-                publishedAt=iso8601.parse_date(record["publishedAt"]),
-                mobius_sensorId=record["data"]["mobius_sensorId"],
-                mobius_sensorPath=record["data"]["mobius_sensorPath"],
-            )
-
-            if reading is None:
-                reading = db.Reading(
-                    sensor=sensor,
-                    requestedAt=requestedAt,
-                    data=[data],
-                )
-            else:
-                reading["data"].append(data)
-
-            reading.save()
-
-            if data["sensorData"] >= MAX_TRESHOLD:
-                alert = db.Alert(reading=reading, sensor=sensor, isHandled=False)
-                alert.save()
-
-        sensor["lastSeenAt"] = datetime.now()
-        sensor["state"] = update_state(
-            sensor["state"],
-            sensor["lastSeenAt"],
-            record["data"]["payloadType"],
-            record["data"]["sensorData"],
-        )
-        sensor.save()
-
-        socketio.emit("change")
-        return record
-
-    @app.route("/api/alert/handle", methods=["POST"])
-    @jwt_required()
-    def handle_alert():
-        received: dict = json.loads(request.data)
-
-        alertID = received["alertID"]
-        alert = db.Alert.objects(id=alertID).first()
-        if alert is None:
-            return {"message": "Not Found"}, 404
-
-        sensor = alert["sensor"]
-
-        user_id = get_jwt_identity()["_id"]["$oid"]
-
-        user = db.User.objects(id=user_id).first()
-
-        alert["isConfirmed"] = received["isConfirmed"]
-        alert["isHandled"] = True
-        alert["handledBy"] = user
-        alert["handledAt"] = datetime.now()
-        alert["handleNote"] = received["handleNote"]
-        alert.save()
-
-        if db.Alert.objects(sensor=sensor, isHandled=False).first() is None:
-
-            sensor["state"] = update_state(
-                sensor["state"], sensor["lastSeenAt"], PayloadType.HANDLE_ALERT
-            )
-            sensor.save()
-
-        socketio.emit("change")
-        return received
-
-    @app.route("/api/command", methods=["POST"])
-    @jwt_required()
-    def sendMqtt():  # alla ricezione di un post pubblica un messaggio sul topic
-        received: dict = json.loads(request.data)
-
-        applicationID = received.get("applicationID", None)
-        sensorID = received.get("sensorID", None)
-
-        if applicationID is None or sensorID is None:
-            return {"message": "Bad Request"}, 400
-
-        topic: str = f"{applicationID}/{sensorID}/command"
-
-        data: bytes = encode_mqtt_data(received["command"], datetime.now().isoformat())
-
-        if not DISABLE_MQTT:
-            mqtt.publish(topic, data)
-
-        print(received)
-        return received
+    define_routes(app, socketio, mqtt)
 
     return app, socketio
 

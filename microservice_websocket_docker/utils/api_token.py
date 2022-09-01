@@ -1,5 +1,6 @@
 from functools import wraps
-from flask import make_response, jsonify, request
+
+from flask import jsonify, make_response, request
 
 
 def api_token_required(f):
