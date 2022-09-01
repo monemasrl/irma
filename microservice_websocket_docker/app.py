@@ -231,7 +231,7 @@ def get_data(sensorID: str) -> dict:
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_file("./config.json", load=json.load)
+    app.config.from_file("./config/config.json", load=json.load)
 
     socketio = create_socketio(app)
     init_scheduler(app, SENSORS_UPDATE_INTERVAL.total_seconds())
