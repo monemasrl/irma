@@ -1,6 +1,6 @@
 import os
 
-import database as db
+import services.database as db
 from bcrypt import checkpw, hashpw
 
 # Generated using bcrypt.gensalt()
