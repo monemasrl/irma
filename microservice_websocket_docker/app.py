@@ -4,9 +4,8 @@ import os
 from datetime import datetime, timedelta
 from enum import IntEnum, auto
 
-import database as db
 import iso8601
-from database import user_manager
+import services.database as db
 from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
 from flask_jwt_extended import (
@@ -18,6 +17,7 @@ from flask_jwt_extended import (
 from flask_mongoengine import MongoEngine
 from flask_mqtt import Mqtt
 from mobius import utils
+from services.database import user_manager
 from services.jwt import init_jwt
 from services.mqtt import create_mqtt
 from services.scheduler import init_scheduler
