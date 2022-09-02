@@ -118,11 +118,9 @@ class Node:
         host = self.config["microservice"]["url"]
         port = self.config["microservice"]["port"]
         api_key = self.config["microservice"]["api_key"]
-        sensorID = self.config["node_info"]["sensorID"]
-        applicationID = self.config["node_info"]["applicationID"]
 
         requests.post(
-            url=f"{host}:{port}/api/{applicationID}/{sensorID}/publish",
+            url=f"{host}:{port}/api/payload/publish",
             json=payload,
             headers={
                 "Authorization": f"Bearer {api_key}",

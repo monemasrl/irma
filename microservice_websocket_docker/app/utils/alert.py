@@ -1,10 +1,9 @@
 from datetime import datetime
 from typing import Union
 
-from services.database import Alert, User
-
-from utils.payload import PayloadType
-from utils.sensor import update_state
+from ..services.database import Alert, User
+from .payload import PayloadType
+from .sensor import update_state
 
 
 def handle_alert(received: dict, user_id: str) -> Union[Alert, None]:

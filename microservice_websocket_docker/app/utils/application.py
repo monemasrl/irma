@@ -1,6 +1,6 @@
 from typing import Union
 
-from services.database import Application, Organization
+from ..services.database import Application, Organization
 
 
 def get_applications(organizationID: str) -> tuple[dict, int]:

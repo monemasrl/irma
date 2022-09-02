@@ -1,5 +1,5 @@
 from flask_jwt_extended import JWTManager
-from services.database import user_manager
+from ..database import user_manager
 
 
 def init_jwt(app):

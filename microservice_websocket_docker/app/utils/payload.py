@@ -2,13 +2,13 @@ import os
 from datetime import datetime
 
 import iso8601
-from flask_mqtt import Mqtt
-from services.database import Alert, Application, Data, Reading, Sensor
-from services.mobius.utils import insert
 
-from utils.data import decode_data, encode_mqtt_data
-from utils.enums import PayloadType, SensorState
-from utils.sensor import MAX_TRESHOLD, update_state
+from .. import mqtt
+from ..services.database import Alert, Application, Data, Reading, Sensor
+from ..services.mobius.utils import insert
+from .data import decode_data, encode_mqtt_data
+from .enums import PayloadType, SensorState
+from .sensor import MAX_TRESHOLD, update_state
 
 # mobius url
 # TODO: move to config file
@@ -89,7 +89,7 @@ def publish(applicationID: str, sensorID: int, record: dict):
     return record
 
 
-def send_mqtt_command(mqtt: Mqtt, applicationID: str, sensorID: str, command: int):
+def send_mqtt_command(applicationID: str, sensorID: str, command: int):
     topic: str = f"{applicationID}/{sensorID}/command"
 
     data: bytes = encode_mqtt_data(command, datetime.now().isoformat())

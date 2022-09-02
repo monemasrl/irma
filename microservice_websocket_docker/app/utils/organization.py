@@ -1,4 +1,4 @@
-from services.database import Organization
+from ..services.database import Organization
 
 
 def get_organizations():

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from flask_mongoengine import Document
+from flask import Flask
+from flask_mongoengine import Document, MongoEngine
 from mongoengine import IntField
 from mongoengine.fields import (
     BooleanField,
@@ -11,6 +12,11 @@ from mongoengine.fields import (
     ReferenceField,
     StringField,
 )
+
+
+def init_db(app: Flask):
+    database = MongoEngine()
+    database.init_app(app)
 
 
 ###############################################################

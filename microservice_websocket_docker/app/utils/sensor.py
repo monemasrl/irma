@@ -1,9 +1,8 @@
 import os
 from datetime import datetime, timedelta
 
-from services.database import Sensor
-
-from utils.enums import PayloadType, SensorState
+from ..services.database import Sensor
+from .enums import PayloadType, SensorState
 
 # valore teorico della soglia di pericolo del sensore
 # TODO: move to config file
