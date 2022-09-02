@@ -16,8 +16,10 @@ class SensorState(IntEnum):
             return "ok"
         elif n == 2:
             return "rec"
-        elif n >= 3:
-            return "alert"
+        elif n == 3:
+            return "alert-ready"
+        elif n == 4:
+            return "alert-running"
         else:
             return "undefined"
 
