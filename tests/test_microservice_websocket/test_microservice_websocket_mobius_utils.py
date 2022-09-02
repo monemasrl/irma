@@ -1,4 +1,4 @@
-from microservice_websocket_docker.mobius.utils import to_mobius_payload
+from microservice_websocket_docker.app.services.mobius.utils import to_mobius_payload
 
 
 def test_to_mobius_payload(node_data: dict):
