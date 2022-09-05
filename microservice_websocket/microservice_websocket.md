@@ -6,36 +6,29 @@ Questo servizio si occupa di interfacciarsi con la piattaforma **Mobius** (vedi 
 
 Nel [docker-compose.yaml](../docker-compose.yaml) presente nella **root della repo**, microservice_websocket viene fatto partire **insieme** a tutti gli altri serivizi.
 
-Nel caso in cui lo si volesse avviare **standalone**, viene fornito il file **docker-compose.yaml** all'interno della cartella [microservice_websocket_docker](./docker-compose.yaml).
+Nel caso in cui lo si volesse avviare **standalone**, viene fornito il file **docker-compose.yaml** all'interno della cartella [microservice_websocket](./docker-compose.yaml).
 
 Per i comandi di **docker-compose** fare riferimento al paragrafo **DEPLOYMENT** nel [README](../README.md).
 
-## Configurazione tramite variabili d'ambiente
+## Configurazione
 
-È possibile specificare le seguenti opzioni tramite variabili d'ambiente:
-
-- **MAX_TRESHOLD**: valore della soglia di pericolo dei sensori, default `20`.
-- **MOBIUS_URL**: l'indirizzo dell'istanza Mobius, default `http://localhost`.
-- **MOBIUS_PORT**: la porta su cui è esposto il servizio, default `5002`.
-- **DISABLE_MQTT**: disabilita il servizio MQTT per il testing, True se settato ad 1, default False.
-- **MQTT_BROKER_URL**: url del serivizo MQTT per comunicare con Chirpstack, default `localhost`.
-- **MQTT_BROKER_PORT**: porta del servizio MQTT per comunicare con Chirpstackm default `1883`.
+All'interno del file [config.json](./config/config.json) è possibile specificare una serie di opzioni.
 
 ## Descrizione API
 
-### Richiesta dati (POST /)
+### Richiesta dati (POST /api/payload/)
 
-È possibile **richiedere** dati mediante una **POST** su **/**.
+È possibile **richiedere** dati mediante una **POST** su **/api/payload/**.
 
 Corpo della **richiesta** (JSON):
 
-- `paths`: un array che contiene tutti i **sensorID** che si vogliono richiedere.
+- `IDs`: un array che contiene tutti i **sensorID** che si vogliono richiedere.
 
 Esempio:
 
 ```jsonc
 {
-  "paths": [
+  "IDs": [
     "01203",
     "21332"
   ]
@@ -49,6 +42,8 @@ Esempio:
 Corpo della **risposta**:
 
 - `sensorID`: l'**id** del sensore.
+- `sensorName`: il **nome** del sensore.
+- `applicationID`: l'**id** dell'applicazione a cui appartiene il sensore.
 - `state`: lo **stato** del sensore. Fare riferimento al paragrafo sugli **Enum** nel [README](../README.md).
 - `datiInterni`: **array di dati** da visualizzare nella dashboard.
 - `unhandledAlertIDs`: gli **id** delle **allerte non gestite**.
@@ -62,7 +57,9 @@ Esempio:
 
 ```jsonc
 {
-  "sensorID": 1,
+  "sensorID": "1",
+  "sensorName": "sensore_1",
+  "applicationID": "34375765",
   "state": 1,
   "datiInterni": [
     {
@@ -84,11 +81,11 @@ Esempio:
 }
 ```
 
-### Pubblicazione dati (POST /\<applicationID\>/\<sensorID\>/publish)
+### Pubblicazione dati (POST /api/payload/publish)
 
-È possibile **pubblicare** dei dati mediante una **POST** su **/\<applicationID\>/\<sensorID\>/publish**.
+È possibile **pubblicare** dei dati mediante una **POST** su **/api/payload/publish**.
 
-A differenza delle altre route che sono protette da **Token JWT**, questa è protetta da un **API Token** statico (si consiglia un **UUID**) che deve essere **inserito** all'interno di *microservice_websocket_docker/api-tokens.txt*.
+A differenza delle altre route che sono protette da **Token JWT**, questa è protetta da un **API Token** statico (si consiglia un **UUID**) che deve essere **inserito** all'interno di *microservice_websocket/api-tokens.txt*.
 
 Il corpo della richiesta può essre di due tipi:
 
@@ -118,7 +115,7 @@ Esempio di **richiesta** dal **nodo**:
 
 ---
 
-La funzione `to_mobius_payload`, all'interno di [app.py](./app.py), convertirà il **payload** e lo invierà a **Mobius**.
+La funzione `to_mobius_payload`, all'interno di [mobius/utils.py](./app/services/mobius/utils.py), convertirà il **payload** e lo invierà a **Mobius**.
 
 Il **payload** che viene inviato a **Mobius** ha questa forma:
 
@@ -142,9 +139,9 @@ Il **payload** che viene inviato a **Mobius** ha questa forma:
 
 Il dato viene poi immagazzinato all'interno del **database** come **Reading**. Per maggiori informazioni sul database fare riferimento alla [documentazione](./database/database.md).
 
-### Invio comandi al sensore (POST /api/command)
+### Invio comandi al sensore (POST /api/payload/command)
 
-È possibile inviare comandi al sensore mediante una **POST** su **/api/command**.
+È possibile inviare comandi al sensore mediante una **POST** su **/api/payload/command**.
 
 Corpo della richiesta (JSON):
 
@@ -167,7 +164,6 @@ Esempio:
 A questo punto **microservice_websocket** pubblicherà sul **topic** `<applicationID>/<sensorID>/command` un **payload**.
 
 Per maggior informazioni sulla struttura del **payload**, fare riferimento al paragrafo **Encode e decode dei dati** del [README](../README.md).
-
 
 ### Gestion alert (POST /api/alert/handle)
 
@@ -195,14 +191,14 @@ A questo punto **microservice_websocket** registrerà l'**alert** come **gestita
 
 - l'**utente** che l'ha gestita.
 - se l'utente **conferma** l'**alert**.
-- **quando** l'ha gestita
+- **quando** l'ha gestita.
 - le eventuali **note**.
 
-Per maggior informazioni sulla struttura del **alert** nel database, fare riferimento alla sua [documentazione](./database/database.md).
+Per maggior informazioni sulla struttura del **alert** nel database, fare riferimento alla sua [documentazione](./app/services/database/database.md).
 
-### Autenticazione (POST /api/authenticate)
+### Autenticazione (POST /api/jwt/authenticate)
 
-Per effettuare l'**autenticazione** ed ottene un **Token JWT** e il relativo **Token JWT di refresh**, è necessario effettuare una **POST** su **/api/authenticate**.
+Per effettuare l'**autenticazione** ed ottene un **Token JWT** e il relativo **Token JWT di refresh**, è necessario effettuare una **POST** su **/api/jwt/authenticate**.
 
 Corpo della richiesta (JSON):
 
@@ -236,9 +232,9 @@ Esempio:
 }
 ```
 
-### Refresh (POST /api/refresh)
+### Refresh (POST /api/jwt/refresh)
 
-Per **refreshare** il **Token JWT** è possibile effettuare una **POST** su **/api/refresh**.
+Per **refreshare** il **Token JWT** è possibile effettuare una **POST** su **/api/jwt/refresh**.
 
 Se il **Token JWT di refresh** non è valido, il server risponderà con un 401.
 
@@ -254,9 +250,9 @@ Esempio:
 }
 ```
 
-### Lista organizzazioni (GET /api/organizations)
+### Lista organizzazioni (GET /api/organizations/)
 
-Per ottenere la lista delle **organizzazioni** è necessario fare una **GET** su **/api/organizations**.
+Per ottenere la lista delle **organizzazioni** è necessario fare una **GET** su **/api/organizations/**.
 
 Corpo della risposta (JSON):
 
@@ -267,13 +263,30 @@ Ogni **elemento** all'interno della **lista** è conforme alla struttura **Organ
 Esempio:
 ```jsonc
 {
-  "organizations": [ {}, {}, {}]
+  "organizations": [{}, {}, {}]
 }
 ```
 
-### Lista applicazioni (GET /api/applications)
+### Creazione organizzazione (POST /api/organizations/)
 
-Per ottenere la lista delle **applicazioni** è necessario fare una **GET** su **/api/applications**.
+Per **creare** un'organizzazione è necessario fare una **POST** su **/api/organizations/**.
+
+Nel caso in cui il nome dell'organizzazione sia **già in uso**, il server risponderà con un errore `400`.
+
+Corpo della richiesta (JSON):
+
+- `name`: il **nome** dell'organizzazione da creare.
+
+Esempio:
+```jsonc
+{
+  "name": "organizzazione1"
+}
+```
+
+### Lista applicazioni (GET /api/applications/)
+
+Per ottenere la lista delle **applicazioni** è necessario fare una **GET** su **/api/applications/**.
 
 Sono disponibili i seguenti **parametri**:
 
@@ -292,9 +305,28 @@ Esempio:
 }
 ```
 
-### Lista dei sensori (GET /api/sensors)
+### Creazione applicazione (POST /api/applications/\<organizationID\>)
 
-Per ottenere la lista dei **sensori** è necessario fare una **GET** su **/api/sensors**.
+Per **creare** un'applicazione è necessario fare una **POST** su **/api/applications/\<organizationID\>**.
+
+Nel caso in cui l'**id** organizzazione **non corrisponda** ad alcuna organizzazione **esistente**, il server risponderà con un error `404`.
+
+Nel caso in cui il nome dell'applicazione sia **già in uso**, il server risponderà con un errore `400`.
+
+Corpo della richiesta (JSON):
+
+- `name`: il **nome** dell'organizzazione da creare.
+
+Esempio:
+```jsonc
+{
+  "name": "organizzazione1"
+}
+```
+
+### Lista dei sensori (GET /api/sensors/)
+
+Per ottenere la lista dei **sensori** è necessario fare una **GET** su **/api/sensors/**.
 
 Sono disponibili i seguenti **parametri**:
 
