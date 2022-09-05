@@ -1,4 +1,4 @@
-from microservice_websocket_docker.app.utils.data import (
+from microservice_websocket.app.utils.data import (
     decode_data,
     encode_mqtt_data,
     to_dashboard_data,

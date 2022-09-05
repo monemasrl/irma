@@ -6,7 +6,7 @@ from flask.testing import FlaskClient
 from flask_socketio import SocketIO, SocketIOTestClient
 from mock import patch
 
-import microservice_websocket_docker.app as websocket_app
+import microservice_websocket.app as websocket_app
 
 
 class TestFlaskApp:

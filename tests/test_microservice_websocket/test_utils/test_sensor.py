@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from microservice_websocket_docker.app.utils.enums import PayloadType, SensorState
-from microservice_websocket_docker.app.utils.sensor import MAX_TRESHOLD, update_state
+from microservice_websocket.app.utils.enums import PayloadType, SensorState
+from microservice_websocket.app.utils.sensor import MAX_TRESHOLD, update_state
 
 
 def _test_update_state_case(
