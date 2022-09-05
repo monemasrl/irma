@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 from ..services.database import Sensor
 from .enums import PayloadType, SensorState
+from .exceptions import ObjectNotFoundException
 
 # valore teorico della soglia di pericolo del sensore
 # TODO: move to config file
@@ -79,4 +80,9 @@ def update_state(
 
 
 def get_sensors(applicationID: str):
-    return Sensor.objects(application=applicationID)
+    sensors = Sensor.objects(application=applicationID)
+
+    if len(sensors) == 0:
+        raise ObjectNotFoundException(Sensor)
+
+    return sensors

@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 
+from ...utils.exceptions import ObjectNotFoundException
 from ...utils.sensor import get_sensors
 
 sensor_bp = Blueprint("sensor", __name__, url_prefix="/sensors")
@@ -14,9 +15,9 @@ def _get_sensors_route():
     if applicationID == "":
         return {"message": "Bad Request"}, 400
 
-    sensors = get_sensors(applicationID)
-
-    if len(sensors) == 0:
+    try:
+        sensors = get_sensors(applicationID)
+    except ObjectNotFoundException:
         return {"message": "Not Found"}, 404
 
     return jsonify(sensors=sensors)

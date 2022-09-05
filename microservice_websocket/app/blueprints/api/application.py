@@ -4,6 +4,10 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 
 from ...utils.application import create_application, get_applications
+from ...utils.exceptions import (
+    ObjectAttributeAlreadyUsedException,
+    ObjectNotFoundException,
+)
 
 application_bp = Blueprint("application", __name__, url_prefix="/applications")
 
@@ -13,10 +17,12 @@ application_bp = Blueprint("application", __name__, url_prefix="/applications")
 def _create_application_route(organizationID):
     record: dict = json.loads(request.data)
 
-    application = create_application(organizationID, record["name"])
-
-    if application is None:
-        return {"message": "Not Found"}, 404
+    try:
+        application = create_application(organizationID, record["name"])
+    except ObjectNotFoundException:
+        return {"message": "not found"}, 404
+    except ObjectAttributeAlreadyUsedException:
+        return {"message": "name already in use"}, 400
 
     return application.to_json()
 
@@ -29,9 +35,9 @@ def _get_applications_route():
     if organizationID == "":
         return {"message": "Bad Request"}, 400
 
-    applications = get_applications(organizationID)
-
-    if len(applications) == 0:
+    try:
+        applications = get_applications(organizationID)
+    except ObjectNotFoundException:
         return {"message": "Not Found"}, 404
 
     return jsonify(applications=applications)

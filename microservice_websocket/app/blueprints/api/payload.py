@@ -1,11 +1,12 @@
 import json
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 
 from ... import socketio
 from ...utils.api_token import api_token_required
 from ...utils.data import fetch_data
+from ...utils.exceptions import ObjectNotFoundException
 from ...utils.payload import publish, send_mqtt_command
 
 payload_bp = Blueprint("payload", __name__, url_prefix="/payload")
@@ -21,10 +22,9 @@ def _publish_route():
     applicationID: str = record["applicationID"]
     sensorID: str = record["sensorID"]
 
-    n = publish(applicationID, sensorID, record)
-
-    if n is None:
-        current_app.logger.info("Not found")
+    try:
+        publish(applicationID, sensorID, record)
+    except ObjectNotFoundException:
         return {"message": "Not Found"}, 404
 
     socketio.emit("change")

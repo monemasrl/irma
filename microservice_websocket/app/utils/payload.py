@@ -8,6 +8,7 @@ from ..services.database import Alert, Application, Data, Reading, Sensor
 from ..services.mobius.utils import insert
 from .data import decode_data, encode_mqtt_data
 from .enums import PayloadType, SensorState
+from .exceptions import ObjectNotFoundException
 from .sensor import MAX_TRESHOLD, update_state
 
 # mobius url
@@ -20,7 +21,7 @@ MOBIUS_PORT = os.environ.get("MOBIUS_PORT", "5002")
 DISABLE_MQTT = False if os.environ.get("DISABLE_MQTT") != 1 else True
 
 
-def publish(applicationID: str, sensorID: int, record: dict):
+def publish(applicationID: str, sensorID: int, record: dict) -> dict:
     record["data"] = decode_data(record["data"])
 
     # Vero se arriva da chirpstack
@@ -31,7 +32,7 @@ def publish(applicationID: str, sensorID: int, record: dict):
     application = Application.objects(id=applicationID).first()
 
     if application is None:
-        return None
+        raise ObjectNotFoundException(Application)
 
     sensor = Sensor.objects(sensorID=sensorID).first()
 

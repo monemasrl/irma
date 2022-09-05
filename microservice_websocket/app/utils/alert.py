@@ -1,16 +1,16 @@
 from datetime import datetime
-from typing import Union
 
 from ..services.database import Alert, User
+from .exceptions import ObjectNotFoundException
 from .payload import PayloadType
 from .sensor import update_state
 
 
-def handle_alert(received: dict, user_id: str) -> Union[Alert, None]:
+def handle_alert(received: dict, user_id: str):
     alert = Alert.objects(id=received["alertID"]).first()
 
     if alert is None:
-        return None
+        raise ObjectNotFoundException(Alert)
 
     sensor = alert["sensor"]
     user = User.objects(id=user_id).first()
