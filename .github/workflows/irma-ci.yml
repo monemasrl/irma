@@ -72,7 +72,7 @@ jobs:
           context: ./mock_mobius_docker/
           push: false
 
-  build-microservice_websocket_docker:
+  build-microservice_websocket:
     runs-on: self-hosted
     steps:
       - name: Set up Docker Buildx
@@ -81,5 +81,5 @@ jobs:
       - name: Build
         uses: docker/build-push-action@v3
         with:
-          context: ./microservice_websocket_docker/
+          context: ./microservice_websocket/
           push: false

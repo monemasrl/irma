@@ -21,7 +21,7 @@ Versione che implementa **LoRaWAN**:
 graph TD;
 
 chirpstack[chirpstack-docker]
-msw[microservice_websocket_docker]
+msw[microservice_websocket]
 mm[mock_mobius_docker]
 irma-ui[Irma UI]
 
@@ -46,7 +46,7 @@ Versione **senza LoRaWAN**:
 ```mermaid
 graph TD;
 
-msw[microservice_websocket_docker]
+msw[microservice_websocket]
 mm[mock_mobius_docker]
 irma-ui[Irma UI]
 
@@ -252,11 +252,11 @@ I due servizi principali che si occupano di memorizzazione ed elaborazione dei d
 - `microservice_websocket`.
 - `mock_mobius` (che simula la piattaforma **Mobius**).
 
-Per maggiori informazioni su **microservice_websocket** consultare la sua [documentazione](./microservice_websocket_docker/microservice_websocket.md).
+Per maggiori informazioni su **microservice_websocket** consultare la sua [documentazione](./microservice_websocket/microservice_websocket.md).
 
 ### Avviare [mock_mobius](mock_mobius_docker/)
 
-Come per [microservice_websocket_docker](microservice_websocket_docker/), è presente il file [docker-compose.yaml](mock_mobius_docker/docker-compose.yaml) che permette di far partire **standalone** il servizio di **mock_mobius** e il database [MongoDB](http://mongodb.com) ad esso associato.
+Come per [microservice_websocket](microservice_websocket/), è presente il file [docker-compose.yaml](mock_mobius_docker/docker-compose.yaml) che permette di far partire **standalone** il servizio di **mock_mobius** e il database [MongoDB](http://mongodb.com) ad esso associato.
 
 Per i comandi di **docker-compose** fare riferimento al paragrafo **DEPLOYMENT**.
 
@@ -266,7 +266,7 @@ All'interno del docker-compose è possibile cambiare il mapping della **porta**,
 
 Il file [downlink.py](utils/downlink.py) si occupa dell'invio dei comandi di Start e Stop all'application server tramite MQTT, che a sua volta invierà un messaggio di downlink verso l'end-device con il comando ricevuto e questo fermerà o avvierà la lettura dei dati dai sensori. Questo script serve per il test dei comandi senza dashboard.
 
-Per l'utilizzo degli stessi comandi, ma da dashboard in remoto, si usa [microservice_websocket_docker](microservice_websocket_docker/), in particolare si effettua una **POST** su **/downlink**. Per maggiori informazioni consultare la [documentazione di microservic_websocket_docker](microservice_websocket_docker/microservice_websocket.md).
+Per l'utilizzo degli stessi comandi, ma da dashboard in remoto, si usa [microservice_websocket](microservice_websocket/), in particolare si effettua una **POST** su **/downlink**. Per maggiori informazioni consultare la [documentazione di microservic_websocket](microservice_websocket/microservice_websocket.md).
 
 ## TESTING IN LOCALE
 
