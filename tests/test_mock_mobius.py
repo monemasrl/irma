@@ -8,7 +8,7 @@ from flask_api import status
 from werkzeug.test import TestResponse
 
 from microservice_websocket.app.services.mobius.utils import to_mobius_payload
-from mock_mobius_docker import app as mobius_app
+from mock_mobius import app as mobius_app
 
 
 class TestFlaskApp:

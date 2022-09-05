@@ -22,7 +22,7 @@ graph TD;
 
 chirpstack[chirpstack-docker]
 msw[microservice_websocket]
-mm[mock_mobius_docker]
+mm[mock_mobius]
 irma-ui[Irma UI]
 
 gateway[Gateway LoRaWAN]
@@ -47,7 +47,7 @@ Versione **senza LoRaWAN**:
 graph TD;
 
 msw[microservice_websocket]
-mm[mock_mobius_docker]
+mm[mock_mobius]
 irma-ui[Irma UI]
 
 nodo[Node]
@@ -254,9 +254,9 @@ I due servizi principali che si occupano di memorizzazione ed elaborazione dei d
 
 Per maggiori informazioni su **microservice_websocket** consultare la sua [documentazione](./microservice_websocket/microservice_websocket.md).
 
-### Avviare [mock_mobius](mock_mobius_docker/)
+### Avviare [mock_mobius](mock_mobius/)
 
-Come per [microservice_websocket](microservice_websocket/), è presente il file [docker-compose.yaml](mock_mobius_docker/docker-compose.yaml) che permette di far partire **standalone** il servizio di **mock_mobius** e il database [MongoDB](http://mongodb.com) ad esso associato.
+Come per [microservice_websocket](microservice_websocket/), è presente il file [docker-compose.yaml](mock_mobius/docker-compose.yaml) che permette di far partire **standalone** il servizio di **mock_mobius** e il database [MongoDB](http://mongodb.com) ad esso associato.
 
 Per i comandi di **docker-compose** fare riferimento al paragrafo **DEPLOYMENT**.
 
