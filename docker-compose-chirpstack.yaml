@@ -1,0 +1,98 @@
+version: "3"
+services:
+  db:
+    image: postgres
+    restart: unless-stopped
+    volumes:
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./config/provision/:/docker-entrypoint-initdb.d/
+      - ./config/db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: "postgres"
+
+  mqtt:
+    image: eclipse-mosquitto
+    restart: unless-stopped
+    ports:
+      - 1883:1883
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  redis:
+    image: redis
+    restart: unless-stopped
+    volumes:
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./config/redis-data:/data
+
+  chirpstack-network-server:
+    image: "chirpstack/chirpstack-network-server"
+    restart: unless-stopped
+    volumes:
+      - ./config/chirpstack-network-server.toml:/etc/chirpstack-network-server/chirpstack-network-server.toml
+    links:
+      - db
+      - mqtt
+
+  chirpstack-application-server:
+    image: "chirpstack/chirpstack-application-server"
+    restart: unless-stopped
+    env_file: .env_chirpstack
+    ports:
+      - 8081:8080
+    volumes:
+      - ./config/chirpstack-application-server.toml:/etc/chirpstack-application-server/chirpstack-application-server.toml
+    links:
+      - db
+      - chirpstack-network-server
+    networks:
+      - default
+      - proxy
+
+  chirpstack-gateway-bridge:
+    image: "chirpstack/chirpstack-gateway-bridge"
+    ports:
+      - 1700:1700/udp
+    volumes:
+      - ./config/chirpstack-gateway-bridge.toml:/etc/chirpstack-gateway-bridge/chirpstack-gateway-bridge.toml
+    links:
+      - db
+      - mqtt
+
+  mongo:
+    image: mongo
+    restart: unless-stopped
+    volumes:
+      - ./config/mongo-data:/data/db
+
+  mobius:
+    build: ./mock_mobius/
+    restart: unless-stopped
+    links:
+      - mongo
+
+  microservice_websocket:
+    build: ./microservice_websocket/
+    restart: unless-stopped
+    env_file: .env_websocket
+    links:
+      - mobius
+      - mqtt
+    ports:
+      - 5000:5000
+    environment:
+      - MOBIUS_URL=http://mobius
+      - MOBIUS_PORT=5000
+      - MQTT_BROKER_URL=mqtt
+      - MQTT_BROKER_PORT=1883
+      - MAX_TRESHOLD=20
+      - DISABLE_MQTT=false
+    networks:
+      - default
+      - proxy
+
+networks:
+  default:
+    driver: bridge
+  proxy:
+    name: nginx-proxy

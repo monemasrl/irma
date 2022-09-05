@@ -9,75 +9,124 @@ Per visualizzare la copertura del codice:
 * [https://irma-tests.netlify.app/coverage](https://irma-tests.netlify.app/coverage)
 
 
-## DESCRIZIONE PROGETTO
+## Descrizione progetto
 
-Rete di comunicazione a lunga gittata tramite protocollo LoRa per la trasmissione di dati raccolti da sensori verso il server che raccoglie e elabora i dati ritrasmettendoli tramite un web-service a una dashboard.
+Rete di comunicazione per **trasmissione e raccolta** dati dei sensori. Il server che li riceve si occupa poi di elaborarli ed inviarli alla **dashboard web** [irma-ui](https://github.com/monemasrl/irma-ui.git).
 
 ### Struttura progetto
 
-Versione che implementa **LoRaWAN**:
-
 ```mermaid
-graph TD;
+flowchart TD;
 
-chirpstack[chirpstack-docker]
 msw[microservice_websocket]
 mm[mock_mobius]
 irma-ui[Irma UI]
 
-gateway[Gateway LoRaWAN]
 nodo[Nodo]
 sensori[Sensori]
 
-chirpstack -- POST 5000 --> msw
 msw -- POST 5002 --> mm
-irma-ui <-- websocket 5000 --> msw
-irma-ui -- POST 5000 --> msw
-msw -- MQTT 1883 --> chirpstack
-gateway -- UDP 1700 --> chirpstack
-nodo -- LoRa --> gateway
-sensori -- CAN --> nodo
+irma-ui -- HTTP 5000 --> msw
+nodo <-- LoRaWAN/IP* --> msw
+sensori <-- CAN --> nodo
 ```
 
----
+> \*LoRaWAN/IP: vedi paragrafo successivo.
 
-Versione **senza LoRaWAN**:
+#### LoRaWAN/IP
+
+La comunicazione tra **Nodo** e **microservice_websocket**, può avvenire in due modi: tramite [LoRaWAN](https://lora-alliance.org/about-lorawan/) o tramite una normale **connessione internet**.
 
 ```mermaid
-graph TD;
+flowchart TD;
 
-msw[microservice_websocket]
-mm[mock_mobius]
-irma-ui[Irma UI]
+nodo1[Nodo]
+nodo2[Nodo]
+msw1[microservice_websocket]
+msw2[microservice_websocket]
 
-nodo[Node]
-sensori[Sensori]
+gtw[Gateway]
 
-nodo -- POST  5000 --> msw
-msw -- POST 5002 --> mm
-irma-ui <-- websocket 5000 --> msw
-irma-ui -- POST 5000 --> msw
-msw -- MQTT 1883 --> nodo
-sensori -- CAN --> nodo
+subgraph IP
+    nodo1 -- HTTP 5000 --> msw1
+    msw1 -- MQTT** 1883 --> nodo1
+end
+
+subgraph LoRaWAN
+    nodo2 <-- LoRa --> gtw
+    gtw <-- UDP 1700 --> chirpstack-docker
+    chirpstack-docker -- HTTP 5000 --> msw2
+    msw2 -- MQTT** 1883 --> chirpstack-docker
+end
 ```
+
+> \*\*Per effettuare la comunicazione tramite MQTT è necessario un **Broker MQTT**.
+
+Per maggiori informazioni su **chirpstack-docker** e sulla comunicazione tramite LoRa, fare riferimento a [LoRaWAN.md](./LoRaWAN.md).
 
 ## DEPLOYMENT
 
-All'interno della **root** principale è presente il file [docker-compose.yaml](docker-compose.yaml), grazie al quale è possibile dispiegare l'intero stack di servizi, **chirpstack**, **mock_mobius** e **microservice_websocket**. All'interno della cartella [config](config/) sono presenti anche i file di configurazione dei vari servizi lanciati da docker.
+All'interno della **root** principale sono presenti due file **docker-compose**:
 
-Per utilizzare [docker-compose.yaml](docker-compose.yaml):
+- [docker-compose.yaml](./docker-compose.yaml), grazie al quale è possibile dispiegare l'intero stack di servizi in **modalità IP**
 
-    docker-compose up -d
+- [docker-compose-chirpstack.yaml](./docker-compose-chirpstack.yaml), grazie al quale è possibile dispiegare l'intero stack di servizi in **modalità LoRaWAN**.
+
+> Per maggiori informazione sulle **due modalità**, fare riferimento al paragrafo precedente.
+
+### Schema dei docker-compose
+
+#### docker-compose-chirpstack.yaml SIMPLIFIED
+
+```mermaid
+flowchart TD;
     
-Per visualizzare i logs:
+subgraph docker
+    cgb[chirpstack-gateway-bridge]
+    cns[chirpstack-network-server]
+    cas[chirpstack-application-server]
+    mqtt[eclipse-mosquitto]
+    mobius[mock_mobius]
+    mongo[(MongoDB)]
+    msw[microservice_websocket]
 
-    docker-compose logs -f
+    cgb & cns & msw -- TCP 1883 --> mqtt
+    mobius <--> mongo
+    msw <--> mongo
+    cas -- HTTP 8000 --> cns
+    msw -- HTTP 5002 --> mobius
+    cas -- HTTP 5000 --> msw
+end
+out([host network])
+out -- TCP 1883 --> mqtt
+out -- HTTP 8080 --> cas
+out -- HTTP 5000 --> msw
+out -- UDP 1700 --> cgb
+```
 
-Per fermare i container (e smontare i volumi):
+#### docker-compose.yaml
 
-    docker-compose down (-v)
-    
-Il [Chirpstack Application Server](https://www.chirpstack.io/application-server/) è raggiungibile mediante la porta 8080 sull'host. Le credenziali predefinite per accedere alla dashboard sono username: `admin` e password: `admin`.
+```mermaid
+flowchart TD;
+
+subgraph docker
+    mqtt[eclipse-mosquitto]
+    mobius[mock_mobius]
+    mongo[(MongoDB)]
+    msw[microservice_websocket]
+
+    msw -- TCP 1883 --> mqtt
+    mobius <--> mongo
+    msw <--> mongo
+    msw -- HTTP 5002 --> mobius
+end
+out([host network])
+out -- TCP 1883 --> mqtt
+out -- HTTP 5000 --> msw
+
+```
+
+## I DATI
 
 ### Encode e decode dei dati
 
@@ -113,32 +162,6 @@ Come per il paragrafo precedente, la trasmissione avviene con **strighe base64**
 - `command`: numero **intero** che rappresenta il tipo di comando inviato. Fare riferimento al capitolo sugli **Enum**.
 - `commandTimestamp`: **stringa** contenente un **timestamp ISO8601**, per raggruppare le letture relative ad un singolo comando di **start recording**.
 
-### Struttura interna [docker-compose.yaml](docker-compose.yaml) (semplificata)
-
-```mermaid
-graph TD;
-subgraph chirpstack-docker;
-  direction LR;
-    cgb[chirpstack-gateway-bridge]
-    cns[chirpstack-network-server]
-    cas[chirpstack-application-server]
-    mqtt[eclipse-mosquitto]
-    mobius[mock_mobius]
-    msw[microservice_websocket]
-
-    cgb & cns & msw <-- TCP 1883 --> mqtt
-    cas -- HTTP 8000 --> cns
-    msw -- HTTP 5000 --> mobius
-    cas -- HTTP 5000 --> msw
-end
-out([host network])
-mqtt <-- TCP 1883 --> out
-cas -- HTTP 8080 --> out
-msw -- HTTP 5000 --> out
-cgb -- UDP 1700 --> out
-```
-
-Per la versione [completa](assets/schema_docker_compose_completo.md).
 
 ## GLI ENUM
 
@@ -189,46 +212,6 @@ stateDiagram-v2
   ALERT_READY --> READY: HANDLE_ALERT
   ALERT_READY --> ERROR: HANDLE_ALERT + TIMEOUT
 ```
-
-## GATEWAY
-
-<img src="assets\raspi4.jpeg" width="150" height="150"/>
-
-Per la connessione del gateway è stato utilizzato un **HAT RAK2245** e un **Raspberry Pi 4B+** con relativa repository per l'installazione del service:
-  
-    $ sudo apt update; sudo apt install git -y
-  
-    $ git clone https://github.com/RAKWireless/rak_common_for_gateway.git ~/rak_common_for_gateway
-  
-    $ cd ~/rak_common_for_gateway
-  
-    $ sudo ./install.sh
-
-Dopo queste operazioni si può eseguire il comando `sudo gateway-config` per configurare la connessione del proprio gateway al server.
-
-
-## END-DEVICE
-
-Per connettere un nuovo end-device su lorawan è necessario sapere il Device EUI che viene fornito dalla scheda che si usa e bisogna fare il join tramite una delle due modalità **(OTAA o ABP)**.
-
-Bisogna creare una applicazione sul server tramite interfaccia web Applications > Create.
-
-Successivamente va registrato il device Applications > [Nome applicazione_da_utilizzare] > Create.
-Bisogna inserire il device EUI durante la registrazione, esso viene fornito dal produttore nella sua documentazione.
-
-Sull'end device nel file [serial_esp_lora_oled.ino](arduino-py-communication/serial_esp_lora_oled.ino) vanno inseriti i dati relativi alle chiavi della rete che si trovano all'interno del menu del device creato in precedenza sul server.
-
-Per la lettura dei dati va scritto un decoder su misura per i dati che verranno ricevuti sul device profile selezionato per la crezione del device sull'application server. Viene fornito un esempio qui: [encode_decode.js](chirpstack-docker/encode_decode.js).
-
-Durante la fase di registrazione è necessario inserire anche i dati relativi alla piattaforma Mobius (sensorId e sensor_path) nella sezione Tags del sensore.
-
-> :warning: **Warning**: *Il file **.ino** fornito nella repository è stato testato solo su un **Heltec ESP32** e non è garantito il funzionamento su altri dispositivi non basati su ESP32* :warning:
-
-<img src="assets\esp.png" width="100" height="100"/>
-
-Per aggiungere la lettura dei dati dai sensori è stato utilizzato il protocollo CAN con l'aggiunta di un **Raspberry Pi 2B** in modo da ricevere i dati sulla interfaccia seriale 
-
-<img src="assets\raspi2.png" width="120" height="120"/>
 
 ## NODO
 
