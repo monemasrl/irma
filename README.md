@@ -260,3 +260,17 @@ esp -- LoRa --> rpi4
 rpi4 -- CAN --> rpi2
 rpi4 -- UDP 1700 --> chirpstack
 ```
+
+## CONTRIBUTING
+
+Nella repo sono presenti i file di **configurazione per un pre-commit hook**, che avvia tool di *linting* e *formattazione*.
+
+Per installare pre-commit: [sito ufficiale](https://pre-commit.com/).
+
+Una volta installato basta eseguire:
+
+```bash
+$ pre-commit install
+```
+
+Per **installare gli hook** nella repo.
