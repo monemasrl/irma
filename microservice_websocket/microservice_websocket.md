@@ -137,7 +137,7 @@ Il **payload** che viene inviato a **Mobius** ha questa forma:
 
 ---
 
-Il dato viene poi immagazzinato all'interno del **database** come **Reading**. Per maggiori informazioni sul database fare riferimento alla [documentazione](./database/database.md).
+Il dato viene poi immagazzinato all'interno del **database** come **Reading**. Per maggiori informazioni sul database fare riferimento alla [documentazione](./app/services/database/database.md).
 
 ### Invio comandi al sensore (POST /api/payload/command)
 
@@ -258,7 +258,7 @@ Corpo della risposta (JSON):
 
 - `organizations`: la **lista** delle **organizzazioni**.
 
-Ogni **elemento** all'interno della **lista** è conforme alla struttura **Organization** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./database/database.md).
+Ogni **elemento** all'interno della **lista** è conforme alla struttura **Organization** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./app/services/database/database.md).
 
 Esempio:
 ```jsonc
@@ -296,7 +296,7 @@ Corpo della risposta (JSON):
 
 - `applications`: la **lista** delle **applicazioni**.
 
-Ogni **elemento** all'interno della **lista** è conforme alla struttura **Application** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./database/database.md).
+Ogni **elemento** all'interno della **lista** è conforme alla struttura **Application** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./app/services/database/database.md).
 
 Esempio:
 ```jsonc
@@ -336,7 +336,7 @@ Corpo della risposta (JSON):
 
 - `sensors`: la **lista** dei **sensori**.
 
-Ogni **elemento** all'interno della **lista** è conforme alla struttura **Application** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./database/database.md).
+Ogni **elemento** all'interno della **lista** è conforme alla struttura **Application** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./app/services/database/database.md).
 
 Esempio:
 ```jsonc

@@ -104,6 +104,8 @@ out -- HTTP 5000 --> msw
 out -- UDP 1700 --> cgb
 ```
 
+---
+
 #### docker-compose.yaml
 
 ```mermaid
@@ -181,6 +183,7 @@ Identifica i messaggi inviati.
 
 
 ### CommandType
+
 | Nome       | Valore |
 |------------|--------|
 | START_REC  |    0   |
@@ -215,45 +218,24 @@ stateDiagram-v2
 
 ## NODO
 
-Sul nodo, nel nostro caso un Rapsberry PI 2, gira uno script che si occupa di **gestire** le **letture** dei sensori e i **comandi**.
+Sul nodo (nel nostro caso un Rapsberry PI 2) gira uno script che si occupa di **gestire** i sensori.
 
 Per maggiori informazioni consultare la [documentazione](./node/node.md).
 
-### Struttura nodo/end-device
-
-```mermaid
-graph LR;
-Sensori <-- CAN --> Nodo -- LoRa --> Gateway
-```
-
 ## WEB-SERVICE E SALVATAGGIO DEI DATI
-
-Il server chirpstack non mantiene i dati trasmessi dagli end-device in nessun modo permanente, perciò sull'application server da interfaccia web deve essere attivata l'integrazione con HTTP, che permette di eseguire una POST con l'intero payload in formato JSON. 
 
 I due servizi principali che si occupano di memorizzazione ed elaborazione dei dati sono:
 
 - `microservice_websocket`.
 - `mock_mobius` (che simula la piattaforma **Mobius**).
 
+In particolare, mentre `mock_mobius` si occupa soltanto di immagazzinare dati, `microservice_websocket` si occupa anche di **elaborarli** ed inviarli alla [ui](https://github.com/monemasrl/irma-ui.git) e di **inviare i comandi** ai nodi.
+
 Per maggiori informazioni su **microservice_websocket** consultare la sua [documentazione](./microservice_websocket/microservice_websocket.md).
-
-### Avviare [mock_mobius](mock_mobius/)
-
-Come per [microservice_websocket](microservice_websocket/), è presente il file [docker-compose.yaml](mock_mobius/docker-compose.yaml) che permette di far partire **standalone** il servizio di **mock_mobius** e il database [MongoDB](http://mongodb.com) ad esso associato.
-
-Per i comandi di **docker-compose** fare riferimento al paragrafo **DEPLOYMENT**.
-
-All'interno del docker-compose è possibile cambiare il mapping della **porta**, di default `5002`.
-
-## COMANDI
-
-Il file [downlink.py](utils/downlink.py) si occupa dell'invio dei comandi di Start e Stop all'application server tramite MQTT, che a sua volta invierà un messaggio di downlink verso l'end-device con il comando ricevuto e questo fermerà o avvierà la lettura dei dati dai sensori. Questo script serve per il test dei comandi senza dashboard.
-
-Per l'utilizzo degli stessi comandi, ma da dashboard in remoto, si usa [microservice_websocket](microservice_websocket/), in particolare si effettua una **POST** su **/downlink**. Per maggiori informazioni consultare la [documentazione di microservic_websocket](microservice_websocket/microservice_websocket.md).
 
 ## TESTING IN LOCALE
 
-Al fine di eseguire dei test in locale, per mancanza di una rete LoRaWAN da utilizzare, venogono utilizzati due script:
+Al fine di eseguire dei test in locale, per mancanza di sensori da utilizzare, venogono utilizzati due script:
 
 1. [auto_can.py](utils/auto_can.py) - 
     Questo script, eseguito (solo per test) sul gateway, invia tramite interfaccia CAN due messaggi a intervalli regolari.
@@ -261,9 +243,9 @@ Al fine di eseguire dei test in locale, per mancanza di una rete LoRaWAN da util
 2. [arduino_communication.py](utils/arduino-py-communication/arduino_communication.py) - 
     Questo script, eseguito su un Rapberry Pi connesso all'ESP32, riceve tramite interfaccia CAN i messaggi, che successivamente ritrasmetterà attraverso intefaccia seriale all'end-device.
 
-Questo sistema sotituisce la necessità di una rete e di sensori funzionanti per fare test sul funzionameto della infrastruttura di rete.
-
 ### Struttura testing locale
+
+#### Versione LoRaWAN
 
 ```mermaid
 graph LR;
@@ -278,14 +260,3 @@ esp -- LoRa --> rpi4
 rpi4 -- CAN --> rpi2
 rpi4 -- UDP 1700 --> chirpstack
 ```
-
-### Inizializzazione interfaccia CAN
-
-Per utilizzare l'interfaccia CAN è talvolta necessario inizializzarla prima di eseguire gli script sopra-citati.
-
-Le istruzioni da eseguire sono:
-
-    $ sudo modprobe peak_usb
-    $ sudo ip link set can0 up type can bitrate 500000
-    
-Per maggiori informazioni consultare la documentazione di [python-can](https://python-can.readthedocs.io/en/stable/interfaces/socketcan.html#pcan).
