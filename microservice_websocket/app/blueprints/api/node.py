@@ -2,22 +2,22 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 
 from ...utils.exceptions import ObjectNotFoundException
-from ...utils.sensor import get_sensors
+from ...utils.node import get_nodes
 
-sensor_bp = Blueprint("sensor", __name__, url_prefix="/sensors")
+node_bp = Blueprint("node", __name__, url_prefix="/nodes")
 
 
-@sensor_bp.route("/", methods=["GET"])
+@node_bp.route("/", methods=["GET"])
 @jwt_required()
-def _get_sensors_route():
+def get_nodes_route():
     applicationID: str = request.args.get("applicationID", "")
 
     if applicationID == "":
         return {"message": "Bad Request"}, 400
 
     try:
-        sensors = get_sensors(applicationID)
+        nodes = get_nodes(applicationID)
     except ObjectNotFoundException:
         return {"message": "Not Found"}, 404
 
-    return jsonify(sensors=sensors)
+    return jsonify(nodes=nodes)

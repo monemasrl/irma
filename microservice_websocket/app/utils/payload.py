@@ -4,12 +4,12 @@ from datetime import datetime
 import iso8601
 
 from .. import mqtt
-from ..services.database import Alert, Application, Data, Reading, Sensor
+from ..services.database import Alert, Application, Data, Node, Reading
 from ..services.mobius.utils import insert
 from .data import decode_data, encode_mqtt_data
-from .enums import PayloadType, SensorState
+from .enums import NodeState, PayloadType
 from .exceptions import ObjectNotFoundException
-from .sensor import MAX_TRESHOLD, update_state
+from .node import MAX_TRESHOLD, update_state
 
 # mobius url
 # TODO: move to config file
@@ -34,18 +34,18 @@ def publish(applicationID: str, sensorID: int, record: dict) -> dict:
     if application is None:
         raise ObjectNotFoundException(Application)
 
-    sensor = Sensor.objects(sensorID=sensorID).first()
+    node = Node.objects(sensorID=sensorID).first()
 
-    if sensor is None:
-        sensor = Sensor(
-            sensorID=record["sensorID"],
+    if node is None:
+        node = Node(
+            nodeID=record["nodeID"],
             application=application,
             organization=application["organization"],
-            sensorName=record["sensorName"],
-            state=SensorState.READY,
+            nodeName=record["nodeName"],
+            state=NodeState.READY,
             lastSeenAt=datetime.now(),
         )
-        sensor.save()
+        node.save()
 
     if record["data"]["payloadType"] == PayloadType.READING:
 
@@ -65,7 +65,7 @@ def publish(applicationID: str, sensorID: int, record: dict) -> dict:
 
         if reading is None:
             reading = Reading(
-                sensor=sensor,
+                node=node,
                 requestedAt=requestedAt,
                 data=[data],
             )
@@ -75,23 +75,23 @@ def publish(applicationID: str, sensorID: int, record: dict) -> dict:
         reading.save()
 
         if data["sensorData"] >= MAX_TRESHOLD:
-            alert = Alert(reading=reading, sensor=sensor, isHandled=False)
+            alert = Alert(reading=reading, node=node, isHandled=False)
             alert.save()
 
-    sensor["lastSeenAt"] = datetime.now()
-    sensor["state"] = update_state(
-        sensor["state"],
-        sensor["lastSeenAt"],
+    node["lastSeenAt"] = datetime.now()
+    node["state"] = update_state(
+        node["state"],
+        node["lastSeenAt"],
         record["data"]["payloadType"],
         record["data"]["sensorData"],
     )
-    sensor.save()
+    node.save()
 
     return record
 
 
-def send_mqtt_command(applicationID: str, sensorID: str, command: int):
-    topic: str = f"{applicationID}/{sensorID}/command"
+def send_mqtt_command(applicationID: str, nodeID: str, command: int):
+    topic: str = f"{applicationID}/{nodeID}/command"
 
     data: bytes = encode_mqtt_data(command, datetime.now().isoformat())
 

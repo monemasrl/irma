@@ -44,11 +44,11 @@ class User(Document):
     roles = ListField(ReferenceField(Role), default=[])
 
 
-class Sensor(Document):
-    sensorID = IntField(required=True)
+class Node(Document):
+    nodeID = StringField(required=True)
+    nodeName = StringField(default="", required=True)
     application = ReferenceField(Application, required=True)
     organization = ReferenceField(Organization, required=True)
-    sensorName = StringField(default="", required=True)
     state = IntField(required=True)
     lastSeenAt = DateTimeField(required=True)
 
@@ -62,14 +62,14 @@ class Data(EmbeddedDocument):
 
 
 class Reading(Document):
-    sensor = ReferenceField(Sensor, required=True)
+    node = ReferenceField(Node, required=True)
     requestedAt = DateTimeField(required=True)
     data = EmbeddedDocumentListField(Data, required=True)
 
 
 class Alert(Document):
     reading = ReferenceField(Reading, required=True)
-    sensor = ReferenceField(Sensor, required=True)
+    node = ReferenceField(Node, required=True)
     isHandled = BooleanField(required=True)
     isConfirmed = BooleanField()
     handledBy = ReferenceField(User)

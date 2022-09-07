@@ -161,7 +161,7 @@ Esempio:
 
 ---
 
-A questo punto **microservice_websocket** pubblicherà sul **topic** `<applicationID>/<sensorID>/command` un **payload**.
+A questo punto **microservice_websocket** pubblicherà sul **topic** `<applicationID>/<nodeID>/command` un **payload**.
 
 Per maggior informazioni sulla struttura del **payload**, fare riferimento al paragrafo **Encode e decode dei dati** del [README](../README.md).
 
@@ -324,9 +324,9 @@ Esempio:
 }
 ```
 
-### Lista dei sensori (GET /api/sensors/)
+### Lista dei nodi (GET /api/nodes/)
 
-Per ottenere la lista dei **sensori** è necessario fare una **GET** su **/api/sensors/**.
+Per ottenere la lista dei **nodi** è necessario fare una **GET** su **/api/nodes/**.
 
 Sono disponibili i seguenti **parametri**:
 
@@ -334,13 +334,13 @@ Sono disponibili i seguenti **parametri**:
 
 Corpo della risposta (JSON):
 
-- `sensors`: la **lista** dei **sensori**.
+- `nodes`: la **lista** dei **nodi**.
 
-Ogni **elemento** all'interno della **lista** è conforme alla struttura **Application** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./app/services/database/database.md).
+Ogni **elemento** all'interno della **lista** è conforme alla struttura **Node** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./app/services/database/database.md).
 
 Esempio:
 ```jsonc
 {
-  "applications": [ {}, {}, {}]
+  "nodes": [ {}, {}, {}]
 }
 ```

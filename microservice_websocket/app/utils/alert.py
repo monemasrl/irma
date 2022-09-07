@@ -2,8 +2,8 @@ from datetime import datetime
 
 from ..services.database import Alert, User
 from .exceptions import ObjectNotFoundException
+from .node import update_state
 from .payload import PayloadType
-from .sensor import update_state
 
 
 def handle_alert(received: dict, user_id: str):
@@ -12,7 +12,7 @@ def handle_alert(received: dict, user_id: str):
     if alert is None:
         raise ObjectNotFoundException(Alert)
 
-    sensor = alert["sensor"]
+    node = alert["node"]
     user = User.objects(id=user_id).first()
 
     alert["isConfirmed"] = received["isConfirmed"]
@@ -22,10 +22,10 @@ def handle_alert(received: dict, user_id: str):
     alert["handleNote"] = received["handleNote"]
     alert.save()
 
-    if Alert.objects(sensor=sensor, isHandled=False).first() is None:
-        sensor["state"] = update_state(
-            sensor["state"], sensor["lastSeenAt"], PayloadType.HANDLE_ALERT
+    if Alert.objects(node=node, isHandled=False).first() is None:
+        node["state"] = update_state(
+            node["state"], node["lastSeenAt"], PayloadType.HANDLE_ALERT
         )
-        sensor.save()
+        node.save()
 
     return alert

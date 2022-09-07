@@ -1,7 +1,7 @@
 from enum import IntEnum, auto
 
 
-class SensorState(IntEnum):
+class NodeState(IntEnum):
     ERROR = 0
     READY = auto()
     RUNNING = auto()

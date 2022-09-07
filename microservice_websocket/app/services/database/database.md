@@ -6,7 +6,7 @@ Il database ha più **collezioni**:
 - Role
 - Organization
 - Application
-- Sensor
+- Node
 - Reading
 - Alert
 
@@ -59,20 +59,20 @@ I campi disponibili sono:
 | applicationName | String | max_length=100, required=True
 | organization | Reference | Organization
 
-## Sensor
+## Node
 
-Rappresenta i **sensori**.
+Rappresenta il **nodo** dei sensori, presente in ogni staker.
 
 I campi disponibili sono:
 
-| Nome campo | Tipo | Note |
-|-|-|-|
-| sensorID | Int | required=True
-| application | Reference | Application, required=True
-| organization | Reference | Organization, required=True
-| sensorName | String | default='', required=True
-| state | Int | required=True
-| lastSeenAt | Datetime | required=True
+| Nome campo   | Tipo      | Note                        |
+| ------------ | --------- | --------------------------- |
+| nodeID       | String    | required=True               |
+| nodeName     | String    | default='', required=True   |
+| application  | Reference | Application, required=True  |
+| organization | Reference | Organization, required=True |
+| state        | Int       | required=True               |
+| lastSeenAt   | Datetime  | required=True               |
 
 ## Data
 
@@ -96,7 +96,7 @@ I campi disponibili sono:
 
 | Nome campo | Tipo | Note |
 |-|-|-|
-| sensor | Reference | Sensor, required=True
+| sensor | Reference | Node, required=True
 | requestedAt | DateTime | required=True
 | data | EmbeddedDocumentList | Data, required=True
 
@@ -109,7 +109,7 @@ I campi disponibili sono:
 | Nome campo | Tipo | Note |
 |-|-|-|
 | reading | Reference | Reading, required=True
-| sensor | Reference | Sensor, required=True
+| sensor | Reference | Node, required=True
 | isHandled | Boolean | required=True
 | isConfirmed | Boolean |
 | handledBy | Reference | User

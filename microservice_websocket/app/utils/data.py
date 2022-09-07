@@ -2,7 +2,7 @@ import base64
 from datetime import datetime
 
 from ..services import database as db
-from .enums import SensorState
+from .enums import NodeState
 
 
 def decode_data(encoded_data: str) -> dict:
@@ -70,7 +70,7 @@ def fetch_data(sensorID: str) -> dict:
     if sensor is None:
         return {}
 
-    state: SensorState = sensor["state"]
+    state: NodeState = sensor["state"]
     sensorName: str = sensor["sensorName"]
     applicationID: str = str(sensor["application"]["id"])
 
@@ -102,7 +102,7 @@ def fetch_data(sensorID: str) -> dict:
         sensorID=sensorID,
         sensorName=sensorName,
         applicationID=applicationID,
-        state=SensorState.to_irma_ui_state(state),
+        state=NodeState.to_irma_ui_state(state),
         titolo1="Media Letture Totali",
         dato1=round(total_average, 3),
         titolo2="Media Letture Mensili",
