@@ -2,8 +2,8 @@ settings:
   node_info:
     organizationID: ""
     applicationID: ""
-    sensorID: 1
-    sensorName: "Nodo1"
+    nodeID: 1
+    nodeName: "Nodo1"
   microservice:
     url: "http://localhost"
     port: 5000
@@ -16,6 +16,3 @@ settings:
     bustype: 'socketcan'
     channel: 'can0'
     bitrate: 12500
-  mobius:
-    sensorId: ""
-    sensorPath: ""

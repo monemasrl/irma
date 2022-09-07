@@ -1,6 +1,5 @@
 import base64
 import threading
-from datetime import datetime
 from enum import IntEnum, auto
 from os import environ
 from time import sleep
@@ -28,18 +27,30 @@ class CommandType(IntEnum):
 
 
 #                           ENCODED DATA
-# | 1 byte payload_type | 4 byte data | 10 byte sensorId | 10 byte sensorPath |
+# | 1 byte payload_type | 1 byte dangerLevel | 1 byte w1_count |
+# | 1 byte w2_count | 1 byte w3_count |
 
 
 def encode_data(
-    payload_type: int, data: int, mobius_sensorId: str, mobius_sensorPath: str
+    payload_type: int,
+    canID: int,
+    sensorNumber: int,
+    dangerLevel: int,
+    window1_count: int,
+    window2_count: int,
+    window3_count: int,
+    session_id: int,
 ) -> str:
 
     byts = b""
     byts += payload_type.to_bytes(1, "big")
-    byts += data.to_bytes(4, "big")
-    byts += mobius_sensorId.ljust(10).encode()
-    byts += mobius_sensorPath.ljust(10).encode()
+    byts += canID.to_bytes(1, "big")
+    byts += sensorNumber.to_bytes(1, "big")
+    byts += dangerLevel.to_bytes(1, "big")
+    byts += window1_count.to_bytes(1, "big")
+    byts += window2_count.to_bytes(1, "big")
+    byts += window3_count.to_bytes(1, "big")
+    byts += session_id.to_bytes(1, "big")
 
     return base64.b64encode(byts).decode()
 
@@ -76,8 +87,8 @@ class Node:
             print("Connected with result code " + str(rc))
 
             applicationID = self.config["node_info"]["applicationID"]
-            sensorID = self.config["node_info"]["sensorID"]
-            client.subscribe(f"{applicationID}/{sensorID}/command")
+            nodeID = self.config["node_info"]["nodeID"]
+            client.subscribe(f"{applicationID}/{nodeID}/command")
 
         def on_message(client, userdata, msg: mqtt.MQTTMessage):
             print(msg.topic + " -> " + str(msg.payload))
@@ -98,21 +109,31 @@ class Node:
         return self.client.loop_forever()
 
     def send_data(
-        self, data: int, payload_type: PayloadType, commandTimestamp: str = ""
+        self,
+        payload_type: PayloadType,
+        canID: int = 0,
+        sensorNumber: int = 0,
+        dangerLevel: int = 0,
+        window1_count: int = 0,
+        window2_count: int = 0,
+        window3_count: int = 0,
+        sessionID: int = 0,
     ):
         payload: dict = {
-            "sensorID": self.config["node_info"]["sensorID"],
-            "sensorName": self.config["node_info"]["sensorName"],
+            "nodeID": self.config["node_info"]["nodeID"],
+            "nodeName": self.config["node_info"]["nodeName"],
             "applicationID": self.config["node_info"]["applicationID"],
             "organizationID": self.config["node_info"]["organizationID"],
             "data": encode_data(
                 payload_type.value,
-                data,
-                self.config["mobius"]["sensorId"],
-                self.config["mobius"]["sensorPath"],
+                canID,
+                sensorNumber,
+                dangerLevel,
+                window1_count,
+                window2_count,
+                window3_count,
+                sessionID,
             ),
-            "publishedAt": datetime.now().isoformat(),
-            "requestedAt": commandTimestamp,
         }
 
         host = self.config["microservice"]["url"]
@@ -135,13 +156,27 @@ class Node:
     def periodically_send_keep_alive(self):
         seconds = self.config["microservice"]["keep_alive_seconds"]
         while True:
-            self.send_data(0, PayloadType.KEEP_ALIVE)
+            self.send_data(PayloadType.KEEP_ALIVE)
             sleep(seconds)
 
-    def read_and_send(self, commandTimestamp: str = ""):
+    def read_and_send(self, sessionID: int = 0):
         if BYPASS_CAN:
-            data = int(input("Inserisci un dato: "))
-            self.send_data(data, PayloadType.READING, commandTimestamp)
+            canID = int(input("Inserisci canID: "))
+            sensorNumber = int(input("Inserisci sensorNumber: "))
+            dangerLevel = int(input("Inserisci dangerLevel: "))
+            w1_count = int(input("Inserisci w1_count: "))
+            w2_count = int(input("Inserisci w2_count: "))
+            w3_count = int(input("Inserisci w3_count: "))
+            self.send_data(
+                PayloadType.READING,
+                canID,
+                sensorNumber,
+                dangerLevel,
+                w1_count,
+                w2_count,
+                w3_count,
+                sessionID,
+            )
             return
 
         msg: Union[None, Message] = None
@@ -152,31 +187,24 @@ class Node:
         data: int = int.from_bytes(msg.data, byteorder="big", signed=False)
         print(f"CAN> {data}")
 
-        self.send_data(data, PayloadType.READING, commandTimestamp)
+        # TODO:
+        self.send_data(PayloadType.READING, sessionID=sessionID)
 
-    def start_rec(self, commandTimestamp: str):
+    def start_rec(self, sessionID: int):
         print("Received MQTT message, sending rec start...")
 
-        self.send_data(0, PayloadType.START_REC)
-
-        print("Sleeping for 10 seconds...")
-
-        for _ in range(10):
-            sleep(1)
-            print(".", end="")
-
-        print()
+        self.send_data(PayloadType.START_REC)
 
         print("Sending readings...")
 
-        self.read_and_send(commandTimestamp)
-        self.read_and_send(commandTimestamp)
-        self.read_and_send(commandTimestamp)
-        self.read_and_send(commandTimestamp)
+        self.read_and_send(sessionID)
+        self.read_and_send(sessionID)
+        self.read_and_send(sessionID)
+        self.read_and_send(sessionID)
 
         print("Sending rec end...")
 
-        self.send_data(0, PayloadType.END_REC)
+        self.send_data(PayloadType.END_REC)
 
 
 if __name__ == "__main__":

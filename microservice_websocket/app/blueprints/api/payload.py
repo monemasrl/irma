@@ -5,9 +5,8 @@ from flask_jwt_extended import jwt_required
 
 from ... import socketio
 from ...utils.api_token import api_token_required
-from ...utils.data import fetch_data
 from ...utils.exceptions import ObjectNotFoundException
-from ...utils.payload import publish, send_mqtt_command
+from ...utils.payload import get_readings, publish, send_mqtt_command
 
 payload_bp = Blueprint("payload", __name__, url_prefix="/payload")
 
@@ -19,11 +18,8 @@ def _publish_route():
 
     record: dict = json.loads(data)
 
-    applicationID: str = record["applicationID"]
-    sensorID: str = record["sensorID"]
-
     try:
-        publish(applicationID, sensorID, record)
+        publish(record)
     except ObjectNotFoundException:
         return {"message": "Not Found"}, 404
 
@@ -49,9 +45,9 @@ def _send_mqtt_command_route():
 
 
 @payload_bp.route("/", methods=["POST"])
-def fetch_data_route():
-    sensorIDs: list = json.loads(request.data)["IDs"]
-    data: list[dict] = [fetch_data(x) for x in sensorIDs]
+def get_readings_route():
+    nodeIDs: list = json.loads(request.data)["IDs"]
 
-    # Filtro via i dati vuoti (sensorID non valido)
-    return jsonify(readings=[x for x in data if x])
+    readings = get_readings(nodeIDs)
+
+    return jsonify(readings=readings)
