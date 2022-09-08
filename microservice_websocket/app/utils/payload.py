@@ -94,7 +94,7 @@ def publish(record: dict) -> dict:
 def send_mqtt_command(applicationID: str, nodeID: str, command: int):
     topic: str = f"{applicationID}/{nodeID}/command"
 
-    data: bytes = encode_mqtt_data(command, datetime.now().isoformat())
+    data: bytes = encode_mqtt_data(command, int(datetime.now().timestamp()))
 
     if not DISABLE_MQTT:
         mqtt.publish(topic, data)

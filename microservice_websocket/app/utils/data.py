@@ -16,9 +16,9 @@ def decode_data(encoded_data: str) -> dict:
     }
 
 
-def encode_mqtt_data(command: int, iso_timestamp: str) -> bytes:
+def encode_mqtt_data(command: int, unix_timestamp: int) -> bytes:
     encoded_data = b""
     encoded_data += command.to_bytes(1, "big")
-    encoded_data += iso_timestamp.encode()
+    encoded_data += unix_timestamp.to_bytes(4, "big")
 
     return base64.b64encode(encoded_data)

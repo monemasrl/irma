@@ -59,7 +59,7 @@ def decode_mqtt_data(encoded_string: str) -> dict:
     encoded_data = base64.b64decode(encoded_string)
     return {
         "command": int.from_bytes(encoded_data[:1], "big"),
-        "commandTimestamp": encoded_data[1:].decode(),
+        "commandTimestamp": int.from_bytes(encode_data[1:], "big"),
     }
 
 
