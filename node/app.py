@@ -9,7 +9,7 @@ import paho.mqtt.client as mqtt
 import requests
 import yaml
 from can import Message
-from can.interface import Bus
+from commands import DecodedMessage, IrmaBus, MessageType
 
 BYPASS_CAN = bool(environ.get("BYPASS_CAN", 0))
 
@@ -74,7 +74,7 @@ class Node:
             channel = self.config["can"]["channel"]
             bitrate = self.config["can"]["bitrate"]
 
-            self.bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate)  # type: ignore
+            self.bus = IrmaBus(bustype=bustype, channel=channel, bitrate=bitrate)
             print(f"Can type '{bustype}', on channel '{channel}' @{bitrate}")
 
         self.launch_keep_alive_daemon()
@@ -106,7 +106,21 @@ class Node:
         self.client.connect(self.config["mqtt"]["url"], self.config["mqtt"]["port"], 60)
 
     def loop_forever(self):
-        return self.client.loop_forever()
+        while True:
+            self.client.loop(0.1)
+            message = self.bus.listen()
+            if message is not None:
+                self.send_message(message)
+
+    def send_message(self, message: DecodedMessage):
+        if message["message_type"] == MessageType.GET_TOTAL_COUNT:
+            # TODO: finish
+            self.send_data(
+                PayloadType.READING,
+                int(message["n_detector"]),
+                int(message["sipm"]),
+                message["danger_level"],
+            )
 
     def send_data(
         self,
