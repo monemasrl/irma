@@ -6,7 +6,12 @@ from flask_jwt_extended import jwt_required
 from ... import socketio
 from ...utils.api_token import api_token_required
 from ...utils.exceptions import ObjectNotFoundException
-from ...utils.payload import get_readings, publish, send_mqtt_command
+from ...utils.payload import (
+    get_total_readings,
+    get_window_readings,
+    publish,
+    send_mqtt_command,
+)
 
 payload_bp = Blueprint("payload", __name__, url_prefix="/payload")
 
@@ -44,10 +49,19 @@ def _send_mqtt_command_route():
     return received
 
 
-@payload_bp.route("/", methods=["POST"])
-def get_readings_route():
+@payload_bp.route("/total", methods=["POST"])
+def get_total_readings_route():
     nodeIDs: list = json.loads(request.data)["IDs"]
 
-    readings = get_readings(nodeIDs)
+    readings = get_total_readings(nodeIDs)
+
+    return jsonify(readings=readings)
+
+
+@payload_bp.route("/windows", methods=["POST"])
+def get_window_readings_route():
+    nodeIDs: list = json.loads(request.data)["IDs"]
+
+    readings = get_window_readings(nodeIDs)
 
     return jsonify(readings=readings)

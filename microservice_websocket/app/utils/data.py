@@ -8,17 +8,15 @@ def decode_data(encoded_data: str) -> dict:
         "payloadType": int.from_bytes(raw_bytes[:1], "big"),
         "canID": int.from_bytes(raw_bytes[1:2], "big"),
         "sensorNumber": int.from_bytes(raw_bytes[2:3], "big"),
-        "dangerLevel": int.from_bytes(raw_bytes[3:4], "big"),
-        "window1_count": int.from_bytes(raw_bytes[4:5], "big"),
-        "window2_count": int.from_bytes(raw_bytes[5:6], "big"),
-        "window3_count": int.from_bytes(raw_bytes[6:7], "big"),
-        "sessionID": int.from_bytes(raw_bytes[7:8], "big"),
+        "value": int.from_bytes(raw_bytes[3:4], "big"),
+        "count": int.from_bytes(raw_bytes[4:5], "big"),
+        "sessionID": int.from_bytes(raw_bytes[5:9], "big"),
+        "readingID": int.from_bytes(raw_bytes[9:13], "big"),
     }
 
 
-def encode_mqtt_data(command: int, unix_timestamp: int) -> bytes:
+def encode_mqtt_data(command: int) -> bytes:
     encoded_data = b""
     encoded_data += command.to_bytes(1, "big")
-    encoded_data += unix_timestamp.to_bytes(4, "big")
 
     return base64.b64encode(encoded_data)

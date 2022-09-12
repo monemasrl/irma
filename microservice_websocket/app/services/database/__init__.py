@@ -66,16 +66,37 @@ class Node(Document):
         }
 
 
-class Reading(Document):
+class TotalReading(Document):
     nodeID = IntField(required=True)
     canID = IntField(required=True)
     sensorNumber = IntField(required=True)
     readingID = IntField(default=0)
     sessionID = IntField(required=True)
     dangerLevel = IntField(required=True)
-    window1_count = IntField(required=True)
-    window2_count = IntField(required=True)
-    window3_count = IntField(required=True)
+    totalCount = IntField(required=True)
+    publishedAt = DateTimeField(required=True)
+
+    def to_dashboard(self) -> dict:
+        return {
+            "nodeID": self.nodeID,
+            "canID": self.canID,
+            "sensorNumber": self.sensorNumber,
+            "readingID": self.readingID,
+            "sessionID": self.sessionID,
+            "dangerLevel": self.dangerLevel,
+            "totalCount": self.totalCount,
+            "publishedAt": str(self.publishedAt),
+        }
+
+
+class WindowReading(Document):
+    nodeID = IntField(required=True)
+    canID = IntField(required=True)
+    sensorNumber = IntField(required=True)
+    readingID = IntField(default=0)
+    sessionID = IntField(required=True)
+    window_number = IntField(required=True)
+    count = IntField(required=True)
     publishedAt = DateTimeField(required=True)
 
     def to_dashboard(self) -> dict:
@@ -84,16 +105,14 @@ class Reading(Document):
             "sensorNumber": self.sensorNumber,
             "readingID": self.readingID,
             "sessionID": self.sessionID,
-            "dangerLevel": self.dangerLevel,
-            "window1_count": self.window1_count,
-            "window2_count": self.window2_count,
-            "window3_count": self.window3_count,
+            "window_number": self.window_number,
+            "count": self.count,
             "publishedAt": str(self.publishedAt),
         }
 
 
 class Alert(Document):
-    reading = ReferenceField(Reading, required=True)
+    reading = ReferenceField(TotalReading, required=True)
     node = ReferenceField(Node, required=True)
     sessionID = IntField(required=True)
     isHandled = BooleanField(required=True)

@@ -25,7 +25,8 @@ class NodeState(IntEnum):
 
 
 class PayloadType(IntEnum):
-    READING = 0
+    TOTAL_READING = 0
+    WINDOW_READING = auto()
     START_REC = auto()
     END_REC = auto()
     KEEP_ALIVE = auto()

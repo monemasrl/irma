@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 
 from .. import mqtt
-from ..services.database import Alert, Application, Node, Reading
+from ..services.database import Alert, Application, Node, TotalReading, WindowReading
 from ..services.mobius.utils import insert
 from .data import decode_data, encode_mqtt_data
 from .enums import NodeState, PayloadType
@@ -48,36 +48,11 @@ def publish(record: dict) -> dict:
         )
         node.save()
 
-    if record["data"]["payloadType"] == PayloadType.READING:
+    if record["data"]["payloadType"] == PayloadType.TOTAL_READING:
+        handle_total_reading(node, record)
 
-        if MOBIUS_URL != "":
-            insert(record)
-
-        reading = Reading(
-            nodeID=nodeID,
-            canID=record["data"]["canID"],
-            sensorNumber=record["data"]["sensorNumber"],
-            sessionID=record["data"]["sessionID"],
-            dangerLevel=record["data"]["dangerLevel"],
-            window1_count=record["data"]["window1_count"],
-            window2_count=record["data"]["window2_count"],
-            window3_count=record["data"]["window3_count"],
-            publishedAt=datetime.now().isoformat(),
-        )
-
-        reading.save()
-
-        if reading["dangerLevel"] >= MAX_TRESHOLD:
-            alert = Alert.objects(sessionID=reading["sessionID"]).first()
-
-            if alert is None:
-                alert = Alert(
-                    reading=reading,
-                    node=node,
-                    sessionID=reading["sessionID"],
-                    isHandled=False,
-                )
-                alert.save()
+    if record["data"]["payloadType"] == PayloadType.WINDOW_READING:
+        handle_window_reading(node, record)
 
     node["lastSeenAt"] = datetime.now()
     node["state"] = update_state(
@@ -91,22 +66,80 @@ def publish(record: dict) -> dict:
     return record
 
 
+def handle_total_reading(node: Node, record: dict):
+    if MOBIUS_URL != "":
+        insert(record)
+
+    reading = TotalReading(
+        nodeID=node["nodeID"],
+        canID=record["data"]["canID"],
+        sensorNumber=record["data"]["sensorNumber"],
+        dangerLevel=record["data"]["value"],
+        totalCount=record["data"]["count"],
+        sessionID=record["data"]["sessionID"],
+        readingID=record["data"]["readingID"],
+        publishedAt=datetime.now().isoformat(),
+    )
+
+    reading.save()
+
+    if reading["dangerLevel"] >= MAX_TRESHOLD:
+        alert = Alert.objects(sessionID=reading["sessionID"]).first()
+
+        if alert is None:
+            alert = Alert(
+                reading=reading,
+                node=node,
+                sessionID=reading["sessionID"],
+                isHandled=False,
+            )
+            alert.save()
+
+
+def handle_window_reading(node: Node, record: dict):
+    if MOBIUS_URL != "":
+        insert(record)
+
+    reading = WindowReading(
+        nodeID=node["nodeID"],
+        canID=record["data"]["canID"],
+        sensorNumber=record["data"]["sensorNumber"],
+        window_number=record["data"]["value"],
+        count=record["data"]["count"],
+        sessionID=record["data"]["sessionID"],
+        readingID=record["data"]["readingID"],
+        publishedAt=datetime.now().isoformat(),
+    )
+
+    reading.save()
+
+
 def send_mqtt_command(applicationID: str, nodeID: str, command: int):
     topic: str = f"{applicationID}/{nodeID}/command"
 
-    data: bytes = encode_mqtt_data(command, int(datetime.now().timestamp()))
+    data: bytes = encode_mqtt_data(command)
 
     if not DISABLE_MQTT:
         mqtt.publish(topic, data)
 
 
-def get_readings(nodeIDs: list[str]) -> list[dict]:
+def get_total_readings(nodeIDs: list[str]) -> list[TotalReading]:
     readings = []
 
     for nodeID in nodeIDs:
-        node_readings: list[Reading] = Reading.objects(nodeID=nodeID)
+        node_readings: list[TotalReading] = TotalReading.objects(nodeID=nodeID)
 
         for node_reading in node_readings:
             readings.append(node_reading.to_dashboard())
 
     return readings
+
+
+def get_window_readings(nodeIDs: list[str]) -> list[WindowReading]:
+    readings = []
+
+    for nodeID in nodeIDs:
+        node_readings: list[WindowReading] = WindowReading.objects(nodeID=nodeID)
+
+        for node_reading in node_readings:
+            readings.append(node_reading.to_dashboard())
