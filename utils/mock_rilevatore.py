@@ -165,5 +165,7 @@ class RilevatoreBus(Bus):
 
 
 if __name__ == "__main__":
-    bus = RilevatoreBus(bustype="socketcan", channel="can0", bitrate=12500)
+    bus = RilevatoreBus(
+        bustype="socketcan", channel="can0", bitrate=12500, detector=Detector.D1
+    )
     bus.loop_forever()
