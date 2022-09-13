@@ -115,9 +115,10 @@ class Node:
 
     def periodically_send_keep_alive(self):
         seconds = self.config["microservice"]["keep_alive_seconds"]
+        self.send_data(PayloadType.END_REC)
         while True:
-            self.send_data(PayloadType.KEEP_ALIVE)
             sleep(seconds)
+            self.send_data(PayloadType.KEEP_ALIVE)
 
     def start_rec(self):
         print("Received MQTT message, sending rec start...")
