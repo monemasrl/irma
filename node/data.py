@@ -15,11 +15,11 @@ def encode_data(
         byts += data["n_detector"].to_bytes(1, "big")
         byts += data["sipm"].to_bytes(1, "big")
         byts += data["value"].to_bytes(1, "big")
-        byts += data["count"].to_bytes(1, "big")
+        byts += data["count"].to_bytes(3, "big")
         byts += data["sessionID"].to_bytes(4, "big")
         byts += data["readingID"].to_bytes(4, "big")
     else:
-        byts += b"0" * 12
+        byts += b"0" * 14
 
     return base64.b64encode(byts).decode()
 

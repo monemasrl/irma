@@ -9,9 +9,9 @@ def decode_data(encoded_data: str) -> dict:
         "canID": int.from_bytes(raw_bytes[1:2], "big"),
         "sensorNumber": int.from_bytes(raw_bytes[2:3], "big"),
         "value": int.from_bytes(raw_bytes[3:4], "big"),
-        "count": int.from_bytes(raw_bytes[4:5], "big"),
-        "sessionID": int.from_bytes(raw_bytes[5:9], "big"),
-        "readingID": int.from_bytes(raw_bytes[9:13], "big"),
+        "count": int.from_bytes(raw_bytes[4:7], "big"),
+        "sessionID": int.from_bytes(raw_bytes[7:11], "big"),
+        "readingID": int.from_bytes(raw_bytes[11:15], "big"),
     }
 
 
