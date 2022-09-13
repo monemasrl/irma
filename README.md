@@ -206,14 +206,14 @@ Il **cambiamento di stato** varia secondo il seguente schema:
 stateDiagram-v2
   [*] --> READY
   ERROR --> READY: KEEP_ALIVE
-  READY --> ERROR: TIMEOUT
-  READY --> RUNNING: START_REC
+  READY --> ERROR: timeout
+  READY --> RUNNING: START_REC, lettura
   RUNNING --> READY: END_REC
   RUNNING --> ALERT_RUNNING: dato >= MAX_TRESHOLD
   ALERT_RUNNING --> RUNNING: HANDLE_ALERT
   ALERT_RUNNING --> ALERT_READY: END_REC
   ALERT_READY --> READY: HANDLE_ALERT
-  ALERT_READY --> ERROR: HANDLE_ALERT + TIMEOUT
+  ALERT_READY --> ALERT_RUNNING: lettura
 ```
 
 ## NODO

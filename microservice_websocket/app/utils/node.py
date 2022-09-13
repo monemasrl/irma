@@ -14,10 +14,13 @@ MAX_TRESHOLD = int(os.environ.get("MAX_TRESHOLD", 20))
 SENSORS_TIMEOUT_INTERVAL = timedelta(seconds=30)
 
 
-def update_state_reading_alert(current_state: NodeState) -> NodeState:
+def update_state_reading(current_state: NodeState, dato: int) -> NodeState:
     if current_state == NodeState.READY:
-        return NodeState.ALERT_READY
-    elif current_state == NodeState.RUNNING:
+        current_state = NodeState.RUNNING
+    elif current_state == NodeState.ALERT_READY:
+        current_state = NodeState.ALERT_RUNNING
+
+    if dato >= MAX_TRESHOLD and current_state == NodeState.RUNNING:
         return NodeState.ALERT_RUNNING
 
     return current_state
@@ -62,8 +65,8 @@ def update_state(
     dato: int = 0,
 ) -> NodeState:
 
-    if typ == PayloadType.READING and dato >= MAX_TRESHOLD:
-        current_state = update_state_reading_alert(current_state)
+    if typ in [PayloadType.TOTAL_READING, PayloadType.WINDOW_READING]:
+        current_state = update_state_reading(current_state, dato)
     elif typ == PayloadType.START_REC:
         current_state = update_state_start_rec(current_state)
     elif typ == PayloadType.END_REC:
