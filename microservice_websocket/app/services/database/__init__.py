@@ -105,7 +105,7 @@ class WindowReading(Document):
             "sensorNumber": self.sensorNumber,
             "readingID": self.readingID,
             "sessionID": self.sessionID,
-            "window_number": self.window_number,
+            "windowNumber": self.window_number,
             "count": self.count,
             "publishedAt": str(self.publishedAt),
         }
