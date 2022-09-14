@@ -38,12 +38,12 @@ def _send_mqtt_command_route():
     received: dict = json.loads(request.data)
 
     applicationID = received.get("applicationID", None)
-    sensorID = received.get("sensorID", None)
+    nodeID = received.get("nodeID", None)
 
-    if applicationID is None or sensorID is None:
+    if applicationID is None or nodeID is None:
         return {"message": "Bad Request"}, 400
 
-    send_mqtt_command(applicationID, sensorID, received["command"])
+    send_mqtt_command(applicationID, nodeID, received["command"])
 
     print(received)
     return received
