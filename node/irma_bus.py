@@ -4,13 +4,13 @@ from typing import Optional
 
 import can_protocol
 from apscheduler.schedulers.background import BackgroundScheduler
-from can import BufferedReader
+from can import BufferedReader, Message
 from can.interface import Bus
 
 
-class IrmaBus(Bus):
+class IrmaBus:
     def __init__(self, bustype, channel, bitrate, interval_minutes=2):
-        super().__init__(bustype=bustype, channel=channel, bitrate=bitrate)
+        self._bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate)
         # TODO: ????????
         self._listener = BufferedReader()
         self._sessionID = None
@@ -50,6 +50,9 @@ class IrmaBus(Bus):
             readingID = self._readingID
 
         return can_protocol.decode(message, self._sessionID, readingID)
+
+    def send(self, message: Message, timeout: Optional[float] = None):
+        self._bus.send(message, timeout)
 
     def start_session(self):
         self._sessionID = int(time.time())

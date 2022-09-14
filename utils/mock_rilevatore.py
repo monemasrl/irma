@@ -1,4 +1,5 @@
 from enum import IntEnum, auto
+from typing import Optional
 
 from can import Message
 from can.interface import Bus
@@ -26,10 +27,13 @@ class Detector(IntEnum):
     BROADCAST = auto()
 
 
-class RilevatoreBus(Bus):
+class RilevatoreBus:
     def __init__(self, bustype, channel, bitrate, detector: Detector):
-        super().__init__(bustype=bustype, channel=channel, bitrate=bitrate)
+        self._bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate)
         self.detector = detector
+
+    def send(self, message: Message, timeout: Optional[float] = None):
+        self._bus.send(message, timeout)
 
     def start_count(self, msg):
         print("Received START COUNT!")
@@ -158,7 +162,7 @@ class RilevatoreBus(Bus):
 
     def loop_forever(self):
         while True:
-            msg = self.recv()
+            msg = self._bus.recv()
             if msg is None:
                 continue
             self.decode(msg)
