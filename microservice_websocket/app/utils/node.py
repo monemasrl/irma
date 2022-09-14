@@ -14,7 +14,7 @@ MAX_TRESHOLD = int(os.environ.get("MAX_TRESHOLD", 20))
 SENSORS_TIMEOUT_INTERVAL = timedelta(seconds=30)
 
 
-def update_state_reading(current_state: NodeState, dato: int) -> NodeState:
+def update_state_total_reading(current_state: NodeState, dato: int) -> NodeState:
     if current_state == NodeState.READY:
         current_state = NodeState.RUNNING
     elif current_state == NodeState.ALERT_READY:
@@ -26,14 +26,23 @@ def update_state_reading(current_state: NodeState, dato: int) -> NodeState:
     return current_state
 
 
-def update_state_start_rec(current_state: NodeState) -> NodeState:
+def update_state_window_reading(current_state: NodeState, *args) -> NodeState:
+    if current_state == NodeState.READY:
+        current_state = NodeState.RUNNING
+    elif current_state == NodeState.ALERT_READY:
+        current_state = NodeState.ALERT_RUNNING
+
+    return current_state
+
+
+def update_state_start_rec(current_state: NodeState, *args) -> NodeState:
     if current_state == NodeState.READY:
         return NodeState.RUNNING
 
     return current_state
 
 
-def update_state_end_rec(current_state: NodeState) -> NodeState:
+def update_state_end_rec(current_state: NodeState, *args) -> NodeState:
     if current_state == NodeState.RUNNING:
         return NodeState.READY
     elif current_state == NodeState.ALERT_RUNNING:
@@ -42,14 +51,14 @@ def update_state_end_rec(current_state: NodeState) -> NodeState:
     return current_state
 
 
-def update_state_keep_alive(current_state: NodeState) -> NodeState:
+def update_state_keep_alive(current_state: NodeState, *args) -> NodeState:
     if current_state == NodeState.ERROR:
         return NodeState.READY
 
     return current_state
 
 
-def update_state_handle_alert(current_state: NodeState) -> NodeState:
+def update_state_handle_alert(current_state: NodeState, *args) -> NodeState:
     if current_state == NodeState.ALERT_READY:
         return NodeState.READY
     elif current_state == NodeState.ALERT_RUNNING:
@@ -65,16 +74,17 @@ def update_state(
     dato: int = 0,
 ) -> NodeState:
 
-    if typ in [PayloadType.TOTAL_READING, PayloadType.WINDOW_READING]:
-        current_state = update_state_reading(current_state, dato)
-    elif typ == PayloadType.START_REC:
-        current_state = update_state_start_rec(current_state)
-    elif typ == PayloadType.END_REC:
-        current_state = update_state_end_rec(current_state)
-    elif typ == PayloadType.KEEP_ALIVE:
-        current_state = update_state_keep_alive(current_state)
-    elif typ == PayloadType.HANDLE_ALERT:
-        current_state = update_state_handle_alert(current_state)
+    FUNCTIONS = {
+        PayloadType.TOTAL_READING: update_state_total_reading,
+        PayloadType.WINDOW_READING: update_state_window_reading,
+        PayloadType.START_REC: update_state_start_rec,
+        PayloadType.END_REC: update_state_end_rec,
+        PayloadType.KEEP_ALIVE: update_state_keep_alive,
+        PayloadType.HANDLE_ALERT: update_state_handle_alert,
+    }
+
+    if typ is not None:
+        current_state = FUNCTIONS[typ](current_state, dato)
 
     if (datetime.now() - lastSeenAt) > SENSORS_TIMEOUT_INTERVAL:
         current_state = NodeState.ERROR
@@ -87,5 +97,7 @@ def get_nodes(applicationID: str):
 
     if len(nodes) == 0:
         raise ObjectNotFoundException(Node)
+
+    nodes = [x.to_dashboard() for x in nodes]
 
     return nodes
