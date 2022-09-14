@@ -3,7 +3,6 @@ from datetime import datetime
 
 from .. import mqtt
 from ..services.database import Alert, Application, Node, TotalReading, WindowReading
-from ..services.mobius.utils import insert
 from .data import decode_data, encode_mqtt_data
 from .enums import NodeState, PayloadType
 from .exceptions import ObjectNotFoundException
@@ -59,7 +58,7 @@ def publish(record: dict) -> dict:
         node["state"],
         node["lastSeenAt"],
         record["data"]["payloadType"],
-        record["data"]["dangerLevel"],
+        record["data"]["value"],
     )
     node.save()
 
@@ -67,8 +66,9 @@ def publish(record: dict) -> dict:
 
 
 def handle_total_reading(node: Node, record: dict):
-    if MOBIUS_URL != "":
-        insert(record)
+    # TODO: reimplememnt
+    # if MOBIUS_URL != "":
+    #     insert(record)
 
     reading = TotalReading(
         nodeID=node["nodeID"],
@@ -97,8 +97,9 @@ def handle_total_reading(node: Node, record: dict):
 
 
 def handle_window_reading(node: Node, record: dict):
-    if MOBIUS_URL != "":
-        insert(record)
+    # TODO: reimplememnt
+    # if MOBIUS_URL != "":
+    #     insert(record)
 
     reading = WindowReading(
         nodeID=node["nodeID"],
@@ -143,3 +144,5 @@ def get_window_readings(nodeIDs: list[str]) -> list[WindowReading]:
 
         for node_reading in node_readings:
             readings.append(node_reading.to_dashboard())
+
+    return readings
