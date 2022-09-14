@@ -101,6 +101,7 @@ class WindowReading(Document):
 
     def to_dashboard(self) -> dict:
         return {
+            "nodeID": self.nodeID,
             "canID": self.canID,
             "sensorNumber": self.sensorNumber,
             "readingID": self.readingID,
