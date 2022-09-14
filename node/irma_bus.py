@@ -18,7 +18,7 @@ class IrmaBus:
         self._scheduler = BackgroundScheduler()
         self._lock = Lock()
 
-        self._scheduler.add_job(self.loop, "bus-loop", minutes=interval_minutes)
+        self._scheduler.add_job(self.loop, "interval", minutes=interval_minutes)
 
     def loop(self):
         with self._lock:
