@@ -6,6 +6,7 @@ from .node import node_bp
 from .payload import payload_bp
 from .alert import alert_bp
 from .jwt import jwt_bp
+from .session import session_bp
 
 from ... import socketio
 from ...services.database import Node, user_manager
@@ -20,6 +21,7 @@ bp.register_blueprint(node_bp)
 bp.register_blueprint(payload_bp)
 bp.register_blueprint(alert_bp)
 bp.register_blueprint(jwt_bp)
+bp.register_blueprint(session_bp)
 
 
 @bp.route("/check")
@@ -38,6 +40,7 @@ def _check_for_updates():
 
     if update_frontend:
         current_app.logger.info("Detected sensor-state change(s), emitting 'change'")
+        socketio.emit("change-reading")
         socketio.emit("change")
 
     return jsonify(message=("Changed" if update_frontend else "Not Changed"))

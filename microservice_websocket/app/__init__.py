@@ -6,7 +6,6 @@ from flask import Flask
 
 # da togliere
 from flask_cors import CORS
-from flask_mqtt import Mqtt
 from flask_socketio import SocketIO
 
 from .services.socketio import init_socketio

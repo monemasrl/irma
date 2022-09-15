@@ -23,4 +23,5 @@ def _handle_alert_route():
         return {"message": "not found"}, 404
 
     socketio.emit("change")
+    socketio.emit("change-reading")
     return received

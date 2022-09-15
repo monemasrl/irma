@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 
 from .. import mqtt
-from ..services.database import Alert, Application, Node, TotalReading, WindowReading
+from ..services.database import Alert, Application, Node, Reading
 from .data import decode_data, encode_mqtt_data
 from .enums import NodeState, PayloadType
 from .exceptions import ObjectNotFoundException
@@ -70,17 +70,24 @@ def handle_total_reading(node: Node, record: dict):
     # if MOBIUS_URL != "":
     #     insert(record)
 
-    reading = TotalReading(
-        nodeID=node["nodeID"],
+    reading = Reading.objects(
+        nodeID=node["nodID"],
+        readingID=record["data"]["readingID"],
         canID=record["data"]["canID"],
         sensorNumber=record["data"]["sensorNumber"],
-        dangerLevel=record["data"]["value"],
-        totalCount=record["data"]["count"],
-        sessionID=record["data"]["sessionID"],
-        readingID=record["data"]["readingID"],
-        publishedAt=datetime.now().isoformat(),
-    )
+    ).first()
 
+    if reading is None:
+        reading = Reading(
+            nodeID=node["nodeID"],
+            canID=record["data"]["canID"],
+            sensorNumber=record["data"]["sensorNumber"],
+            readingID=record["data"]["readingID"],
+            sessionID=record["data"]["sessionID"],
+            publishedAt=datetime.now().isoformat(),
+        )
+
+    reading["dangerLevel"] = record["data"]["value"]
     reading.save()
 
     if reading["dangerLevel"] >= MAX_TRESHOLD:
@@ -101,16 +108,33 @@ def handle_window_reading(node: Node, record: dict):
     # if MOBIUS_URL != "":
     #     insert(record)
 
-    reading = WindowReading(
-        nodeID=node["nodeID"],
+    reading = Reading.objects(
+        nodeID=node["nodID"],
+        readingID=record["data"]["readingID"],
         canID=record["data"]["canID"],
         sensorNumber=record["data"]["sensorNumber"],
-        window_number=record["data"]["value"],
-        count=record["data"]["count"],
-        sessionID=record["data"]["sessionID"],
-        readingID=record["data"]["readingID"],
-        publishedAt=datetime.now().isoformat(),
-    )
+    ).first()
+
+    if reading is None:
+        reading = Reading(
+            nodeID=node["nodeID"],
+            canID=record["data"]["canID"],
+            sensorNumber=record["data"]["sensorNumber"],
+            sessionID=record["data"]["sessionID"],
+            readingID=record["data"]["readingID"],
+            publishedAt=datetime.now().isoformat(),
+        )
+
+    window_number = record["data"]["value"]
+
+    if window_number == 1:
+        reading["window1_count"] = record["data"]["count"]
+    elif window_number == 2:
+        reading["window2_count"] = record["data"]["count"]
+    elif window_number == 3:
+        reading["window3_count"] = record["data"]["count"]
+    else:
+        raise ValueError(f"Unexpected window_number: {window_number}")
 
     reading.save()
 
@@ -122,27 +146,3 @@ def send_mqtt_command(applicationID: str, nodeID: str, command: int):
 
     if not DISABLE_MQTT:
         mqtt.publish(topic, data)
-
-
-def get_total_readings(nodeIDs: list[str]) -> list[TotalReading]:
-    readings = []
-
-    for nodeID in nodeIDs:
-        node_readings: list[TotalReading] = TotalReading.objects(nodeID=nodeID)
-
-        for node_reading in node_readings:
-            readings.append(node_reading.to_dashboard())
-
-    return readings
-
-
-def get_window_readings(nodeIDs: list[str]) -> list[WindowReading]:
-    readings = []
-
-    for nodeID in nodeIDs:
-        node_readings: list[WindowReading] = WindowReading.objects(nodeID=nodeID)
-
-        for node_reading in node_readings:
-            readings.append(node_reading.to_dashboard())
-
-    return readings
