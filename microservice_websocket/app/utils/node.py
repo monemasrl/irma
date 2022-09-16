@@ -15,7 +15,7 @@ SENSORS_TIMEOUT_INTERVAL = timedelta(seconds=30)
 
 
 def update_state_total_reading(current_state: NodeState, dato: int) -> NodeState:
-    if current_state == NodeState.READY:
+    if current_state == NodeState.READY or current_state == NodeState.ERROR:
         current_state = NodeState.RUNNING
     elif current_state == NodeState.ALERT_READY:
         current_state = NodeState.ALERT_RUNNING
@@ -27,7 +27,7 @@ def update_state_total_reading(current_state: NodeState, dato: int) -> NodeState
 
 
 def update_state_window_reading(current_state: NodeState, *args) -> NodeState:
-    if current_state == NodeState.READY:
+    if current_state == NodeState.READY or current_state == NodeState.ERROR:
         current_state = NodeState.RUNNING
     elif current_state == NodeState.ALERT_READY:
         current_state = NodeState.ALERT_RUNNING
@@ -36,14 +36,14 @@ def update_state_window_reading(current_state: NodeState, *args) -> NodeState:
 
 
 def update_state_start_rec(current_state: NodeState, *args) -> NodeState:
-    if current_state == NodeState.READY:
+    if current_state == NodeState.READY or current_state == NodeState.ERROR:
         return NodeState.RUNNING
 
     return current_state
 
 
 def update_state_end_rec(current_state: NodeState, *args) -> NodeState:
-    if current_state == NodeState.RUNNING:
+    if current_state == NodeState.RUNNING or current_state == NodeState.ERROR:
         return NodeState.READY
     elif current_state == NodeState.ALERT_RUNNING:
         return NodeState.ALERT_READY
@@ -59,7 +59,7 @@ def update_state_keep_alive(current_state: NodeState, *args) -> NodeState:
 
 
 def update_state_handle_alert(current_state: NodeState, *args) -> NodeState:
-    if current_state == NodeState.ALERT_READY:
+    if current_state == NodeState.ALERT_READY or current_state == NodeState.ERROR:
         return NodeState.READY
     elif current_state == NodeState.ALERT_RUNNING:
         return NodeState.RUNNING
