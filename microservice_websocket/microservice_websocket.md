@@ -16,68 +16,49 @@ All'interno del file [config.json](./config/config.json) è possibile specificar
 
 ## Descrizione API
 
-### Richiesta dati (POST /api/payload/)
 
-È possibile **richiedere** dati mediante una **POST** su **/api/payload/**.
+### Richiesta sessione di letture (GET /api/session/)
 
-Corpo della **richiesta** (JSON):
+È possibile **richiedere** una sessione di letture mediante una **GET** su **/api/session/**.
 
-- `IDs`: un array che contiene tutti i **sensorID** che si vogliono richiedere.
+Sono disponibili i seguenti **parametri**:
 
-Esempio:
-
-```jsonc
-{
-  "IDs": [
-    "01203",
-    "21332"
-  ]
-}
-```
+- `nodeID`: l'**id** del **nodo** di cui si richiede la **sessione**.
+- `sessionID`: l'**id** della **sessione**. Se non presente o uguale a -1, verr à restituita la sessione più **recente**.
 
 ---
 
-**microservice_websocket** procederà ad interrogare il **database** per ogni **sensorID** ricevuto.
-
 Corpo della **risposta**:
 
-- `sensorID`: l'**id** del sensore.
-- `sensorName`: il **nome** del sensore.
-- `applicationID`: l'**id** dell'applicazione a cui appartiene il sensore.
-- `state`: lo **stato** del sensore. Fare riferimento al paragrafo sugli **Enum** nel [README](../README.md).
-- `datiInterni`: **array di dati** da visualizzare nella dashboard.
-- `unhandledAlertIDs`: gli **id** delle **allerte non gestite**.
-
-Ogni elemento all'interno di `datiInerni` ha i seguenti attributi:
-
-- `titolo`: **titolo** del dato.
-- `dato`: il **dato**.
+- `readings`: un array di [Reading](./app/services/database/database.md#reading), conformi al metodo `to_dashboard()` della classe.
 
 Esempio:
 
 ```jsonc
 {
-  "sensorID": "1",
-  "sensorName": "sensore_1",
-  "applicationID": "34375765",
-  "state": 1,
-  "datiInterni": [
-    {
-      "titolo": "Titolo1",
-      "dato": 123
-    },
-    {
-      "titolo": "Titolo2",
-      "dato": 456
-    },
-    {
-      "titolo": "Titolo3",
-      "dato": 789
-    }
-  ],
-  "unhandledAlertIDs": [
-    "123"
-  ]
+  "readings": [{}, {}, {}]
+}
+```
+
+### Richiesta id sessioni (GET /api/session/ids)
+
+È possibile **richiedere** gli **id** delle sessioni di un certo **nodo** mediante una **GET** su **/api/session/ids**.
+
+Sono disponibili i seguenti **parametri**:
+
+- `nodeID`: l'**id** del **nodo** di cui si richiede la **lista degli id**.
+
+---
+
+Corpo della **risposta**:
+
+- `IDs`: un array di **interi**, che rappresentano gli **id** delle **sessioni disponibli** per quel **nodo**.
+
+Esempio:
+
+```jsonc
+{
+  "IDs": [123, 456, 789]
 }
 ```
 

@@ -130,7 +130,7 @@ out -- HTTP 5000 --> msw
 
 ## I DATI
 
-### Encode e decode dei dati
+### Encode e decode dei dati (da aggiornare)
 
 Per agevolare la trasmissione, i dati vengono codificati in **stringhe base64**. Una volta convertita nuovamente in bytes, la struttura è la seguente:
 
@@ -155,7 +155,7 @@ Lo stesso payload **decodificato**:
 ```
 
 
-### Encode e decode dei payload MQTT
+### Encode e decode dei payload MQTT (da aggiornare)
 
 Come per il paragrafo precedente, la trasmissione avviene con **strighe base64**. Una volta convertita nuovamente in bytes, la struttura è la seguente:
 
@@ -187,6 +187,7 @@ Identifica i messaggi inviati.
 | Nome       | Valore |
 |------------|--------|
 | START_REC  |    0   |
+| END_REC    |    1   |
 
 ### SensorState
 
@@ -218,7 +219,7 @@ stateDiagram-v2
 
 ## NODO
 
-Sul nodo (nel nostro caso un Rapsberry PI 2) gira uno script che si occupa di **gestire** i sensori.
+Sul nodo (nel nostro caso un Rapsberry PI 2) gira uno script che si occupa di **gestire** i rilevatori.
 
 Per maggiori informazioni consultare la [documentazione](./node/node.md).
 
@@ -235,20 +236,16 @@ Per maggiori informazioni su **microservice_websocket** consultare la sua [docum
 
 ## TESTING IN LOCALE
 
-Al fine di eseguire dei test in locale, per mancanza di sensori da utilizzare, venogono utilizzati due script:
+Al fine di eseguire dei test in locale, per mancanza di rilevatori da utilizzare, viene usato lo script [mock_rilevatore.py](./utils/mock_rilevatore.py), che si occupa di **simulare** la presenza di un rilevatore.
 
-1. [auto_can.py](utils/auto_can.py) - 
-    Questo script, eseguito (solo per test) sul gateway, invia tramite interfaccia CAN due messaggi a intervalli regolari.
-    
-2. [arduino_communication.py](utils/arduino-py-communication/arduino_communication.py) - 
-    Questo script, eseguito su un Rapberry Pi connesso all'ESP32, riceve tramite interfaccia CAN i messaggi, che successivamente ritrasmetterà attraverso intefaccia seriale all'end-device.
+Qualora vengano richieste delle letture dal **nodo**, lo script mostrerà un prompt dove inserire i valori da inviare.
 
 ### Struttura testing locale
 
 #### Versione LoRaWAN
 
 ```mermaid
-graph LR;
+flowchart LR;
 rpi4[Raspberry PI 4 - gateway]
 subgraph nodo
   rpi2[Raspberry PI 2]
@@ -259,6 +256,19 @@ rpi2 -- Serial --> esp
 esp -- LoRa --> rpi4
 rpi4 -- CAN --> rpi2
 rpi4 -- UDP 1700 --> chirpstack
+```
+
+#### Versione IP
+
+```mermaid
+flowchart LR; 
+rpi4[Raspberry PI 4 - mock_rilevatore.py]
+rpi2[Raspberry PI 2 - nodo]
+msw[microservice_websocket]
+
+rpi2 <-- CAN --> rpi4
+rpi2 -- HTTP --> msw
+msw -- MQTT --> rpi2
 ```
 
 ## CONTRIBUTING
