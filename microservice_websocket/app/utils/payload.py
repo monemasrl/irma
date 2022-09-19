@@ -46,12 +46,14 @@ def publish(record: dict) -> dict:
     elif record["payloadType"] == PayloadType.WINDOW_READING:
         handle_window_reading(node, record)
 
+    value = record["data"].get("value", 0)
+
     node["lastSeenAt"] = datetime.now()
     node["state"] = update_state(
         node["state"],
         node["lastSeenAt"],
         record["payloadType"],
-        record["data"]["value"],
+        value,
     )
     node.save()
 
