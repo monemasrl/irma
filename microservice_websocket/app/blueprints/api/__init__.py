@@ -7,6 +7,7 @@ from .payload import payload_bp
 from .alert import alert_bp
 from .jwt import jwt_bp
 from .session import session_bp
+from .user import user_bp
 
 from ... import socketio
 from ...services.database import Node, user_manager
@@ -22,6 +23,7 @@ bp.register_blueprint(payload_bp)
 bp.register_blueprint(alert_bp)
 bp.register_blueprint(jwt_bp)
 bp.register_blueprint(session_bp)
+bp.register_blueprint(user_bp)
 
 
 @bp.route("/check")

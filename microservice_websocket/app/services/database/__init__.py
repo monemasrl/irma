@@ -43,8 +43,13 @@ class User(Document):
     last_name = StringField(default="")
     roles = ListField(ReferenceField(Role), default=[])
 
-    def to_json():
-        return {}
+    def to_json(self):
+        return {
+            "email": self.email,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "roles": self.roles,
+        }
 
 
 class Node(Document):
