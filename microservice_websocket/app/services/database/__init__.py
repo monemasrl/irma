@@ -43,6 +43,9 @@ class User(Document):
     last_name = StringField(default="")
     roles = ListField(ReferenceField(Role), default=[])
 
+    def to_json():
+        return {}
+
 
 class Node(Document):
     nodeID = IntField(required=True)
