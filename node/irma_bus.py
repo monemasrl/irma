@@ -18,6 +18,7 @@ class IrmaBus:
         self._lock = Lock()
 
         self._scheduler.add_job(self.loop, "interval", minutes=interval_minutes)
+        self.loop()
 
     def loop(self):
         with self._lock:
