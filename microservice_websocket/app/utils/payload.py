@@ -3,7 +3,6 @@ from datetime import datetime
 
 from .. import mqtt
 from ..services.database import Alert, Application, Node, Reading
-from .data import decode_data, encode_mqtt_data
 from .enums import NodeState, PayloadType
 from .exceptions import ObjectNotFoundException
 from .node import MAX_TRESHOLD, update_state
@@ -22,12 +21,6 @@ def publish(record: dict) -> dict:
 
     applicationID: str = record["applicationID"]
     nodeID: str = record["nodeID"]
-    record["data"] = decode_data(record["data"])
-
-    # Vero se arriva da chirpstack
-    if "txInfo" in record:
-        # TODO: portare a payload di node/app.py
-        pass
 
     application = Application.objects(id=applicationID).first()
 
@@ -142,7 +135,7 @@ def handle_window_reading(node: Node, record: dict):
 def send_mqtt_command(applicationID: str, nodeID: str, command: int):
     topic: str = f"{applicationID}/{nodeID}/command"
 
-    data: bytes = encode_mqtt_data(command)
+    data: bytes = command.to_bytes(1, "big")
 
     if not DISABLE_MQTT:
         mqtt.publish(topic, data)

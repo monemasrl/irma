@@ -7,7 +7,6 @@ import paho.mqtt.client as mqtt
 import requests
 import yaml
 from can_protocol import DecodedMessage, MessageType
-from data import decode_mqtt_data, encode_data
 from irma_bus import IrmaBus
 
 BYPASS_CAN = bool(environ.get("BYPASS_CAN", 0))
@@ -57,9 +56,7 @@ class Node:
         def on_message(client, userdata, msg: mqtt.MQTTMessage):
             print(msg.topic + " -> " + str(msg.payload))
 
-            decoded_data = decode_mqtt_data(msg.payload.decode())
-
-            command = decoded_data["command"]
+            command = int.from_bytes(msg.payload, "big")
 
             if command == CommandType.START_REC:
                 self.start_rec()
@@ -96,7 +93,15 @@ class Node:
             "nodeName": self.config["node_info"]["nodeName"],
             "applicationID": self.config["node_info"]["applicationID"],
             "organizationID": self.config["node_info"]["organizationID"],
-            "data": encode_data(payload_type.value, data),
+            "data": {
+                "payloadType": payload_type,
+                "canID": data["n_detector"],
+                "sensorNumber": data["sipm"],
+                "value": data["value"],
+                "count": data["count"],
+                "sessionID": data["sessionID"],
+                "readingID": data["readingID"],
+            },
         }
 
         host = self.config["microservice"]["url"]
