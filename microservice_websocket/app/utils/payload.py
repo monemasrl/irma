@@ -66,7 +66,7 @@ def handle_total_reading(node: Node, record: dict):
     #     insert(record)
 
     reading = Reading.objects(
-        nodeID=node["nodID"],
+        nodeID=node["nodeID"],
         readingID=record["data"]["readingID"],
         canID=record["data"]["canID"],
         sensorNumber=record["data"]["sensorNumber"],
@@ -104,7 +104,7 @@ def handle_window_reading(node: Node, record: dict):
     #     insert(record)
 
     reading = Reading.objects(
-        nodeID=node["nodID"],
+        nodeID=node["nodeID"],
         readingID=record["data"]["readingID"],
         canID=record["data"]["canID"],
         sensorNumber=record["data"]["sensorNumber"],

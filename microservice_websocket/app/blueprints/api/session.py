@@ -19,7 +19,7 @@ def get_reading_session():
     try:
         readings = get_session(nodeID, sessionID)
     except ObjectNotFoundException:
-        return {"message", "Not Found"}, 404
+        return {"message": "Not Found"}, 404
 
     return jsonify(readings=readings)
 

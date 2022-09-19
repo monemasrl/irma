@@ -2,9 +2,9 @@ from ..services.database import Node, Reading
 from .exceptions import ObjectNotFoundException
 
 
-def get_session(nodeID: int, sessionID: int) -> list[Reading]:
+def get_session(nodeID: int, sessionID: int) -> list[dict]:
     if sessionID == -1:
-        latest_reading = Reading.object(nodeID=nodeID).order_by("-sessionID").first()
+        latest_reading = Reading.objects(nodeID=nodeID).order_by("-sessionID").first()
         if latest_reading is None:
             raise ObjectNotFoundException(Reading)
 
