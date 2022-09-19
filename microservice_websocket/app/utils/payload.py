@@ -40,17 +40,17 @@ def publish(record: dict) -> dict:
         )
         node.save()
 
-    if record["data"]["payloadType"] == PayloadType.TOTAL_READING:
+    if record["payloadType"] == PayloadType.TOTAL_READING:
         handle_total_reading(node, record)
 
-    if record["data"]["payloadType"] == PayloadType.WINDOW_READING:
+    elif record["payloadType"] == PayloadType.WINDOW_READING:
         handle_window_reading(node, record)
 
     node["lastSeenAt"] = datetime.now()
     node["state"] = update_state(
         node["state"],
         node["lastSeenAt"],
-        record["data"]["payloadType"],
+        record["payloadType"],
         record["data"]["value"],
     )
     node.save()

@@ -93,7 +93,6 @@ class Node:
             data_entry = {}
         else:
             data_entry = {
-                "payloadType": payload_type,
                 "canID": data["n_detector"],
                 "sensorNumber": data["sipm"],
                 "value": data["value"],
@@ -107,6 +106,7 @@ class Node:
             "nodeName": self.config["node_info"]["nodeName"],
             "applicationID": self.config["node_info"]["applicationID"],
             "organizationID": self.config["node_info"]["organizationID"],
+            "payloadType": payload_type,
             "data": data_entry,
         }
 
