@@ -88,12 +88,11 @@ class Node:
         payload_type: PayloadType,
         data: DecodedMessage = None,
     ):
-        payload: dict = {
-            "nodeID": self.config["node_info"]["nodeID"],
-            "nodeName": self.config["node_info"]["nodeName"],
-            "applicationID": self.config["node_info"]["applicationID"],
-            "organizationID": self.config["node_info"]["organizationID"],
-            "data": {
+
+        if data is None:
+            data_entry = {}
+        else:
+            data_entry = {
                 "payloadType": payload_type,
                 "canID": data["n_detector"],
                 "sensorNumber": data["sipm"],
@@ -101,7 +100,14 @@ class Node:
                 "count": data["count"],
                 "sessionID": data["sessionID"],
                 "readingID": data["readingID"],
-            },
+            }
+
+        payload: dict = {
+            "nodeID": self.config["node_info"]["nodeID"],
+            "nodeName": self.config["node_info"]["nodeName"],
+            "applicationID": self.config["node_info"]["applicationID"],
+            "organizationID": self.config["node_info"]["organizationID"],
+            "data": data_entry,
         }
 
         host = self.config["microservice"]["url"]
