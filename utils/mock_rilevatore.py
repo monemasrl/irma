@@ -1,4 +1,5 @@
 from enum import IntEnum, auto
+from random import randint
 from typing import Optional
 
 from can import Message
@@ -28,9 +29,10 @@ class Detector(IntEnum):
 
 
 class RilevatoreBus:
-    def __init__(self, bustype, channel, bitrate, detector: Detector):
+    def __init__(self, bustype, channel, bitrate, detector: Detector, manual: bool):
         self._bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate)
         self.detector = detector
+        self.manual = manual
 
     def send(self, message: Message, timeout: Optional[float] = None):
         self._bus.send(message, timeout)
@@ -50,7 +52,11 @@ class RilevatoreBus:
         print(f"SIPM: {sipm}")
         print(f"Window: {window}")
 
-        reading = int(input("Inserisci valore per la finestra: "))
+        if self.manual:
+            reading = int(input("Inserisci valore per la finestra: "))
+        else:
+            reading = randint(0, 10_000_000)
+
         encoded_reading = reading.to_bytes(3, "big")
 
         new_msg = Message(
@@ -76,9 +82,17 @@ class RilevatoreBus:
 
         print(f"SIPM: {sipm}")
 
-        count = int(input("Inserisci il conteggio: "))
+        if self.manual:
+            count = int(input("Inserisci il conteggio: "))
+        else:
+            count = randint(0, 10_000_000)
+
         encoded_count = count.to_bytes(3, "big")
-        danger_level = int(input("Inserisci il livello di pericolosita: "))
+
+        if self.manual:
+            danger_level = int(input("Inserisci il livello di pericolosita: "))
+        else:
+            danger_level = randint(0, 9)
 
         new_msg = Message(
             arbitration_id=0,
@@ -170,6 +184,10 @@ class RilevatoreBus:
 
 if __name__ == "__main__":
     bus = RilevatoreBus(
-        bustype="socketcan", channel="can0", bitrate=12500, detector=Detector.D1
+        bustype="socketcan",
+        channel="can0",
+        bitrate=12500,
+        detector=Detector.D1,
+        manual=True,
     )
     bus.loop_forever()
