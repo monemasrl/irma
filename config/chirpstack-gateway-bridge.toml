@@ -1,4 +1,0 @@
-[integration.mqtt.auth.generic]
-servers=["tcp://mqtt:1883"]
-username=""
-password=""

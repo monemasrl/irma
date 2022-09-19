@@ -23,90 +23,23 @@ mm[mock_mobius]
 irma-ui[Irma UI]
 
 nodo[Nodo]
-sensori[Sensori]
+rilevatori[Rilevatori]
 
 msw -- POST 5002 --> mm
 irma-ui -- HTTP 5000 --> msw
-nodo <-- LoRaWAN/IP* --> msw
-sensori <-- CAN --> nodo
-```
-
-> \*LoRaWAN/IP: vedi paragrafo successivo.
-
-#### LoRaWAN/IP
-
-La comunicazione tra **Nodo** e **microservice_websocket**, può avvenire in due modi: tramite [LoRaWAN](https://lora-alliance.org/about-lorawan/) o tramite una normale **connessione internet**.
-
-```mermaid
-flowchart TD;
-
-nodo1[Nodo]
-nodo2[Nodo]
-msw1[microservice_websocket]
-msw2[microservice_websocket]
-
-gtw[Gateway]
-
-subgraph IP
-    nodo1 -- HTTP 5000 --> msw1
-    msw1 -- MQTT** 1883 --> nodo1
-end
-
-subgraph LoRaWAN
-    nodo2 <-- LoRa --> gtw
-    gtw <-- UDP 1700 --> chirpstack-docker
-    chirpstack-docker -- HTTP 5000 --> msw2
-    msw2 -- MQTT** 1883 --> chirpstack-docker
-end
+nodo -- HTTP 5000 --> msw
+msw -- MQTT** 1883 --> nodo
+rilevatori <-- CAN --> nodo
 ```
 
 > \*\*Per effettuare la comunicazione tramite MQTT è necessario un **Broker MQTT**.
 
-Per maggiori informazioni su **chirpstack-docker** e sulla comunicazione tramite LoRa, fare riferimento a [LoRaWAN.md](./LoRaWAN.md).
-
 ## DEPLOYMENT
 
-All'interno della **root** principale sono presenti due file **docker-compose**:
+All'interno della **root** principale sono è presente il file [docker-compose.yaml](./docker-compose.yaml), grazie al quale è possibile dispiegare l'intero **stack di servizi**.
 
-- [docker-compose.yaml](./docker-compose.yaml), grazie al quale è possibile dispiegare l'intero stack di servizi in **modalità IP**
+### Schema docker-compose.yaml
 
-- [docker-compose-chirpstack.yaml](./docker-compose-chirpstack.yaml), grazie al quale è possibile dispiegare l'intero stack di servizi in **modalità LoRaWAN**.
-
-> Per maggiori informazione sulle **due modalità**, fare riferimento al paragrafo precedente.
-
-### Schema dei docker-compose
-
-#### docker-compose-chirpstack.yaml SIMPLIFIED
-
-```mermaid
-flowchart TD;
-    
-subgraph docker
-    cgb[chirpstack-gateway-bridge]
-    cns[chirpstack-network-server]
-    cas[chirpstack-application-server]
-    mqtt[eclipse-mosquitto]
-    mobius[mock_mobius]
-    mongo[(MongoDB)]
-    msw[microservice_websocket]
-
-    cgb & cns & msw -- TCP 1883 --> mqtt
-    mobius <--> mongo
-    msw <--> mongo
-    cas -- HTTP 8000 --> cns
-    msw -- HTTP 5002 --> mobius
-    cas -- HTTP 5000 --> msw
-end
-out([host network])
-out -- TCP 1883 --> mqtt
-out -- HTTP 8080 --> cas
-out -- HTTP 5000 --> msw
-out -- UDP 1700 --> cgb
-```
-
----
-
-#### docker-compose.yaml
 
 ```mermaid
 flowchart TD;
@@ -242,28 +175,10 @@ Qualora vengano richieste delle letture dal **nodo**, lo script mostrerà un pro
 
 ### Struttura testing locale
 
-#### Versione LoRaWAN
-
-```mermaid
-flowchart LR;
-rpi4[Raspberry PI 4 - gateway]
-subgraph nodo
-  rpi2[Raspberry PI 2]
-  esp[ESP32]
-end
-
-rpi2 -- Serial --> esp
-esp -- LoRa --> rpi4
-rpi4 -- CAN --> rpi2
-rpi4 -- UDP 1700 --> chirpstack
-```
-
-#### Versione IP
-
 ```mermaid
 flowchart LR; 
 rpi4[Raspberry PI 4 - mock_rilevatore.py]
-rpi2[Raspberry PI 2 - nodo]
+rpi2[Raspberry PI 2 - node]
 msw[microservice_websocket]
 
 rpi2 <-- CAN --> rpi4

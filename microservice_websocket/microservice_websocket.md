@@ -4,18 +4,13 @@ Questo servizio si occupa di interfacciarsi con la piattaforma **Mobius** (vedi 
 
 ## Avvio
 
-Nel [docker-compose.yaml](../docker-compose.yaml) presente nella **root della repo**, microservice_websocket viene fatto partire **insieme** a tutti gli altri serivizi.
-
-Nel caso in cui lo si volesse avviare **standalone**, viene fornito il file **docker-compose.yaml** all'interno della cartella [microservice_websocket](./docker-compose.yaml).
-
-Per i comandi di **docker-compose** fare riferimento al paragrafo **DEPLOYMENT** nel [README](../README.md).
+L'**immagine docker** può essere avviata con il file [docker-compose.yaml](../docker-compose.yaml) presente nella **root della repo**.
 
 ## Configurazione
 
 All'interno del file [config.json](./config/config.json) è possibile specificare una serie di opzioni.
 
 ## Descrizione API
-
 
 ### Richiesta sessione di letture (GET /api/session/)
 
@@ -68,14 +63,7 @@ Esempio:
 
 A differenza delle altre route che sono protette da **Token JWT**, questa è protetta da un **API Token** statico (si consiglia un **UUID**) che deve essere **inserito** all'interno di *microservice_websocket/api-tokens.txt*.
 
-Il corpo della richiesta può essre di due tipi:
-
-- Quello inviato dal [nodo](../node/app.py).
-- Quello inviato di default da [Chirpstack](https://www.chirpstack.io/application-server/).
-
-> Le richieste di **chirpstack** vengono convertite a richieste del **nodo**.
-
-Esempio di **richiesta** dal **nodo**:
+Corpo della richiesta:
 
 ```jsonc
 {
@@ -118,7 +106,7 @@ Il **payload** che viene inviato a **Mobius** ha questa forma:
 
 ---
 
-Il dato viene poi immagazzinato all'interno del **database** come **Reading**. Per maggiori informazioni sul database fare riferimento alla [documentazione](./app/services/database/database.md).
+Il dato viene poi immagazzinato all'interno del **database** come [Reading](./app/services/database/database.md#reading).
 
 ### Invio comandi al sensore (POST /api/payload/command)
 
@@ -126,7 +114,7 @@ Il dato viene poi immagazzinato all'interno del **database** come **Reading**. P
 
 Corpo della richiesta (JSON):
 
-- `command`: il comando da inviare al **sensore**. Per maggiori informazioni fare riferimento al paragrafo sugli **Enum** del [README](../README.md).
+- `command`: il comando da inviare al **sensore**. [Per maggiori informazioni](../README.md#gli-enum).
 - `applicationID`: l'**id** dell'**applicazione** di cui fa parte il **sensore**.
 - `sensorID`: l'**id** del **sensore** a cui inviare il comando.
 
@@ -144,7 +132,7 @@ Esempio:
 
 A questo punto **microservice_websocket** pubblicherà sul **topic** `<applicationID>/<nodeID>/command` un **payload**.
 
-Per maggior informazioni sulla struttura del **payload**, fare riferimento al paragrafo **Encode e decode dei dati** del [README](../README.md).
+[Per maggior informazioni sulla struttura del **payload**](../README.md#encode-e-decode-dei-payload-mqtt-da-aggiornare).
 
 ### Gestion alert (POST /api/alert/handle)
 
@@ -175,7 +163,7 @@ A questo punto **microservice_websocket** registrerà l'**alert** come **gestita
 - **quando** l'ha gestita.
 - le eventuali **note**.
 
-Per maggior informazioni sulla struttura del **alert** nel database, fare riferimento alla sua [documentazione](./app/services/database/database.md).
+Per maggiori informazioni sulla struttura dell'[Alert](./app/services/database/database.md#alert).
 
 ### Autenticazione (POST /api/jwt/authenticate)
 
@@ -239,7 +227,7 @@ Corpo della risposta (JSON):
 
 - `organizations`: la **lista** delle **organizzazioni**.
 
-Ogni **elemento** all'interno della **lista** è conforme alla struttura **Organization** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./app/services/database/database.md).
+Ogni **elemento** all'interno della **lista** è conforme alla struttura [Organization](./app/services/database/database.md#organization).
 
 Esempio:
 ```jsonc
@@ -271,18 +259,18 @@ Per ottenere la lista delle **applicazioni** è necessario fare una **GET** su *
 
 Sono disponibili i seguenti **parametri**:
 
-- `organizationID`: l'**id** dell'**organizzazione** a cui devono appartenere le **applicazioni** (**OBBLIGATORIO**).
+- `organizationID`: l'**id** dell'**organizzazione** a cui appartengono le **applicazioni**.
 
 Corpo della risposta (JSON):
 
 - `applications`: la **lista** delle **applicazioni**.
 
-Ogni **elemento** all'interno della **lista** è conforme alla struttura **Application** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./app/services/database/database.md).
+Ogni **elemento** all'interno della **lista** è conforme alla struttura [Application](./app/services/database/database.md#application).
 
 Esempio:
 ```jsonc
 {
-  "applications": [ {}, {}, {}]
+  "applications": [{}, {}, {}]
 }
 ```
 
@@ -311,17 +299,17 @@ Per ottenere la lista dei **nodi** è necessario fare una **GET** su **/api/node
 
 Sono disponibili i seguenti **parametri**:
 
-- `applicationID`: l'**id** dell'**applicazione** a cui devono appartenere i **sensori** (**OBBLIGATORIO**).
+- `applicationID`: l'**id** dell'**applicazione** a cui devono appartenere i **sensori**.
 
 Corpo della risposta (JSON):
 
 - `nodes`: la **lista** dei **nodi**.
 
-Ogni **elemento** all'interno della **lista** è conforme alla struttura **Node** all'interno del **database**. Per maggior informazioni fare riferimento alla [documentazione](./app/services/database/database.md).
+Ogni **elemento** all'interno della **lista** è conforme alla struttura del metodo `to_dashboard()` del **Node**.
 
 Esempio:
 ```jsonc
 {
-  "nodes": [ {}, {}, {}]
+  "nodes": [{}, {}, {}]
 }
 ```
