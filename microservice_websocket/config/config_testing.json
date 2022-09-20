@@ -1,4 +1,7 @@
 {
+    "SECRET_KEY": "pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw",
+    "JWT_SECRET_KEY": "pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw",
+
     "TESTING": true,
     "MONGODB_CONNECT": false,
     "MONGODB_SETTINGS": {

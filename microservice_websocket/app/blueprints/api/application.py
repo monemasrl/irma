@@ -16,9 +16,13 @@ application_bp = Blueprint("application", __name__, url_prefix="/applications")
 @jwt_required()
 def _create_application_route(organizationID):
     record: dict = json.loads(request.data)
+    name = record.get("name", None)
+
+    if name is None:
+        return {"message": "Bad Request"}, 400
 
     try:
-        application = create_application(organizationID, record["name"])
+        application = create_application(organizationID, name)
     except ObjectNotFoundException:
         return {"message": "not found"}, 404
     except ObjectAttributeAlreadyUsedException:

@@ -24,9 +24,13 @@ def _get_organizations_route():
 @jwt_required()
 def _create_organization_route():
     record: dict = json.loads(request.data)
+    name = record.get("name", None)
+
+    if name is None:
+        return {"message": "Bad Request"}, 400
 
     try:
-        organization = create_organization(record["name"])
+        organization = create_organization(name)
     except ObjectNotFoundException:
         return {"message": f"""name '{record["name"]}' is already in use"""}, 400
 

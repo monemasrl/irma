@@ -22,6 +22,4 @@ class ObjectAttributeAlreadyUsedException(Exception):
 
     def __init__(self, attribute):
         self.attribute = attribute
-        super().__init__(
-            f"Value '{attribute}' for field '{attribute.__name__}' is already"
-        )
+        super().__init__(f"Value '{attribute}' is already used")
