@@ -21,7 +21,7 @@ class NodeState(IntEnum):
         elif n == 4:
             return "alert-running"
         else:
-            return "undefined"
+            raise ValueError
 
 
 class PayloadType(IntEnum):
