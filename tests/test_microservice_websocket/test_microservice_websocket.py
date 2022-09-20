@@ -7,10 +7,12 @@ from flask_socketio import SocketIO, SocketIOTestClient
 from mock import patch
 
 from microservice_websocket.app import create_app, socketio
+from microservice_websocket.app.services.database import Application, Organization
 from tests.test_microservice_websocket.test_routes import test_bp
 
 
 class TestFlaskApp:
+    # --------------- Fixtures ---------------------------------------------
     @pytest.fixture()
     def testing_app(self) -> Flask:
         with patch("microservice_websocket.app.DISABLE_MQTT", True):
@@ -36,10 +38,23 @@ class TestFlaskApp:
     ) -> SocketIOTestClient:
         return socketio.test_client(testing_app, flask_test_client=app_client)
 
-    def test_api_token_decorator(self, app_client: FlaskClient):
-        test_url = "http://localhost:5000/test/api-token-test"
+    @pytest.fixture()
+    def jwt_token(self, app_client: FlaskClient):
+        response = app_client.post(
+            "/api/jwt/authenticate",
+            json={"username": "bettarini@monema.it", "password": "password"},
+        )
 
-        response = app_client.get(test_url)
+        decoded_json = response.json
+
+        return decoded_json["access_token"]
+
+    #
+    # ------------------- utils/api_token.py -------------------------------
+    def test_api_token_decorator(self, app_client: FlaskClient):
+        endpoint = "/test/api-token-test"
+
+        response = app_client.get(endpoint)
 
         assert (
             response.status_code == 401
@@ -47,51 +62,201 @@ class TestFlaskApp:
 
         with patch("builtins.open", mock_open(read_data="1234")):
             response = app_client.get(
-                test_url, headers={"Authorization": "Bearer 1234"}
+                endpoint, headers={"Authorization": "Bearer 1234"}
             )
 
         assert (
             response.status_code == 200
         ), "Cannot access route protected with @api_token_required with correct api-token"
 
-    # @patch('microservice_websocket_docker.app.MOBIUS_URL', "")
-    # def test_publish_route_post(
-    #         self,
-    #         app_client,
-    #         sensorData_Uplink,
-    #         sensorData_noUplink):
     #
-    #     response: TestResponse = app_client.post("/publish", json=sensorData_Uplink)
-    #     decoded_json: dict = json.loads(response.data)
-    #     payload: dict = to_mobius_payload(sensorData_Uplink)
+    # ------------------ blueprints/api/organization.py --------------------
+    def test_create_organizations(self, app_client: FlaskClient, jwt_token: str):
+        endpoint = "/api/organizations/"
+        name = "orgName"
+
+        # Creating Organization
+        payload = {"name": name}
+        response = app_client.post(
+            endpoint, json=payload, headers={"Authorization": f"Bearer {jwt_token}"}
+        )
+
+        assert (
+            response.status_code == 200
+        ), "Invalid response code when posting valid data"
+
+        assert (
+            len(Organization.objects()) == 1
+        ), "Create organization doesn't persist in the database"
+
+        # Creating Organization with already used name
+        response = app_client.post(
+            endpoint, json=payload, headers={"Authorization": f"Bearer {jwt_token}"}
+        )
+
+        assert (
+            response.status_code == 400
+        ), "Invalid response code when posting data with name already in use"
+
+        assert (
+            len(Organization.objects()) == 1
+        ), "Create organization doesn't persist in the database"
+
+        assert (
+            Organization.objects().first()["organizationName"] == name
+        ), "Invalid organization name"
+
+        # Creating organization with invalid payload
+        response = app_client.post(
+            endpoint, json={}, headers={"Authorization": f"Bearer {jwt_token}"}
+        )
+
+        assert (
+            response.status_code == 400
+        ), "Invalid response code when posting an invalid payload when creating an organization"
+
+        Organization.objects().first().delete()
+
+    def test_get_organizations(self, app_client: FlaskClient, jwt_token: str):
+        endpoint = "/api/organizations/"
+        name = "orgName"
+
+        # Getting empty Organizations
+        response = app_client.get(
+            endpoint, headers={"Authorization": f"Bearer {jwt_token}"}
+        )
+
+        assert (
+            response.status_code == 404
+        ), "Invalid response code when getting route with empty organizations"
+
+        # Manual create Organization
+        o = Organization(organizationName=name)
+        o.save()
+
+        # Getting newly created Organization
+        response = app_client.get(
+            endpoint, headers={"Authorization": f"Bearer {jwt_token}"}
+        )
+
+        assert (
+            response.status_code == 200
+        ), "Invalid response code when getting route with organizations present"
+
+        assert (
+            len(response.json["organizations"]) == 1
+        ), "Invalid payload lenght when querying organizations"
+
+        assert (
+            response.json["organizations"][0]["organizationName"] == name
+        ), "Invalid Organization name"
+
+        # Teardown
+        o.delete()
+
     #
-    #     print("[DEBUG] Original data: ")
-    #     print(payload)
-    #     print("===========================")
-    #     print("[DEBUG] Data received back from post request: ")
-    #     print(decoded_json)
-    #     assert decoded_json == payload, \
-    #     "Output mismatch when posting valida data. Check stdout log."
-    #
-    #     response: TestResponse = app_client.post("/publish", json=sensorData_noUplink)
-    #     decoded_json: dict = json.loads(response.data)
-    #     assert not decoded_json, \
-    #     "Wrong response from post request: should be empty, but it's not"
-    #
-    # @patch('microservice_websocket_docker.app.MOBIUS_URL', "")
-    # def test_main_route_post(self, app_client: FlaskClient, sensorData_Uplink):
-    #
-    #     body = {
-    #         "paths": [sensorData_Uplink["tags"]["sensor_path"]],
-    #     }
-    #
-    #     response: TestResponse = app_client.post("/", json=body)
-    #     decoded_json: dict = json.loads(response.data)
-    #     assert "data" in decoded_json, "Invalid json from '/' route"
-    #     devices: list = decoded_json["data"]
-    #     assert len(devices) == len(body["paths"]), \
-    #     "Invalid number of devices in json from '/' route"
-    #
+    # ------------------ blueprints/api/application.py ---------------------
+    def test_create_applications(self, app_client: FlaskClient, jwt_token: str):
+        endpoint = "/api/applications/"
+        name = "appName"
+        o = Organization(organizationName="orgName")
+        o.save()
+        organizationID = str(Organization.objects().first()["id"])
+
+        # Creating Application
+        response = app_client.post(
+            endpoint + organizationID,
+            json={"name": name},
+            headers={"Authorization": f"Bearer {jwt_token}"},
+        )
+
+        assert (
+            response.status_code == 200
+        ), "Invalid response code when posting valid data in create route"
+
+        # Creating application with wrong orgID
+        response = app_client.post(
+            endpoint + "63186eab0ca2d54a5c258384",
+            json={"name": "qux"},
+            headers={"Authorization": f"Bearer {jwt_token}"},
+        )
+
+        assert (
+            response.status_code == 404
+        ), "Invalid response code when posting data to wrong orgID"
+
+        # Creating application with same name
+        response = app_client.post(
+            endpoint + organizationID,
+            json={"name": name},
+            headers={"Authorization": f"Bearer {jwt_token}"},
+        )
+
+        assert (
+            response.status_code == 400
+        ), "Invalid response code when posting data with already existing name"
+
+        # Creating application with invalid payload
+        response = app_client.post(
+            endpoint + organizationID,
+            json={},
+            headers={"Authorization": f"Bearer {jwt_token}"},
+        )
+
+        assert (
+            response.status_code == 400
+        ), "Invalid response code when posting invalid data"
+
+        # Teardown
+        Application.objects().first().delete()
+        o.delete()
+
+    def test_get_applications(self, app_client: FlaskClient, jwt_token: str):
+        endpoint = "/api/applications/"
+        name = "appName"
+        o = Organization(organizationName="orgName")
+        o.save()
+        organizationID = str(Organization.objects().first()["id"])
+
+        # Getting empty Applications with no args
+        response = app_client.get(
+            endpoint, headers={"Authorization": f"Bearer {jwt_token}"}
+        )
+
+        assert (
+            response.status_code == 400
+        ), "Invalid response code when getting Application with no args"
+
+        # Getting empty Applications with right args
+        response = app_client.get(
+            endpoint,
+            headers={"Authorization": f"Bearer {jwt_token}"},
+            query_string={"organizationID": organizationID},
+        )
+
+        assert (
+            response.status_code == 404
+        ), "Invalid response code when getting Application with right args"
+
+        # Manually create application
+        a = Application(applicationName=name, organization=o)
+        a.save()
+
+        # Getting newly created application
+        response = app_client.get(
+            endpoint,
+            headers={"Authorization": f"Bearer {jwt_token}"},
+            query_string={"organizationID": organizationID},
+        )
+
+        assert (
+            response.status_code == 200
+        ), "Invalid response code when getting Application"
+
+        # Teardown
+        a.delete()
+        o.delete()
+
     # @patch('microservice_websocket_docker.app.MOBIUS_URL', "")
     # def test_socketio_emits_on_change(
     #         self,
@@ -102,16 +267,3 @@ class TestFlaskApp:
     #     received: list = socketio_client.get_received()
     #     assert received[0]['name'] == 'change', \
     #     "Invalid response from socket 'onChange()'"
-    #
-    # @patch('microservice_websocket_docker.app.MOBIUS_URL', "")
-    # def test_get_data(self):
-    #     s: dict = websocket_app.get_data("")
-    #     print(f"{s=}")
-    #     assert all(key in s for key in [
-    #             "devEUI",
-    #             "applicationID",
-    #             "state",
-    #             "datiInterni"
-    #         ]) and len(s["datiInterni"]) == 3, \
-    #     "Invalid structure of returned json: doesn't match `to_irma_ui_data()` \
-    #     function, in `data_conversion.py`. Check stdout log."
