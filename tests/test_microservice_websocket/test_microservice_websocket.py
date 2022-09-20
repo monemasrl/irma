@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import mock_open
 
 import pytest
@@ -7,7 +8,7 @@ from flask_socketio import SocketIO, SocketIOTestClient
 from mock import patch
 
 from microservice_websocket.app import create_app, socketio
-from microservice_websocket.app.services.database import Application, Organization
+from microservice_websocket.app.services.database import Application, Node, Organization
 from tests.test_microservice_websocket.test_routes import test_bp
 
 
@@ -254,6 +255,61 @@ class TestFlaskApp:
         ), "Invalid response code when getting Application"
 
         # Teardown
+        a.delete()
+        o.delete()
+
+    #
+    # ------------------ blueprints/api/node.py ----------------------------
+    def test_get_nodes(self, app_client: FlaskClient, jwt_token: str):
+        endpoint = "/api/nodes/"
+        o = Organization(organizationName="foo")
+        o.save()
+        a = Application(applicationName="bar", organization=o)
+        a.save()
+        applicationID = str(a["id"])
+
+        # Getting nodes with no args
+        response = app_client.get(
+            endpoint, headers={"Authorization": f"Bearer {jwt_token}"}
+        )
+
+        assert (
+            response.status_code == 400
+        ), "Invalid response code when getting node with no args"
+
+        # Getting nodes with no node present
+        response = app_client.get(
+            endpoint,
+            headers={"Authorization": f"Bearer {jwt_token}"},
+            query_string={"applicationID": applicationID},
+        )
+
+        assert (
+            response.status_code == 404
+        ), "Invalid response code when getting empty nodes"
+
+        # Manually create node
+        n = Node(
+            nodeID=123,
+            nodeName="nodeName",
+            application=a,
+            organization=o,
+            state=1,
+            lastSeenAt=datetime.now(),
+        )
+        n.save()
+
+        # Getting newly created node
+        response = app_client.get(
+            endpoint,
+            headers={"Authorization": f"Bearer {jwt_token}"},
+            query_string={"applicationID": applicationID},
+        )
+
+        assert response.status_code == 200, "Invalid response code when getting nodes"
+
+        # Teardown
+        n.delete()
         a.delete()
         o.delete()
 
