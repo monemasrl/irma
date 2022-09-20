@@ -1,4 +1,4 @@
-import json
+from unittest.mock import mock_open
 
 import pytest
 from flask import Flask
@@ -6,40 +6,53 @@ from flask.testing import FlaskClient
 from flask_socketio import SocketIO, SocketIOTestClient
 from mock import patch
 
-import microservice_websocket.app as websocket_app
+from microservice_websocket.app import create_app, socketio
+from tests.test_microservice_websocket.test_routes import test_bp
 
 
 class TestFlaskApp:
     @pytest.fixture()
-    def app_socketio(self) -> tuple[Flask, SocketIO]:  # type: ignore
+    def testing_app(self) -> Flask:
+        with patch("microservice_websocket.app.DISABLE_MQTT", True):
+            app = create_app(testing=True)
 
-        with patch("microservice_websocket_docker.app.DISABLE_MQTT", True):
-            app, socketio = websocket_app.create_app()
-
-        app.config.update(
-            {
-                "TESTING": True,
-            }
-        )
-        app.config.from_file(
-            "microservice_websocket_docker/config_testing.json", json.load
-        )
+        app.register_blueprint(test_bp)
 
         # set up
-        yield app, socketio
+        yield app
         # clean up
 
     @pytest.fixture()
-    def app_client(self, app_socketio: tuple[Flask, SocketIO]) -> FlaskClient:
-        app, _ = app_socketio
-        return app.test_client()
+    def testing_socketio(self) -> SocketIO:
+        return socketio
+
+    @pytest.fixture()
+    def app_client(self, testing_app: Flask) -> FlaskClient:
+        return testing_app.test_client()
 
     @pytest.fixture()
     def socketio_client(
-        self, app_socketio: tuple[Flask, SocketIO], app_client: FlaskClient
+        self, testing_app: Flask, app_client: FlaskClient, testing_socketio: SocketIO
     ) -> SocketIOTestClient:
-        app, socketio = app_socketio
-        return socketio.test_client(app, flask_test_client=app_client)
+        return socketio.test_client(testing_app, flask_test_client=app_client)
+
+    def test_api_token_decorator(self, app_client: FlaskClient):
+        test_url = "http://localhost:5000/test/api-token-test"
+
+        response = app_client.get(test_url)
+
+        assert (
+            response.status_code == 401
+        ), "Invalid response code from route protected with @api_token_required"
+
+        with patch("builtins.open", mock_open(read_data="1234")):
+            response = app_client.get(
+                test_url, headers={"Authorization": "Bearer 1234"}
+            )
+
+        assert (
+            response.status_code == 200
+        ), "Cannot access route protected with @api_token_required with correct api-token"
 
     # @patch('microservice_websocket_docker.app.MOBIUS_URL', "")
     # def test_publish_route_post(

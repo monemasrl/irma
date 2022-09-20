@@ -12,7 +12,6 @@ from .user import user_bp
 from ... import socketio
 from ...services.database import Node, user_manager
 from ...utils.node import update_state
-from ...utils.api_token import api_token_required
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -53,9 +52,3 @@ def _check_for_updates():
 def create_user():
     current_app.logger.info("Creo utente")
     user_manager.create_user(email="bettarini@monema.it", password="password")
-
-
-@bp.route("/api-token-test")
-@api_token_required
-def api_token_test():
-    return jsonify({"message": "Valid API Token!"})
