@@ -8,13 +8,7 @@ from flask_socketio import SocketIO, SocketIOTestClient
 from mock import patch
 
 from microservice_websocket.app import create_app, socketio
-from microservice_websocket.app.services.database import (
-    Alert,
-    Application,
-    Node,
-    Organization,
-    Reading,
-)
+from microservice_websocket.app.services import database as db
 from microservice_websocket.app.utils.enums import PayloadType
 from tests.test_microservice_websocket.test_routes import test_bp
 
@@ -30,7 +24,15 @@ class TestFlaskApp:
 
         # set up
         yield app
+
         # clean up
+        db.Organization.drop_collection()
+        db.Application.drop_collection()
+        db.Role.drop_collection()
+        db.User.drop_collection()
+        db.Node.drop_collection()
+        db.Reading.drop_collection()
+        db.Alert.drop_collection()
 
     @pytest.fixture()
     def testing_socketio(self) -> SocketIO:
@@ -94,7 +96,7 @@ class TestFlaskApp:
         ), "Invalid response code when posting valid data"
 
         assert (
-            len(Organization.objects()) == 1
+            len(db.Organization.objects()) == 1
         ), "Create organization doesn't persist in the database"
 
         # Creating Organization with already used name
@@ -107,11 +109,11 @@ class TestFlaskApp:
         ), "Invalid response code when posting data with name already in use"
 
         assert (
-            len(Organization.objects()) == 1
+            len(db.Organization.objects()) == 1
         ), "Create organization doesn't persist in the database"
 
         assert (
-            Organization.objects().first()["organizationName"] == name
+            db.Organization.objects().first()["organizationName"] == name
         ), "Invalid organization name"
 
         # Creating organization with invalid payload
@@ -123,7 +125,7 @@ class TestFlaskApp:
             response.status_code == 400
         ), "Invalid response code when posting an invalid payload when creating an organization"
 
-        Organization.objects().first().delete()
+        db.Organization.objects().first().delete()
 
     def test_get_organizations(self, app_client: FlaskClient, jwt_token: str):
         endpoint = "/api/organizations/"
@@ -139,7 +141,7 @@ class TestFlaskApp:
         ), "Invalid response code when getting route with empty organizations"
 
         # Manual create Organization
-        o = Organization(organizationName=name)
+        o = db.Organization(organizationName=name)
         o.save()
 
         # Getting newly created Organization
@@ -167,9 +169,9 @@ class TestFlaskApp:
     def test_create_applications(self, app_client: FlaskClient, jwt_token: str):
         endpoint = "/api/applications/"
         name = "appName"
-        o = Organization(organizationName="orgName")
+        o = db.Organization(organizationName="orgName")
         o.save()
-        organizationID = str(Organization.objects().first()["id"])
+        organizationID = str(db.Organization.objects().first()["id"])
 
         # Creating Application
         response = app_client.post(
@@ -216,15 +218,15 @@ class TestFlaskApp:
         ), "Invalid response code when posting invalid data"
 
         # Teardown
-        Application.objects().first().delete()
+        db.Application.objects().first().delete()
         o.delete()
 
     def test_get_applications(self, app_client: FlaskClient, jwt_token: str):
         endpoint = "/api/applications/"
         name = "appName"
-        o = Organization(organizationName="orgName")
+        o = db.Organization(organizationName="orgName")
         o.save()
-        organizationID = str(Organization.objects().first()["id"])
+        organizationID = str(db.Organization.objects().first()["id"])
 
         # Getting empty Applications with no args
         response = app_client.get(
@@ -247,7 +249,7 @@ class TestFlaskApp:
         ), "Invalid response code when getting Application with right args"
 
         # Manually create application
-        a = Application(applicationName=name, organization=o)
+        a = db.Application(applicationName=name, organization=o)
         a.save()
 
         # Getting newly created application
@@ -269,9 +271,9 @@ class TestFlaskApp:
     # ------------------ blueprints/api/node.py ----------------------------
     def test_get_nodes(self, app_client: FlaskClient, jwt_token: str):
         endpoint = "/api/nodes/"
-        o = Organization(organizationName="foo")
+        o = db.Organization(organizationName="foo")
         o.save()
-        a = Application(applicationName="bar", organization=o)
+        a = db.Application(applicationName="bar", organization=o)
         a.save()
         applicationID = str(a["id"])
 
@@ -296,7 +298,7 @@ class TestFlaskApp:
         ), "Invalid response code when getting empty nodes"
 
         # Manually create node
-        n = Node(
+        n = db.Node(
             nodeID=123,
             nodeName="nodeName",
             application=a,
@@ -324,11 +326,11 @@ class TestFlaskApp:
     # ------------------ blueprints/api/alert.py ---------------------------
     def test_handle_alert(self, app_client: FlaskClient, jwt_token: str):
         endpoint = "/api/alert/handle"
-        org = Organization(organizationName="foo")
+        org = db.Organization(organizationName="foo")
         org.save()
-        app = Application(applicationName="bar", organization=org)
+        app = db.Application(applicationName="bar", organization=org)
         app.save()
-        node = Node(
+        node = db.Node(
             nodeID=123,
             nodeName="nodeName",
             application=app,
@@ -337,7 +339,7 @@ class TestFlaskApp:
             lastSeenAt=datetime.now(),
         )
         node.save()
-        reading = Reading(
+        reading = db.Reading(
             nodeID=node["nodeID"],
             canID=1,
             sensorNumber=2,
@@ -363,7 +365,7 @@ class TestFlaskApp:
         ), "Invalid response code when trying to handle non-existing alert"
 
         # Manually create Alert
-        alert = Alert(
+        alert = db.Alert(
             reading=reading,
             node=node,
             sessionID=reading["sessionID"],
@@ -382,7 +384,7 @@ class TestFlaskApp:
             headers={"Authorization": f"Bearer {jwt_token}"},
         )
 
-        alert = Alert.objects().first()
+        alert = db.Alert.objects().first()
 
         assert (
             response.status_code == 200
@@ -443,9 +445,9 @@ class TestFlaskApp:
     # ------------------ blueprints/api/payload.py -------------------------
     def test_publish(self, app_client: FlaskClient, jwt_token: str):
         endpoint = "/api/payload/publish"
-        org = Organization(organizationName="foo")
+        org = db.Organization(organizationName="foo")
         org.save()
-        app = Application(applicationName="bar", organization=org)
+        app = db.Application(applicationName="bar", organization=org)
         app.save()
 
         # Trying to post data to non-existing application
@@ -491,11 +493,13 @@ class TestFlaskApp:
                 headers={"Authorization": "Bearer 1234"},
             )
 
-        assert len(Node.objects()) == 1, "Couldn't create node upon posting data"
-        assert len(Reading.objects()) == 1, "Couldn't create reading upon posting data"
+        assert len(db.Node.objects()) == 1, "Couldn't create node upon posting data"
+        assert (
+            len(db.Reading.objects()) == 1
+        ), "Couldn't create reading upon posting data"
 
         # Teardown
-        Node.objects().first().delete()
+        db.Node.objects().first().delete()
         app.delete()
         org.delete()
 
