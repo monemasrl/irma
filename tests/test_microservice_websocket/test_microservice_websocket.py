@@ -8,7 +8,14 @@ from flask_socketio import SocketIO, SocketIOTestClient
 from mock import patch
 
 from microservice_websocket.app import create_app, socketio
-from microservice_websocket.app.services.database import Application, Node, Organization
+from microservice_websocket.app.services.database import (
+    Alert,
+    Application,
+    Node,
+    Organization,
+    Reading,
+)
+from microservice_websocket.app.utils.enums import PayloadType
 from tests.test_microservice_websocket.test_routes import test_bp
 
 
@@ -312,6 +319,185 @@ class TestFlaskApp:
         n.delete()
         a.delete()
         o.delete()
+
+    #
+    # ------------------ blueprints/api/alert.py ---------------------------
+    def test_handle_alert(self, app_client: FlaskClient, jwt_token: str):
+        endpoint = "/api/alert/handle"
+        org = Organization(organizationName="foo")
+        org.save()
+        app = Application(applicationName="bar", organization=org)
+        app.save()
+        node = Node(
+            nodeID=123,
+            nodeName="nodeName",
+            application=app,
+            organization=org,
+            state=1,
+            lastSeenAt=datetime.now(),
+        )
+        node.save()
+        reading = Reading(
+            nodeID=node["nodeID"],
+            canID=1,
+            sensorNumber=2,
+            readingID=32704,
+            sessionID=12892,
+            publishedAt=datetime.now(),
+        )
+        reading.save()
+
+        # Handle not existing alert
+        response = app_client.post(
+            endpoint,
+            json={
+                "alertID": "63186eab0ca2d54a5c258384",
+                "isConfirmed": True,
+                "handleNote": "foo",
+            },
+            headers={"Authorization": f"Bearer {jwt_token}"},
+        )
+
+        assert (
+            response.status_code == 404
+        ), "Invalid response code when trying to handle non-existing alert"
+
+        # Manually create Alert
+        alert = Alert(
+            reading=reading,
+            node=node,
+            sessionID=reading["sessionID"],
+            isHandled=False,
+        )
+        alert.save()
+
+        # Try to handle newly created alert
+        response = app_client.post(
+            endpoint,
+            json={
+                "alertID": str(alert["id"]),
+                "isConfirmed": True,
+                "handleNote": "foo",
+            },
+            headers={"Authorization": f"Bearer {jwt_token}"},
+        )
+
+        alert = Alert.objects().first()
+
+        assert (
+            response.status_code == 200
+            and alert["isConfirmed"]
+            and alert["handleNote"] == "foo"
+            and alert["handledBy"]["email"] == "bettarini@monema.it"
+        ), "Invalid response code when trying to handle existing alert"
+
+        # Teardown
+        alert.delete()
+        reading.delete()
+        node.delete()
+        app.delete()
+        org.delete()
+
+    #
+    # ------------------ blueprints/api/jwt.py -----------------------------
+    def test_jwt_authenticate(self, app_client: FlaskClient):
+        endpoint = "/api/jwt/authenticate"
+
+        # Trying to authenticate with invalid payload
+        response = app_client.post(endpoint, json={})
+
+        assert (
+            response.status_code == 400
+        ), "Invalid response code when trying to authenticate with invalid payload"
+
+        # Trying to authenticate as a non-registered user
+        response = app_client.post(
+            endpoint, json={"username": "foo", "password": "bar"}
+        )
+
+        assert (
+            response.status_code == 404
+        ), "Invalid response code when trying to authenticate as a non-registered user"
+
+        # Trying to authenticate with wrong password
+        response = app_client.post(
+            endpoint, json={"username": "bettarini@monema.it", "password": "foo"}
+        )
+
+        assert (
+            response.status_code == 401
+        ), "Invalid response code when trying to authenticate with wrong password"
+
+        # Normal authentication
+        response = app_client.post(
+            endpoint, json={"username": "bettarini@monema.it", "password": "password"}
+        )
+
+        assert (
+            response.status_code == 200
+            and "access_token" in response.json
+            and "refresh_token" in response.json
+        ), "Invalid response when posting valid data"
+
+    #
+    # ------------------ blueprints/api/payload.py -------------------------
+    def test_publish(self, app_client: FlaskClient, jwt_token: str):
+        endpoint = "/api/payload/publish"
+        org = Organization(organizationName="foo")
+        org.save()
+        app = Application(applicationName="bar", organization=org)
+        app.save()
+
+        # Trying to post data to non-existing application
+        with patch("builtins.open", mock_open(read_data="1234")):
+            response = app_client.post(
+                endpoint,
+                json={
+                    "nodeID": 123,
+                    "nodeName": "nodeName",
+                    "applicationID": "63186eab0ca2d54a5c258384",
+                    "organizationID": str(org["id"]),
+                    "payloadType": PayloadType.KEEP_ALIVE,
+                    "data": {},
+                },
+                headers={"Authorization": "Bearer 1234"},
+            )
+
+        assert (
+            response.status_code == 404
+        ), "Invalid response code when posting data to non-existing application"
+
+        # Post data to non-existing node
+        total_reading_data = {
+            "canID": 1,
+            "sensorNumber": 2,
+            "value": 3,
+            "count": 111,
+            "sessionID": 3,
+            "readingID": 1,
+        }
+
+        with patch("builtins.open", mock_open(read_data="1234")):
+            response = app_client.post(
+                endpoint,
+                json={
+                    "nodeID": 123,
+                    "nodeName": "nodeName",
+                    "applicationID": str(app["id"]),
+                    "organizationID": str(org["id"]),
+                    "payloadType": PayloadType.TOTAL_READING,
+                    "data": total_reading_data,
+                },
+                headers={"Authorization": "Bearer 1234"},
+            )
+
+        assert len(Node.objects()) == 1, "Couldn't create node upon posting data"
+        assert len(Reading.objects()) == 1, "Couldn't create reading upon posting data"
+
+        # Teardown
+        Node.objects().first().delete()
+        app.delete()
+        org.delete()
 
     # @patch('microservice_websocket_docker.app.MOBIUS_URL', "")
     # def test_socketio_emits_on_change(
