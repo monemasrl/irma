@@ -31,10 +31,9 @@ def create_app(testing=False):
     app = Flask(__name__)
     global mqtt
 
+    app.config.from_file("../config/config.json", load=json.load)
     if testing:
         app.config.from_file("../config/config_testing.json", load=json.load)
-    else:
-        app.config.from_file("../config/config.json", load=json.load)
 
     app.debug = testing
 

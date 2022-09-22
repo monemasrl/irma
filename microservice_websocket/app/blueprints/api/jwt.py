@@ -43,13 +43,3 @@ def refresh_token():
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity)
     return jsonify(access_token=access_token)
-
-
-@jwt_bp.route("/test")
-@jwt_required()
-def jwttest():
-    """
-    View protected by jwt test. If necessary, exempt it from csrf protection.
-    See flask_wtf.csrf for more info
-    """
-    return jsonify({"foo": "bar", "baz": "qux"})

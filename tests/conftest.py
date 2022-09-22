@@ -65,7 +65,7 @@ def socketio_client(
 
 
 @pytest.fixture()
-def jwt_token(app_client: FlaskClient):
+def tokens(app_client: FlaskClient) -> tuple[str, str]:
     response = app_client.post(
         "/api/jwt/authenticate",
         json={"username": "bettarini@monema.it", "password": "password"},
@@ -73,12 +73,17 @@ def jwt_token(app_client: FlaskClient):
 
     decoded_json = response.json
 
-    return decoded_json["access_token"]
+    return [decoded_json["access_token"], decoded_json["refresh_token"]]
 
 
 @pytest.fixture()
-def auth_header(jwt_token: str):
-    return {"Authorization": f"Bearer {jwt_token}"}
+def auth_header(tokens):
+    return {"Authorization": f"Bearer {tokens[0]}"}
+
+
+@pytest.fixture()
+def refresh_header(tokens):
+    return {"Authorization": f"Bearer {tokens[1]}"}
 
 
 @pytest.fixture()
