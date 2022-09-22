@@ -61,43 +61,6 @@ out -- HTTP 5000 --> msw
 
 ```
 
-## I DATI
-
-### Encode e decode dei dati (da aggiornare)
-
-Per agevolare la trasmissione, i dati vengono codificati in **stringhe base64**. Una volta convertita nuovamente in bytes, la struttura è la seguente:
-
-    |payload_type: 1 byte|sensorData: 4 byte|mobius_sensorId: 10 byte|mobius_sensorPath: 10 byte| 
-
-- `payload_type`: numoro **intero** che rappresenta il **tipo di messaggio** che viene inviato. Fare riferimento al capitolo sugli **Enum**.
-- `sensorData`: numero **intero**, **big endian** che rappresenta la **lettura** del sensore.
-- `mobius_sensorId`: **stringa** di 10 caratteri, padding a **destra**, richiesta per l'inserimento della lettura sulla piattaforma **Mobius**.
-- `mobius_sensorPath`: **stringa** di 10 caratteri, padding a **destra**, richiesta per l'inserimento della lettura sulla piattaforma **Mobius**.
-
-Esempio di **payload base64**: `AQAAAAdtb2JpdXNJZCAgbW9iaXVzUGF0aA==`
-
-Lo stesso payload **decodificato**:
-
-```json
-{
-  "payloadType": 1,
-  "sensorData": 7,
-  "mobius_sensorId": "mobiusId",
-  "mobius_sensorPath": "mobiusPath"
-}
-```
-
-
-### Encode e decode dei payload MQTT (da aggiornare)
-
-Come per il paragrafo precedente, la trasmissione avviene con **strighe base64**. Una volta convertita nuovamente in bytes, la struttura è la seguente:
-
-    |command: 1 byte|commandTimestamp: x bytes|
-
-- `command`: numero **intero** che rappresenta il tipo di comando inviato. Fare riferimento al capitolo sugli **Enum**.
-- `commandTimestamp`: **stringa** contenente un **timestamp ISO8601**, per raggruppare le letture relative ad un singolo comando di **start recording**.
-
-
 ## GLI ENUM
 
 Per **ridurre** il **numero di dati** trasmessi, ma al contempo **mantenere la leggebilità**, sono stati creati diversi **IntEnum** per identificare diverse proprietà.

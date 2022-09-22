@@ -61,26 +61,29 @@ Esempio:
 
 È possibile **pubblicare** dei dati mediante una **POST** su **/api/payload/publish**.
 
-A differenza delle altre route che sono protette da **Token JWT**, questa è protetta da un **API Token** statico (si consiglia un **UUID**) che deve essere **inserito** all'interno di *microservice_websocket/api-tokens.txt*.
+A differenza delle altre route che sono protette da **Token JWT**, questa è protetta da un **API Token** statico (si consiglia un **UUID**) che deve essere **inserito** all'interno di `microservice_websocket/api-tokens.txt`.
 
 Corpo della richiesta:
 
 ```jsonc
 {
-  "sensorID": 1,
+  "nodeID": 1,
+  "nodeName": "irma-node",
   "applicationID": "foo",
   "organizationID": "bar",
-  "deviceName": "irma-sensor",
+  "payloadType": 1, // Fare riferimento agli Enum
   "data": {
-      "state": 3,
-      "sensorData": 4.5,
-      "mobius_sensorId": "foo",
-      "mobius_sensorPath": "bar",
-  },
-  "publishedAt": "time", // iso8601 timestamp
-  "payloadType": 1
+      "canID": 3,
+      "sensorNumber": 4.5,
+      "value": 2,
+      "count": 1345,
+      "sessionID": 7,
+      "readingID": 3
+  }
 }
 ```
+
+> Per maggiori info su **PayloadType** fare riferimento gli [enum](../README.md#gli-enum).
 
 ---
 
@@ -108,15 +111,15 @@ Il **payload** che viene inviato a **Mobius** ha questa forma:
 
 Il dato viene poi immagazzinato all'interno del **database** come [Reading](./app/services/database/database.md#reading).
 
-### Invio comandi al sensore (POST /api/payload/command)
+### Invio comandi al nodo (POST /api/payload/command)
 
-È possibile inviare comandi al sensore mediante una **POST** su **/api/payload/command**.
+È possibile inviare comandi al nodo mediante una **POST** su **/api/payload/command**.
 
 Corpo della richiesta (JSON):
 
-- `command`: il comando da inviare al **sensore**. [Per maggiori informazioni](../README.md#gli-enum).
-- `applicationID`: l'**id** dell'**applicazione** di cui fa parte il **sensore**.
-- `sensorID`: l'**id** del **sensore** a cui inviare il comando.
+- `command`: il comando da inviare al **nodo**. [Per maggiori informazioni](../README.md#gli-enum).
+- `applicationID`: l'**id** dell'**applicazione** di cui fa parte il **nodo**.
+- `nodeID`: l'**id** del **nodo** a cui inviare il comando.
 
 Esempio:
 
@@ -124,15 +127,13 @@ Esempio:
 {
   "command": 0,
   "applicationID": "13244",
-  "sensorID": 1
+  "nodeID": 1
 }
 ```
 
 ---
 
-A questo punto **microservice_websocket** pubblicherà sul **topic** `<applicationID>/<nodeID>/command` un **payload**.
-
-[Per maggior informazioni sulla struttura del **payload**](../README.md#encode-e-decode-dei-payload-mqtt-da-aggiornare).
+A questo punto **microservice_websocket** pubblicherà sul **topic** `<applicationID>/<nodeID>/command` un **payload** contenente un [CommandType](../README.md#gli-enum).
 
 ### Gestion alert (POST /api/alert/handle)
 
