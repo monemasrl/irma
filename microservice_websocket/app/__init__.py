@@ -27,7 +27,7 @@ socketio = SocketIO(cors_allowed_origins="*")
 mqtt = None
 
 
-def create_app(testing=False):
+def create_app(testing=False, debug=False):
     app = Flask(__name__)
     global mqtt
 
@@ -35,7 +35,7 @@ def create_app(testing=False):
     if testing:
         app.config.from_file("../config/config_testing.json", load=json.load)
 
-    app.debug = testing
+    app.debug = debug
 
     init_scheduler(app, SENSORS_UPDATE_INTERVAL.total_seconds())
     init_jwt(app)
