@@ -3,10 +3,15 @@ from .exceptions import ObjectNotFoundException
 
 
 def get_session(nodeID: int, sessionID: int) -> list[dict]:
+    node = Node.objects(nodeID=nodeID).first()
+
+    if node is None:
+        raise ObjectNotFoundException(Node)
+
     if sessionID == -1:
         latest_reading = Reading.objects(nodeID=nodeID).order_by("-sessionID").first()
         if latest_reading is None:
-            raise ObjectNotFoundException(Reading)
+            return []
 
         sessionID = latest_reading["sessionID"]
 

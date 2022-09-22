@@ -35,6 +35,6 @@ def get_sessions_id_route():
     try:
         sessions_id = get_sessions_id(nodeID)
     except ObjectNotFoundException:
-        return {"message", "Not Found"}, 404
+        return {"message": "Not Found"}, 404
 
     return jsonify(IDs=sessions_id)
