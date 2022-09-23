@@ -7,7 +7,7 @@ from .exceptions import ObjectNotFoundException
 
 # valore teorico della soglia di pericolo del sensore
 # TODO: move to config file
-MAX_TRESHOLD = int(os.environ.get("MAX_TRESHOLD", 20))
+MAX_TRESHOLD = int(os.environ.get("MAX_TRESHOLD", 7))
 
 # for sensor timeout
 # TODO: move to config file
