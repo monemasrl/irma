@@ -34,7 +34,7 @@ services:
       - MOBIUS_PORT=5000
       - MQTT_BROKER_URL=mqtt
       - MQTT_BROKER_PORT=1883
-      - MAX_TRESHOLD=20
+      - MAX_TRESHOLD=7
       - DISABLE_MQTT=false
     networks:
       - default
