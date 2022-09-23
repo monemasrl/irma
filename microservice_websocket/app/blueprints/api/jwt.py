@@ -41,5 +41,8 @@ def authenticate():
 @jwt_required(refresh=True)
 def refresh_token():
     identity = get_jwt_identity()
+    if identity is None:
+        return {"message": "User Not Found"}, 401
+
     access_token = create_access_token(identity=identity)
     return jsonify(access_token=access_token)
