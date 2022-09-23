@@ -1,3 +1,4 @@
+import pytest
 from flask.testing import FlaskClient
 from mock import mock_open, patch
 
@@ -20,6 +21,7 @@ class TestPublishPayload:
 
     @classmethod
     def teardown_class(cls):
+        db.Alert.drop_collection()
         db.Reading.drop_collection()
         db.Node.drop_collection()
         db.Application.drop_collection()
@@ -78,8 +80,8 @@ class TestPublishPayload:
             len(db.Reading.objects()) == 1
         ), "Couldn't create reading upon posting data"
 
-    # Post all type of reading
-    def test_publish_all_readings(self, app_client: FlaskClient):
+    # Post all window readings
+    def test_publish_window_readings(self, app_client: FlaskClient):
         data_w1 = {
             "canID": 1,
             "sensorNumber": 2,
@@ -139,3 +141,167 @@ class TestPublishPayload:
             and reading["window2_count"] == 222
             and reading["window3_count"] == 333
         ), "Invalid reading merge"
+
+    # Create reading by sending windows first
+    def test_publish_windows_first(self, app_client: FlaskClient):
+        data_w1 = {
+            "canID": 1,
+            "sensorNumber": 2,
+            "value": 1,
+            "count": 111,
+            "sessionID": 5,
+            "readingID": 7,
+        }
+
+        data_w2 = {
+            "canID": 1,
+            "sensorNumber": 2,
+            "value": 2,
+            "count": 222,
+            "sessionID": 5,
+            "readingID": 7,
+        }
+
+        data_w3 = {
+            "canID": 1,
+            "sensorNumber": 2,
+            "value": 3,
+            "count": 333,
+            "sessionID": 5,
+            "readingID": 7,
+        }
+
+        data_total = {
+            "canID": 1,
+            "sensorNumber": 2,
+            "value": 4,
+            "count": 777,
+            "sessionID": 5,
+            "readingID": 7,
+        }
+
+        with patch("builtins.open", mock_open(read_data="1234")):
+            for data in [data_w1, data_w2, data_w3]:
+                response = app_client.post(
+                    self.endpoint,
+                    json={
+                        "nodeID": 123,
+                        "nodeName": "nodeName",
+                        "applicationID": str(db.Application.objects().first()["id"]),
+                        "organizationID": str(db.Organization.objects().first()["id"]),
+                        "payloadType": PayloadType.WINDOW_READING,
+                        "data": data,
+                    },
+                    headers={"Authorization": "Bearer 1234"},
+                )
+                assert (
+                    response.status_code == 200
+                ), "Invalid response code when publishing valid payload"
+
+            response = app_client.post(
+                self.endpoint,
+                json={
+                    "nodeID": 123,
+                    "nodeName": "nodeName",
+                    "applicationID": str(db.Application.objects().first()["id"]),
+                    "organizationID": str(db.Organization.objects().first()["id"]),
+                    "payloadType": PayloadType.TOTAL_READING,
+                    "data": data_total,
+                },
+                headers={"Authorization": "Bearer 1234"},
+            )
+
+            assert (
+                response.status_code == 200
+            ), "Invalid response code when publishing valid payload"
+
+            assert len(db.Node.objects()) == 1, "Invalid number of Node"
+            assert len(db.Reading.objects()) == 2, "Invalid number of Reading"
+
+            reading = db.Reading.objects(sessionID=5).first()
+            assert (
+                reading["dangerLevel"] == 4
+                and reading["window1_count"] == 111
+                and reading["window2_count"] == 222
+                and reading["window3_count"] == 333
+            ), "Invalid Reading structure"
+
+    def test_publish_alert_total_reading(self, app_client: FlaskClient):
+        with patch("builtins.open", mock_open(read_data="1234")):
+            response = app_client.post(
+                self.endpoint,
+                json={
+                    "nodeID": 123,
+                    "nodeName": "nodeName",
+                    "applicationID": str(db.Application.objects().first()["id"]),
+                    "organizationID": str(db.Organization.objects().first()["id"]),
+                    "payloadType": PayloadType.TOTAL_READING,
+                    "data": {
+                        "canID": 1,
+                        "sensorNumber": 2,
+                        "value": 9,
+                        "count": 777,
+                        "sessionID": 6,
+                        "readingID": 9,
+                    },
+                },
+                headers={"Authorization": "Bearer 1234"},
+            )
+
+        assert (
+            response.status_code == 200
+        ), "Invalid response code when publishing valid payload"
+
+        assert len(db.Reading.objects()) == 3, "Invalid number of Reading"
+        assert len(db.Alert.objects()) == 1, "Invalid number of Alert"
+
+    def test_publish_window_reading_wrong_value(self, app_client: FlaskClient):
+        with patch("builtins.open", mock_open(read_data="1234")):
+            with pytest.raises(ValueError):
+                response = app_client.post(
+                    self.endpoint,
+                    json={
+                        "nodeID": 123,
+                        "nodeName": "nodeName",
+                        "applicationID": str(db.Application.objects().first()["id"]),
+                        "organizationID": str(db.Organization.objects().first()["id"]),
+                        "payloadType": PayloadType.WINDOW_READING,
+                        "data": {
+                            "canID": 1,
+                            "sensorNumber": 2,
+                            "value": 5,
+                            "count": 333,
+                            "sessionID": 5,
+                            "readingID": 1,
+                        },
+                    },
+                    headers={"Authorization": "Bearer 1234"},
+                )
+                assert (
+                    response.status_code == 500
+                ), "Invalid response code when publishing window with wrong value"
+
+    # Publish leftover payload types
+    def test_publish_remaining_payloads(self, app_client: FlaskClient):
+        with patch("builtins.open", mock_open(read_data="1234")):
+            for type in [
+                PayloadType.KEEP_ALIVE,
+                PayloadType.START_REC,
+                PayloadType.END_REC,
+            ]:
+                response = app_client.post(
+                    self.endpoint,
+                    json={
+                        "nodeID": 123,
+                        "nodeName": "nodeName",
+                        "applicationID": str(db.Application.objects().first()["id"]),
+                        "organizationID": str(db.Organization.objects().first()["id"]),
+                        "payloadType": type,
+                        "data": {},
+                    },
+                    headers={"Authorization": "Bearer 1234"},
+                )
+
+            assert (
+                response.status_code == 200
+            ), "Invalid response code when publishing valid payload"

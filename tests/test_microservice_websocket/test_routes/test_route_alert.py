@@ -3,6 +3,7 @@ from datetime import datetime
 from flask.testing import FlaskClient
 
 from microservice_websocket.app.services import database as db
+from microservice_websocket.app.utils.enums import NodeState
 
 
 class TestAlertHandle:
@@ -22,7 +23,7 @@ class TestAlertHandle:
             nodeName="nodeName",
             application=app,
             organization=org,
-            state=1,
+            state=NodeState.ALERT_READY,
             lastSeenAt=datetime.now(),
         )
         node.save()
@@ -64,7 +65,7 @@ class TestAlertHandle:
     def test_handle(self, app_client: FlaskClient, auth_header):
         reading = db.Reading.objects().first()
 
-        # Manually create Alert
+        # Manually create Alerts
         alert = db.Alert(
             reading=reading,
             node=db.Node.objects().first(),
@@ -72,6 +73,13 @@ class TestAlertHandle:
             isHandled=False,
         )
         alert.save()
+        alert2 = db.Alert(
+            reading=reading,
+            node=db.Node.objects().first(),
+            sessionID=reading["sessionID"],
+            isHandled=False,
+        )
+        alert2.save()
 
         # Try to handle newly created alert
         response = app_client.post(
@@ -84,7 +92,7 @@ class TestAlertHandle:
             headers=auth_header,
         )
 
-        alert = db.Alert.objects().first()
+        alert = db.Alert.objects(id=alert["id"]).first()
 
         assert (
             response.status_code == 200
@@ -92,3 +100,22 @@ class TestAlertHandle:
             and alert["handleNote"] == "foo"
             and alert["handledBy"]["email"] == "bettarini@monema.it"
         ), "Invalid response code when trying to handle existing alert"
+
+        assert (
+            db.Node.objects().first()["state"] == NodeState.ALERT_READY
+        ), "Invalid state when handling 1/2 alert"
+
+        # Handle leftover alert
+        response = app_client.post(
+            self.endpoint,
+            json={
+                "alertID": str(alert2["id"]),
+                "isConfirmed": True,
+                "handleNote": "foo",
+            },
+            headers=auth_header,
+        )
+
+        assert (
+            db.Node.objects().first()["state"] == NodeState.READY
+        ), "Invalid state when handling all alert"
