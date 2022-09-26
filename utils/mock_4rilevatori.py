@@ -29,20 +29,19 @@ class Detector(IntEnum):
 
 
 class RilevatoreBus:
-    def __init__(self, bustype, channel, bitrate, manual: Optional[Detector]):
+    def __init__(self, bustype, channel, bitrate):
         self._bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate)
-        self.manual = manual
 
     def send(self, message: Message, timeout: Optional[float] = None):
         self._bus.send(message, timeout)
 
-    def start_count(self, msg, detector: Detector):
+    def start_count(self, msg):
         print("Received START COUNT!")
 
-    def stop_count(self, msg, detector: Detector):
+    def stop_count(self, msg):
         print("Recevied STOP COUNT!")
 
-    def get_window(self, msg: Message, detector: Detector):
+    def get_window(self, msg: Message):
         print("Received GET WINDOW!")
         byte0 = msg.data[0]
         sipm = 1 if byte0 >> 7 == 0 else 2
@@ -51,11 +50,7 @@ class RilevatoreBus:
         print(f"SIPM: {sipm}")
         print(f"Window: {window}")
 
-        if detector == self.manual:
-            reading = int(input("Inserisci valore per la finestra: "))
-        else:
-            reading = randint(0, 10_000_000)
-
+        reading = randint(0, 10_000_000)
         encoded_reading = reading.to_bytes(3, "big")
 
         new_msg = Message(
@@ -68,30 +63,23 @@ class RilevatoreBus:
                 encoded_reading[1],
                 encoded_reading[2],
                 MessageType.RETURN_COUNT_WINDOW,
-                detector,
+                msg.arbitration_id,
             ],
         )
         self.send(new_msg)
         print("Sent RETURN COUNT WINDOW!")
 
-    def get_total_count(self, msg: Message, detector: Detector):
+    def get_total_count(self, msg: Message):
         print("Received GET TOTAL COUNT!")
         byte0 = msg.data[0]
         sipm = 1 if byte0 >> 7 == 0 else 2
 
         print(f"SIPM: {sipm}")
 
-        if detector == self.manual:
-            count = int(input("Inserisci il conteggio: "))
-        else:
-            count = randint(0, 10_000_000)
-
+        count = randint(0, 10_000_000)
         encoded_count = count.to_bytes(3, "big")
 
-        if detector == self.manual:
-            danger_level = int(input("Inserisci il livello di pericolosita: "))
-        else:
-            danger_level = randint(0, 9)
+        danger_level = randint(0, 9)
 
         new_msg = Message(
             arbitration_id=0,
@@ -103,13 +91,13 @@ class RilevatoreBus:
                 encoded_count[1],
                 encoded_count[2],
                 MessageType.RETURN_COUNT_TOTAL,
-                detector,
+                msg.arbitration_id,
             ],
         )
         self.send(new_msg)
         print("Sent RETURN COUNT TOTAL!")
 
-    def set_window_low(self, msg: Message, detector: Detector):
+    def set_window_low(self, msg: Message):
         print("Received SET WINDOW LOW!")
         byte0 = msg.data[0]
         sipm = 1 if byte0 >> 7 == 0 else 2
@@ -120,7 +108,7 @@ class RilevatoreBus:
         print(f"Window: {window}")
         print(f"Settaggio: {value}")
 
-    def set_window_high(self, msg: Message, detector: Detector):
+    def set_window_high(self, msg: Message):
         print("Received SET WINDOW HIGH!")
         byte0 = msg.data[0]
         sipm = 1 if byte0 >> 7 == 0 else 2
@@ -131,7 +119,7 @@ class RilevatoreBus:
         print(f"Window: {window}")
         print(f"Settaggio: {value}")
 
-    def set_hv(self, msg, detector: Detector):
+    def set_hv(self, msg):
         print("Received SET HV!")
         byte0 = msg.data[0]
         sipm = 1 if byte0 >> 7 == 0 else 2
@@ -140,13 +128,13 @@ class RilevatoreBus:
         print(f"SIPM: {sipm}")
         print(f"Settaggio: {value}")
 
-    def enable_board(self, msg, detector: Detector):
+    def enable_board(self, msg):
         print("Received ENABLE BOARD!")
 
-    def disable_board(self, msg, detector: Detector):
+    def disable_board(self, msg):
         print("Received DISABLE BOARD!")
 
-    def unknown(self, msg, detector: Detector):
+    def unknown(self, msg):
         print("Received unexpected payload")
 
     def decode(self, msg: Message):
@@ -167,7 +155,7 @@ class RilevatoreBus:
         }
 
         data = msg.data
-        cases[data[6]](msg, msg.arbitration_id)
+        cases[data[6]](msg)
 
     def loop_forever(self):
         while True:
@@ -182,6 +170,5 @@ if __name__ == "__main__":
         bustype="socketcan",
         channel="can0",
         bitrate=12500,
-        manual=Detector.D1,
     )
     bus.loop_forever()
