@@ -35,13 +35,13 @@ class RilevatoreBus:
     def send(self, message: Message, timeout: Optional[float] = None):
         self._bus.send(message, timeout)
 
-    def start_count(self, msg):
+    def start_count(self, msg, arbitration_id):
         print("Received START COUNT!")
 
-    def stop_count(self, msg):
+    def stop_count(self, msg, arbitration_id):
         print("Recevied STOP COUNT!")
 
-    def get_window(self, msg: Message):
+    def get_window(self, msg: Message, arbitration_id):
         print("Received GET WINDOW!")
         byte0 = msg.data[0]
         sipm = 1 if byte0 >> 7 == 0 else 2
@@ -63,13 +63,13 @@ class RilevatoreBus:
                 encoded_reading[1],
                 encoded_reading[2],
                 MessageType.RETURN_COUNT_WINDOW,
-                msg.arbitration_id,
+                arbitration_id,
             ],
         )
         self.send(new_msg)
         print("Sent RETURN COUNT WINDOW!")
 
-    def get_total_count(self, msg: Message):
+    def get_total_count(self, msg: Message, arbitration_id):
         print("Received GET TOTAL COUNT!")
         byte0 = msg.data[0]
         sipm = 1 if byte0 >> 7 == 0 else 2
@@ -91,13 +91,13 @@ class RilevatoreBus:
                 encoded_count[1],
                 encoded_count[2],
                 MessageType.RETURN_COUNT_TOTAL,
-                msg.arbitration_id,
+                arbitration_id,
             ],
         )
         self.send(new_msg)
         print("Sent RETURN COUNT TOTAL!")
 
-    def set_window_low(self, msg: Message):
+    def set_window_low(self, msg: Message, arbitration_id):
         print("Received SET WINDOW LOW!")
         byte0 = msg.data[0]
         sipm = 1 if byte0 >> 7 == 0 else 2
@@ -108,7 +108,7 @@ class RilevatoreBus:
         print(f"Window: {window}")
         print(f"Settaggio: {value}")
 
-    def set_window_high(self, msg: Message):
+    def set_window_high(self, msg: Message, arbitration_id):
         print("Received SET WINDOW HIGH!")
         byte0 = msg.data[0]
         sipm = 1 if byte0 >> 7 == 0 else 2
@@ -119,7 +119,7 @@ class RilevatoreBus:
         print(f"Window: {window}")
         print(f"Settaggio: {value}")
 
-    def set_hv(self, msg):
+    def set_hv(self, msg, arbitration_id):
         print("Received SET HV!")
         byte0 = msg.data[0]
         sipm = 1 if byte0 >> 7 == 0 else 2
@@ -128,13 +128,13 @@ class RilevatoreBus:
         print(f"SIPM: {sipm}")
         print(f"Settaggio: {value}")
 
-    def enable_board(self, msg):
+    def enable_board(self, msg, arbitration_id):
         print("Received ENABLE BOARD!")
 
-    def disable_board(self, msg):
+    def disable_board(self, msg, arbitration_id):
         print("Received DISABLE BOARD!")
 
-    def unknown(self, msg):
+    def unknown(self, msg, arbitration_id):
         print("Received unexpected payload")
 
     def decode(self, msg: Message):
@@ -155,7 +155,12 @@ class RilevatoreBus:
         }
 
         data = msg.data
-        cases[data[6]](msg)
+
+        if msg.arbitration_id == Detector.BROADCAST:
+            for arbitration_id in [Detector.D1, Detector.D2, Detector.D3, Detector.D4]:
+                cases[data[6]](msg, int(arbitration_id))
+        else:
+            cases[data[6]](msg, msg.arbitration_id)
 
     def loop_forever(self):
         while True:
