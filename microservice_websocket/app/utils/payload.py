@@ -86,7 +86,7 @@ def handle_total_reading(node: Node, record: dict):
     reading.save()
 
     if reading["dangerLevel"] >= MAX_TRESHOLD:
-        alert = Alert.objects(sessionID=reading["sessionID"]).first()
+        alert = Alert.objects(sessionID=reading["sessionID"], isHandled=False).first()
 
         if alert is None:
             alert = Alert(

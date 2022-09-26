@@ -3,7 +3,7 @@ from flask.testing import FlaskClient
 from mock import mock_open, patch
 
 from microservice_websocket.app.services import database as db
-from microservice_websocket.app.utils.enums import PayloadType
+from microservice_websocket.app.utils.enums import NodeState, PayloadType
 
 
 class TestPublishPayload:
@@ -226,7 +226,8 @@ class TestPublishPayload:
                 and reading["window3_count"] == 333
             ), "Invalid Reading structure"
 
-    def test_publish_alert_total_reading(self, app_client: FlaskClient):
+    # Publish reading with dangerLevel > MAX_TRESHOLD
+    def test_publish_alert_from_state_ok(self, app_client: FlaskClient):
         with patch("builtins.open", mock_open(read_data="1234")):
             response = app_client.post(
                 self.endpoint,
@@ -254,6 +255,83 @@ class TestPublishPayload:
 
         assert len(db.Reading.objects()) == 3, "Invalid number of Reading"
         assert len(db.Alert.objects()) == 1, "Invalid number of Alert"
+        assert (
+            db.Node.objects().first()["state"] == NodeState.ALERT_RUNNING
+        ), "Invalid Node state"
+
+    # Publish reading with dangerLevel > MAX_TRESHOLD while already in alert
+    def test_publish_alert_from_state_alert_running(self, app_client: FlaskClient):
+        with patch("builtins.open", mock_open(read_data="1234")):
+            response = app_client.post(
+                self.endpoint,
+                json={
+                    "nodeID": 123,
+                    "nodeName": "nodeName",
+                    "applicationID": str(db.Application.objects().first()["id"]),
+                    "organizationID": str(db.Organization.objects().first()["id"]),
+                    "payloadType": PayloadType.TOTAL_READING,
+                    "data": {
+                        "canID": 1,
+                        "sensorNumber": 2,
+                        "value": 9,
+                        "count": 777,
+                        "sessionID": 6,
+                        "readingID": 11,
+                    },
+                },
+                headers={"Authorization": "Bearer 1234"},
+            )
+
+        assert (
+            response.status_code == 200
+        ), "Invalid response code when publishing valid payload"
+
+        assert len(db.Reading.objects()) == 4, "Invalid number of Reading"
+        assert len(db.Alert.objects()) == 1, "Invalid number of Alert"
+        assert (
+            db.Node.objects().first()["state"] == NodeState.ALERT_RUNNING
+        ), "Invalid Node state"
+
+    # Publish reading with dangerLevel > MAX_TRESHOLD with an already handled alert
+    def test_publish_alert_with_already_handled_alert(self, app_client: FlaskClient):
+        alert = db.Alert.objects().first()
+        alert["isHandled"] = True
+        alert.save()
+
+        node = db.Node.objects().first()
+        node["state"] = NodeState.READY
+        node.save()
+
+        with patch("builtins.open", mock_open(read_data="1234")):
+            response = app_client.post(
+                self.endpoint,
+                json={
+                    "nodeID": 123,
+                    "nodeName": "nodeName",
+                    "applicationID": str(db.Application.objects().first()["id"]),
+                    "organizationID": str(db.Organization.objects().first()["id"]),
+                    "payloadType": PayloadType.TOTAL_READING,
+                    "data": {
+                        "canID": 1,
+                        "sensorNumber": 2,
+                        "value": 9,
+                        "count": 777,
+                        "sessionID": 6,
+                        "readingID": 12,
+                    },
+                },
+                headers={"Authorization": "Bearer 1234"},
+            )
+
+        assert (
+            response.status_code == 200
+        ), "Invalid response code when publishing valid payload"
+
+        assert len(db.Reading.objects()) == 5, "Invalid number of Reading"
+        assert len(db.Alert.objects()) == 2, "Invalid number of Alert"
+        assert (
+            db.Node.objects().first()["state"] == NodeState.ALERT_RUNNING
+        ), "Invalid Node state"
 
     def test_publish_window_reading_wrong_value(self, app_client: FlaskClient):
         with patch("builtins.open", mock_open(read_data="1234")):
