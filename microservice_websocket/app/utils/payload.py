@@ -6,6 +6,7 @@ from ..services.database import Alert, Application, Node, Reading
 from .enums import NodeState, PayloadType
 from .exceptions import ObjectNotFoundException
 from .node import MAX_TRESHOLD, update_state
+from .sync_cache import add_to_cache
 
 # mobius url
 # TODO: move to config file
@@ -61,10 +62,6 @@ def publish(record: dict) -> dict:
 
 
 def handle_total_reading(node: Node, record: dict):
-    # TODO: reimplememnt
-    # if MOBIUS_URL != "":
-    #     insert(record)
-
     reading = Reading.objects(
         nodeID=node["nodeID"],
         readingID=record["data"]["readingID"],
@@ -84,6 +81,7 @@ def handle_total_reading(node: Node, record: dict):
 
     reading["dangerLevel"] = record["data"]["value"]
     reading.save()
+    add_to_cache(str(reading["id"]))
 
     if reading["dangerLevel"] >= MAX_TRESHOLD:
         alert = Alert.objects(sessionID=reading["sessionID"], isHandled=False).first()
@@ -99,10 +97,6 @@ def handle_total_reading(node: Node, record: dict):
 
 
 def handle_window_reading(node: Node, record: dict):
-    # TODO: reimplememnt
-    # if MOBIUS_URL != "":
-    #     insert(record)
-
     reading = Reading.objects(
         nodeID=node["nodeID"],
         readingID=record["data"]["readingID"],
@@ -132,6 +126,7 @@ def handle_window_reading(node: Node, record: dict):
         raise ValueError(f"Unexpected window_number: {window_number}")
 
     reading.save()
+    add_to_cache(str(reading["id"]))
 
 
 def send_mqtt_command(applicationID: str, nodeID: str, command: int):

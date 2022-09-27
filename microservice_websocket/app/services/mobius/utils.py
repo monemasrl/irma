@@ -1,51 +1,53 @@
 import json
+from datetime import datetime
 from os import environ
 
 import requests
-from flask_api import status
 
-MOBIUS_URL = environ.get("MOBIUS_URL", "http://localhost")
+from ..database import Reading
+
+# TODO: move to config file
+MOBIUS_URL = environ.get("MOBIUS_URL", "http://mobius")
 MOBIUS_PORT = environ.get("MOBIUS_PORT", "5002")
 
 
-# Conversione payload chirpstack in payload per mobius
-def to_mobius_payload(record: dict) -> dict:
-    sensorId = record["data"]["mobius_sensorId"]
-    readingTimestamp = record["publishedAt"]
-
+# Conversione reading per mobius
+def to_mobius_payload(reading: Reading, sensorId: str) -> dict:
     return {
         "m2m:cin": {
             "con": {
                 "metadata": {
                     "sensorId": sensorId,
-                    "readingTimestamp": readingTimestamp,
-                },
+                    "readingTimestamp": datetime.fromtimestamp(
+                        reading["readingID"]
+                    ).isoformat(),
+                    # "latitude": <latitudine del sensore>, // opzionale
+                    # "longitude": <longitudine del sensore>, // opzionale
+                    # "heading": <orientazione del sensore>, // opzionale
+                }
             },
-            "sensorData": record,
+            "sensorData": {
+                "canID": reading["canID"],
+                "sensorNumber": reading["sensorNumber"],
+                "dangerLevel": reading["dangerLevel"],
+                "window1Count": reading["window1_count"],
+                "window2Count": reading["window2_count"],
+                "window3Count": reading["window3_count"],
+            },
         }
     }
 
 
-def insert(record):
-    mobius_payload: dict = to_mobius_payload(record)
+def insert(reading: Reading):
+    with open("./config/mobius_conversion.json") as f:
+        mobius_conversion_table = json.load(f)
+
+    sensorPath = mobius_conversion_table[str(reading["nodeID"])]["sensorPath"]
+    sensorId = mobius_conversion_table[str(reading["nodeID"])]["sensorId"]
+
+    mobius_payload: dict = to_mobius_payload(reading, sensorId)
 
     requests.post(
-        f"{MOBIUS_URL}:{MOBIUS_PORT}/{record['data']['mobius_sensorPath']}",
+        f"{MOBIUS_URL}:{MOBIUS_PORT}/{sensorPath}",
         json=mobius_payload,
     )
-
-
-def read(sensor_path):
-    # Querying mobius for sensor_path
-    response: requests.Response = requests.get(
-        f"{MOBIUS_URL}:{MOBIUS_PORT}/{sensor_path}"
-    )
-    decoded_response: dict = json.loads(response.content)
-
-    collect: list[dict] = (
-        decoded_response["m2m:rsp"]["m2m:cin"]
-        if status.is_success(response.status_code)
-        else []
-    )
-
-    return collect

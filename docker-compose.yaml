@@ -8,6 +8,12 @@ services:
     volumes:
       - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf
 
+  cache:
+    build: ./cache
+    restart: unless-stopped
+    volumes:
+      - ./cache/data:/data
+
   mongo:
     image: mongo
     restart: unless-stopped
@@ -27,6 +33,7 @@ services:
     links:
       - mobius
       - mqtt
+      - cache
     ports:
       - 5000:5000
     environment:

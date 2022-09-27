@@ -19,5 +19,6 @@ __pycache__/
 redis-data/
 db-data/
 mongo-data/
+cache/data
 
 # End of https://www.toptal.com/developers/gitignore/api/venv

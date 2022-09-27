@@ -3,6 +3,7 @@ import os
 from datetime import timedelta
 
 from flask import Flask
+from flask_redis import FlaskRedis
 
 # da togliere
 from flask_cors import CORS
@@ -25,6 +26,7 @@ DISABLE_MQTT = False if os.environ.get("DISABLE_MQTT") != 1 else True
 
 socketio = SocketIO(cors_allowed_origins="*")
 mqtt = None
+redis_client = FlaskRedis()
 
 
 def create_app(testing=False, debug=False):
@@ -37,6 +39,7 @@ def create_app(testing=False, debug=False):
 
     app.debug = debug
 
+    redis_client.init_app(app)
     init_scheduler(app, SENSORS_UPDATE_INTERVAL.total_seconds())
     init_jwt(app)
     init_db(app)
