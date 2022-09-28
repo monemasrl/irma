@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
@@ -5,6 +7,7 @@ from flask_socketio import SocketIO, SocketIOTestClient
 from mock import patch
 
 from microservice_websocket.app import create_app, socketio
+from microservice_websocket.app.services.database import Reading
 from tests.test_microservice_websocket.blueprint_test_routes import test_bp
 
 
@@ -89,3 +92,19 @@ def refresh_header(tokens):
 @pytest.fixture()
 def obj_id() -> str:
     return "63186eab0ca2d54a5c258384"
+
+
+@pytest.fixture()
+def reading() -> Reading:
+    return Reading(
+        nodeID=1,
+        canID=2,
+        sensorNumber=1,
+        readingID=1_640_200,
+        sessionID=1_640_000,
+        dangerLevel=4,
+        window1_count=111,
+        window2_count=222,
+        window3_count=333,
+        publishedAt=datetime.now(),
+    )

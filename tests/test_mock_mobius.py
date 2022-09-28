@@ -23,12 +23,13 @@ class TestFlaskApp:
     def app_client(self, app: Flask) -> FlaskClient:
         return app.test_client()
 
-    def test_publish_data(self, app_client, node_data):
-        payload: dict = to_mobius_payload(node_data)
+    def test_publish_data(self, app_client, reading):
+        sensorId = "sensorId1_foo"
+        sensorPath = "sensorPath1_foo"
+
+        payload: dict = to_mobius_payload(reading, sensorId)
         print(payload)
-        response: TestResponse = app_client.post(
-            f"/{node_data['data']['mobius_sensorPath']}", json=payload
-        )
+        response: TestResponse = app_client.post(f"/{sensorPath}", json=payload)
 
         assert status.is_success(
             response.status_code
@@ -40,21 +41,23 @@ class TestFlaskApp:
             response.status_code
         ), "Invalid response code from server when submitting on invalid route"
 
-    def test_db_consistency(self, app_client, node_data: dict):
+    def test_db_consistency(self, app_client, reading):
         """
         This test is meant to check if data stored
         as Reading in database is consistent
         """
-        payload: dict = to_mobius_payload(node_data)
-        response: TestResponse = app_client.post(
-            f"/{node_data['data']['mobius_sensorPath']}", json=payload
-        )
+
+        sensorId = "sensorId1_foo"
+        sensorPath = "sensorPath1_foo"
+        payload: dict = to_mobius_payload(reading, sensorId)
+
+        response: TestResponse = app_client.post(f"/{sensorPath}", json=payload)
 
         assert status.is_success(
             response.status_code
         ), "Invalid response code from server when submitting valid payload"
 
-        data = app_client.get(f"/{node_data['data']['mobius_sensorPath']}").data
+        data = app_client.get(f"/{sensorPath}").data
         data_dict: dict = json.loads(data.decode())
 
         print(data_dict)
@@ -66,19 +69,21 @@ class TestFlaskApp:
             len(data_dict["m2m:rsp"]["m2m:cin"]) > 0
         ), "Reading doesn't get saved on the database"
 
-    def test_db_query_limits(self, app_client, node_data: dict):
+    def test_db_query_limits(self, app_client, reading):
+        sensorId = "sensorId1_foo"
+        sensorPath = "sensorPath1_foo"
+
         reading_timestamps = [
             datetime(2022, 7, 10, 12, 45, x) for x in [10, 20, 30, 40, 50]
         ]
-        reading_timestamps_iso = [x.isoformat() for x in reading_timestamps]
+        reading_timestamps_iso = [x.timestamp() for x in reading_timestamps]
 
         for time in reading_timestamps_iso:
-            node_data["publishedAt"] = time
-            payload: dict = to_mobius_payload(node_data)
+            reading["readingID"] = time
+            print(reading["publishedAt"])
+            payload: dict = to_mobius_payload(reading, sensorId)
 
-            response: TestResponse = app_client.post(
-                f"/{node_data['data']['mobius_sensorPath']}", json=payload
-            )
+            response: TestResponse = app_client.post(f"/{sensorPath}", json=payload)
 
             assert status.is_success(
                 response.status_code
@@ -86,9 +91,7 @@ class TestFlaskApp:
 
         inf_limit: str = reading_timestamps[0].strftime("%Y%m%dT%H%M%S")
         sup_limit: str = reading_timestamps[-1].strftime("%Y%m%dT%H%M%S")
-        response = app_client.get(
-            f"/{node_data['data']['mobius_sensorPath']}?crb={sup_limit}&cra={inf_limit}"
-        )
+        response = app_client.get(f"/{sensorPath}?crb={sup_limit}&cra={inf_limit}")
 
         assert status.is_success(
             response.status_code
@@ -105,7 +108,7 @@ class TestFlaskApp:
             but got {len(decoded_response['m2m:rsp']['m2m:cin'])}"
 
         response = app_client.get(
-            f"/{node_data['data']['mobius_sensorPath']}?crb={sup_limit}&cra={inf_limit}&lim=2"
+            f"/{sensorPath}?crb={sup_limit}&cra={inf_limit}&lim=2"
         )
 
         assert status.is_success(
@@ -123,10 +126,10 @@ class TestFlaskApp:
         ), f"Invalid response from server, expected 2 results \
             but got {len(decoded_response['m2m:rsp']['m2m:cin'])}"
 
-    def test_db_query_last(self, app_client, node_data: dict):
-        response: TestResponse = app_client.get(
-            f"/{node_data['data']['mobius_sensorPath']}"
-        )
+    def test_db_query_last(self, app_client, reading):
+        sensorPath = "sensorPath1_foo"
+
+        response: TestResponse = app_client.get(f"/{sensorPath}")
         decoded_response: dict = json.loads(response.data)
 
         readings = [x for x in decoded_response["m2m:rsp"]["m2m:cin"]]
@@ -136,7 +139,7 @@ class TestFlaskApp:
         )
         last_reading: dict = readings[0]
 
-        response = app_client.get(f"/{node_data['data']['mobius_sensorPath']}/la")
+        response = app_client.get(f"/{sensorPath}/la")
 
         assert status.is_success(
             response.status_code
