@@ -1,10 +1,8 @@
 from datetime import datetime, timedelta
 
+from ..config import config
 from ..services.database import Reading
 from ..services.mobius import utils as mobius_utils
-
-# TODO: move to config file
-SYNC_TIME = timedelta(minutes=1)
 
 
 def add_to_cache(readingObjectID: str):
@@ -26,6 +24,8 @@ def sync_cached():
 
         publishedAt = reading["publishedAt"]
 
-        if datetime.now() - publishedAt > SYNC_TIME:
+        if datetime.now() - publishedAt > timedelta(
+            seconds=config["READING_SYNC_WAIT"]
+        ):
             mobius_utils.insert(reading)
             redis_client.srem("idCache", readingObjectId)

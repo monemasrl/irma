@@ -1,0 +1,7 @@
+{
+    "host": "http://mobius",
+    "port": 5000,
+    "conversion": {
+        "1": {"sensorId": "node1SensorId", "sensorPath": "node1SensorPath"}
+    }
+}

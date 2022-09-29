@@ -1,24 +1,9 @@
 {
-  "SECRET_KEY": "pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw",
+  "READING_SYNC_WAIT": 60,
+  "CHECK_SYNC_READY": 30,
 
-  "JWT_SECRET_KEY": "pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw",
-  "JWT_ACCESS_TOKEN_EXPIRES": 3600,
-  "JWT_REFRESH_TOKEN_EXPIRES": 604800,
+  "NODE_STATUS_CHECK_INTERVAL": 10,
+  "NODE_TIMEOUT_INTERVAL": 30,
 
-  "MONGODB_SETTINGS": {
-    "db": "irma",
-    "host": "mongodb://mongo:27017/irma"
-  },
-
-  "CORS_SETTINGS": {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Credentials": true
-  },
-
-  "MQTT_BROKER_URL": "mqtt",
-  "MQTT_BROKER_PORT": 1883,
-  "MQTT_TLS_ENABLED": false,
-
-  "REDIS_URL": "redis://cache:6379/0"
+  "ALERT_TRESHOLD": 7
 }

@@ -1,17 +1,9 @@
-import os
 from datetime import datetime, timedelta
 
+from ..config import config
 from ..services.database import Node
 from .enums import NodeState, PayloadType
 from .exceptions import ObjectNotFoundException
-
-# valore teorico della soglia di pericolo del sensore
-# TODO: move to config file
-MAX_TRESHOLD = int(os.environ.get("MAX_TRESHOLD", 7))
-
-# for sensor timeout
-# TODO: move to config file
-SENSORS_TIMEOUT_INTERVAL = timedelta(seconds=30)
 
 
 def update_state_total_reading(current_state: NodeState, dato: int) -> NodeState:
@@ -20,7 +12,7 @@ def update_state_total_reading(current_state: NodeState, dato: int) -> NodeState
     elif current_state == NodeState.ALERT_READY:
         current_state = NodeState.ALERT_RUNNING
 
-    if dato >= MAX_TRESHOLD and current_state == NodeState.RUNNING:
+    if dato >= config["ALERT_TRESHOLD"] and current_state == NodeState.RUNNING:
         return NodeState.ALERT_RUNNING
 
     return current_state
@@ -86,7 +78,9 @@ def update_state(
     if typ is not None:
         current_state = FUNCTIONS[typ](current_state, dato)
 
-    if (datetime.now() - lastSeenAt) > SENSORS_TIMEOUT_INTERVAL:
+    if (datetime.now() - lastSeenAt) > timedelta(
+        seconds=config["NODE_TIMEOUT_INTERVAL"]
+    ):
         current_state = NodeState.ERROR
 
     return current_state

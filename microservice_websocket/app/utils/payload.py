@@ -1,21 +1,14 @@
-import os
 from datetime import datetime
 
 from .. import mqtt
+from ..config import config
 from ..services.database import Alert, Application, Node, Reading
 from .enums import NodeState, PayloadType
 from .exceptions import ObjectNotFoundException
-from .node import MAX_TRESHOLD, update_state
+from .node import update_state
 from .sync_cache import add_to_cache
 
-# mobius url
-# TODO: move to config file
-MOBIUS_URL = os.environ.get("MOBIUS_URL", "http://localhost")
-MOBIUS_PORT = os.environ.get("MOBIUS_PORT", "5002")
-
-# for testing purposes
-# TODO: move to config file and merge with app.py
-DISABLE_MQTT = False if os.environ.get("DISABLE_MQTT") != 1 else True
+DISABLE_MQTT = False
 
 
 def publish(record: dict) -> dict:
@@ -76,14 +69,14 @@ def handle_total_reading(node: Node, record: dict):
             sensorNumber=record["data"]["sensorNumber"],
             readingID=record["data"]["readingID"],
             sessionID=record["data"]["sessionID"],
-            publishedAt=datetime.now().isoformat(),
+            publishedAt=datetime.now(),
         )
 
     reading["dangerLevel"] = record["data"]["value"]
     reading.save()
     add_to_cache(str(reading["id"]))
 
-    if reading["dangerLevel"] >= MAX_TRESHOLD:
+    if reading["dangerLevel"] >= config["ALERT_TRESHOLD"]:
         alert = Alert.objects(sessionID=reading["sessionID"], isHandled=False).first()
 
         if alert is None:
@@ -111,7 +104,7 @@ def handle_window_reading(node: Node, record: dict):
             sensorNumber=record["data"]["sensorNumber"],
             sessionID=record["data"]["sessionID"],
             readingID=record["data"]["readingID"],
-            publishedAt=datetime.now().isoformat(),
+            publishedAt=datetime.now(),
         )
 
     window_number = record["data"]["value"]

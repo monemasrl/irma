@@ -1,6 +1,4 @@
 import json
-import os
-from datetime import timedelta
 
 from fakeredis import FakeRedis
 from flask import Flask
@@ -16,13 +14,7 @@ from .services.mqtt import create_mqtt
 from .services.scheduler import init_scheduler
 from .services.socketio import init_socketio
 
-# interval for checking sensor timeout
-SENSORS_UPDATE_INTERVAL = timedelta(seconds=10)
-
-# for testing purposes
-# TODO: move to config file
-DISABLE_MQTT = False if os.environ.get("DISABLE_MQTT") != 1 else True
-
+DISABLE_MQTT = False
 
 socketio = SocketIO(cors_allowed_origins="*")
 mqtt = None
@@ -34,16 +26,16 @@ def create_app(testing=False, debug=False):
     global mqtt
     global redis_client
 
-    app.config.from_file("../config/config.json", load=json.load)
+    app.config.from_file("../config/config_server.json", load=json.load)
     if testing:
-        app.config.from_file("../config/config_testing.json", load=json.load)
+        app.config.from_file("../config/config_server_testing.json", load=json.load)
         redis_client = FlaskRedis.from_custom_provider(FakeRedis)
         print(f"{redis_client=}")
 
     app.debug = debug
 
     redis_client.init_app(app)
-    init_scheduler(app, SENSORS_UPDATE_INTERVAL.total_seconds())
+    init_scheduler(app)
     init_jwt(app)
     init_db(app)
     CORS(app)

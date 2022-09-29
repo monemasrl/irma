@@ -5,6 +5,8 @@ from mock import mock_open, patch
 from microservice_websocket.app.services import database as db
 from microservice_websocket.app.utils.enums import NodeState, PayloadType
 
+# TODO: ALERT_TRESHOLD from configs
+
 
 class TestPublishPayload:
     endpoint = "/api/payload/publish"
@@ -226,7 +228,7 @@ class TestPublishPayload:
                 and reading["window3_count"] == 333
             ), "Invalid Reading structure"
 
-    # Publish reading with dangerLevel > MAX_TRESHOLD
+    # Publish reading with dangerLevel > ALERT_TRESHOLD
     def test_publish_alert_from_state_ok(self, app_client: FlaskClient):
         with patch("builtins.open", mock_open(read_data="1234")):
             response = app_client.post(
@@ -259,7 +261,7 @@ class TestPublishPayload:
             db.Node.objects().first()["state"] == NodeState.ALERT_RUNNING
         ), "Invalid Node state"
 
-    # Publish reading with dangerLevel > MAX_TRESHOLD while already in alert
+    # Publish reading with dangerLevel > ALERT_TRESHOLD while already in alert
     def test_publish_alert_from_state_alert_running(self, app_client: FlaskClient):
         with patch("builtins.open", mock_open(read_data="1234")):
             response = app_client.post(
@@ -292,7 +294,7 @@ class TestPublishPayload:
             db.Node.objects().first()["state"] == NodeState.ALERT_RUNNING
         ), "Invalid Node state"
 
-    # Publish reading with dangerLevel > MAX_TRESHOLD with an already handled alert
+    # Publish reading with dangerLevel > ALERT_TRESHOLD with an already handled alert
     def test_publish_alert_with_already_handled_alert(self, app_client: FlaskClient):
         alert = db.Alert.objects().first()
         alert["isHandled"] = True

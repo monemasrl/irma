@@ -1,24 +1,21 @@
-from datetime import timedelta
 from flask import Flask
 from flask_apscheduler import APScheduler
 import requests
 from ...utils.sync_cache import sync_cached
-
-# TODO: move to config file
-SYNC_CACHE_INTERVAL = timedelta(seconds=30)
+from ...config import config
 
 
-def init_scheduler(app: Flask, update_interval: int):
+def init_scheduler(app: Flask):
     scheduler = APScheduler()
     scheduler.init_app(app)
 
-    @scheduler.task("interval", id="update_state", seconds=update_interval)
+    @scheduler.task(
+        "interval", id="update_state", seconds=config["NODE_STATUS_CHECK_INTERVAL"]
+    )
     def periodically_get_route():
         requests.get("http://localhost:5000/api/check")
 
-    @scheduler.task(
-        "interval", id="sync_cache", seconds=SYNC_CACHE_INTERVAL.total_seconds()
-    )
+    @scheduler.task("interval", id="sync_cache", seconds=config["CHECK_SYNC_READY"])
     def periodically_sync_cache():
         sync_cached()
 

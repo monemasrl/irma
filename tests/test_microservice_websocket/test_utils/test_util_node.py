@@ -1,7 +1,10 @@
 from datetime import datetime
 
+from microservice_websocket.app.config import config
 from microservice_websocket.app.utils.enums import NodeState, PayloadType
-from microservice_websocket.app.utils.node import MAX_TRESHOLD, update_state
+from microservice_websocket.app.utils.node import update_state
+
+ALERT_TRESHOLD = config["ALERT_TRESHOLD"]
 
 
 def _test_update_state_case(
@@ -28,7 +31,7 @@ def test_get_state():
         NodeState.ERROR,
         datetime.now(),
         PayloadType.TOTAL_READING,
-        MAX_TRESHOLD,
+        ALERT_TRESHOLD,
         NodeState.ALERT_RUNNING,
     )
     _test_update_state_case(
@@ -63,7 +66,7 @@ def test_get_state():
         NodeState.READY,
         datetime.now(),
         PayloadType.TOTAL_READING,
-        MAX_TRESHOLD,
+        ALERT_TRESHOLD,
         NodeState.ALERT_RUNNING,
     )
     _test_update_state_case(
@@ -109,7 +112,7 @@ def test_get_state():
         NodeState.RUNNING,
         datetime.now(),
         PayloadType.TOTAL_READING,
-        MAX_TRESHOLD,
+        ALERT_TRESHOLD,
         NodeState.ALERT_RUNNING,
     )
     _test_update_state_case(

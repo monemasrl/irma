@@ -1,14 +1,9 @@
-import json
 from datetime import datetime
-from os import environ
 
 import requests
 
 from ..database import Reading
-
-# TODO: move to config file
-MOBIUS_URL = environ.get("MOBIUS_URL", "http://mobius")
-MOBIUS_PORT = environ.get("MOBIUS_PORT", "5002")
+from .config import config
 
 
 # Conversione reading per mobius
@@ -39,15 +34,12 @@ def to_mobius_payload(reading: Reading, sensorId: str) -> dict:
 
 
 def insert(reading: Reading):
-    with open("./config/mobius_conversion.json") as f:
-        mobius_conversion_table = json.load(f)
-
-    sensorPath = mobius_conversion_table[str(reading["nodeID"])]["sensorPath"]
-    sensorId = mobius_conversion_table[str(reading["nodeID"])]["sensorId"]
+    sensorId = config.nodeID_to_sensorId(reading["nodeID"])
+    sensorPath = config.nodeID_to_sensorPath(reading["nodeID"])
 
     mobius_payload: dict = to_mobius_payload(reading, sensorId)
 
     requests.post(
-        f"{MOBIUS_URL}:{MOBIUS_PORT}/{sensorPath}",
+        f"{config.host}:{config.port}/{sensorPath}",
         json=mobius_payload,
     )
