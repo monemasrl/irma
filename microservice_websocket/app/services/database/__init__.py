@@ -94,9 +94,9 @@ class Reading(Document):
             "readingID": self.readingID,
             "sessionID": self.sessionID,
             "dangerLevel": self.dangerLevel,
-            "window1Count": self.window1_count,
-            "window2Count": self.window2_count,
-            "window3Count": self.window3_count,
+            "window1": self.window1_count,
+            "window2": self.window2_count,
+            "window3": self.window3_count,
             "publishedAt": str(self.publishedAt),
         }
 
