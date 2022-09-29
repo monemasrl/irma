@@ -5,7 +5,7 @@ from typing import TypedDict
 
 class Config(TypedDict):
     READING_SYNC_WAIT: int
-    NODE_STATUS_CHECK_INTERVAL: int
+    NODE_TIMEOUT_CHECK_INTERVAL: int
     NODE_TIMEOUT_INTERVAL: int
     ALERT_TRESHOLD: int
     CHECK_SYNC_READY: int
