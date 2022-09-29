@@ -106,6 +106,7 @@ class Alert(Document):
     node = ReferenceField(Node, required=True)
     sessionID = IntField(required=True)
     isHandled = BooleanField(required=True)
+    raisedAt = DateTimeField(required=True)
     isConfirmed = BooleanField()
     handledBy = ReferenceField(User)
     handledAt = DateTimeField()

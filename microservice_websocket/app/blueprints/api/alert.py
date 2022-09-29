@@ -1,10 +1,10 @@
 import json
 
-from flask import Blueprint, request
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from ... import socketio
-from ...utils.alert import handle_alert
+from ...utils.alert import alert_info, handle_alert
 from ...utils.exceptions import ObjectNotFoundException
 
 alert_bp = Blueprint("alert", __name__, url_prefix="/alert")
@@ -25,3 +25,19 @@ def _handle_alert_route():
     socketio.emit("change")
     socketio.emit("change-reading")
     return received
+
+
+@alert_bp.route("/info", methods=["GET"])
+@jwt_required()
+def alert_info_route():
+    alertID = request.args.get("id", None)
+
+    if alertID is None:
+        return {"message": "Bad Request"}, 400
+
+    try:
+        response: dict = alert_info(alertID)
+    except ObjectNotFoundException:
+        return {"message": "not found"}, 404
+
+    return jsonify(response)

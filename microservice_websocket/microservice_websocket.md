@@ -166,6 +166,40 @@ A questo punto **microservice_websocket** registrerà l'**alert** come **gestita
 
 Per maggiori informazioni sulla struttura dell'[Alert](./app/services/database/database.md#alert).
 
+### Info Alert (GET /api/alert/info)
+
+Per ottenere maggiori **informazioni** su di un **Alert**, è possibile effettuare una **GET** su **/api/alert/info**.
+
+Sono disponibili i seguenti **parametri**:
+
+- `id`: l'**id** dell'**Alert** di cui si richiedon le **informazioni**.
+
+---
+
+Corpo della **risposta**:
+
+- `nodeID`: l'**id** del **Node** a cui fa riferimento l'**Alert**.
+- `sessionID`: l'**id** della **session** a cui fa riferimento l'**Alert**.
+- `readingID`: l'**id** della **Reading** che ha generato l'**Alert**.
+- `canID`: l'**id** del **rilevatore** che ha generato l'**Alert**.
+- `sensorNumber`: il **numero del sensore** che ha generato l'**Alert**.
+- `alertID`: l'**id** dell'**Alert**.
+- `raisedAt`: il **UNIX timestamp** relativo a quando è stato generato l'**Alert**.
+
+Esempio:
+
+```jsonc
+{
+  "nodeID": 1,
+  "sessionID": 1640400,
+  "readingID": 1640800,
+  "canID": 3,
+  "sensorNumber": 2,
+  "alertID": "63186eab0ca2d54a5c258384",
+  "raisedAt": 1640830
+}
+```
+
 ### Autenticazione (POST /api/jwt/authenticate)
 
 Per effettuare l'**autenticazione** ed ottene un **Token JWT** e il relativo **Token JWT di refresh**, è necessario effettuare una **POST** su **/api/jwt/authenticate**.

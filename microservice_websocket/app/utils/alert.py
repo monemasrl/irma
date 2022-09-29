@@ -29,3 +29,20 @@ def handle_alert(received: dict, user_id: str):
         node.save()
 
     return alert
+
+
+def alert_info(alertID: str) -> dict:
+    alert = Alert.objects(id=alertID).first()
+
+    if alert is None:
+        raise ObjectNotFoundException(Alert)
+
+    return {
+        "nodeID": alert["reading"]["nodeID"],
+        "sessionID": alert["reading"]["sessionID"],
+        "readingID": alert["reading"]["readingID"],
+        "canID": alert["reading"]["canID"],
+        "sensorNumber": alert["reading"]["sensorNumber"],
+        "alertID": alertID,
+        "raisedAt": int(alert["raisedAt"].timestamp()),
+    }

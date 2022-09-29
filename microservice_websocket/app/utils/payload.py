@@ -85,6 +85,7 @@ def handle_total_reading(node: Node, record: dict):
                 node=node,
                 sessionID=reading["sessionID"],
                 isHandled=False,
+                raisedAt=datetime.now(),
             )
             alert.save()
 
