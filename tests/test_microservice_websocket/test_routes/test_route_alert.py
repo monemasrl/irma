@@ -206,7 +206,6 @@ class TestAlertInfo:
 
         for key in [
             "canID",
-            "sensorNumber",
             "readingID",
             "nodeID",
             "alertID",

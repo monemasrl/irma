@@ -42,7 +42,6 @@ def alert_info(alertID: str) -> dict:
         "sessionID": alert["reading"]["sessionID"],
         "readingID": alert["reading"]["readingID"],
         "canID": alert["reading"]["canID"],
-        "sensorNumber": alert["reading"]["sensorNumber"],
         "alertID": alertID,
         "raisedAt": int(alert["raisedAt"].timestamp()),
     }

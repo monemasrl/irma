@@ -182,7 +182,6 @@ Corpo della **risposta**:
 - `sessionID`: l'**id** della **session** a cui fa riferimento l'**Alert**.
 - `readingID`: l'**id** della **Reading** che ha generato l'**Alert**.
 - `canID`: l'**id** del **rilevatore** che ha generato l'**Alert**.
-- `sensorNumber`: il **numero del sensore** che ha generato l'**Alert**.
 - `alertID`: l'**id** dell'**Alert**.
 - `raisedAt`: il **UNIX timestamp** relativo a quando è stato generato l'**Alert**.
 
