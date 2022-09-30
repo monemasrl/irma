@@ -8,7 +8,34 @@ L'**immagine docker** può essere avviata con il file [docker-compose.yaml](../d
 
 ## Configurazione
 
-All'interno del file [config.json](./config/config.json) è possibile specificare una serie di opzioni.
+Sono presenti due file di configurazione, uno relativo al [webserver](./config/config_server.json) in sé per sé, l'altro relativo al [comportamento dell'applicazione](./config/config.json).
+
+> :warning: **Relativo al [webserver](./config/config_server.json)**: Ricordarsi di generare una nuova Secret Key!
+
+### [config.json](./config/config.json)
+
+```jsonc
+{
+  // Tempo di cache delle letture prima
+  // di essere inviate al servizio di
+  // backup esterno (Mobius)
+  "READING_SYNC_WAIT": 60,
+
+  // Ogni quanto controllare che il tempo
+  // di cache sia passato
+  "CHECK_SYNC_READY": 30,
+
+  // Intervallo di timeout del nodo
+  "NODE_TIMEOUT_INTERVAL": 30,
+
+  // Ogni quanto controllare che i
+  // nodi non siano in timeout
+  "NODE_TIMEOUT_CHECK_INTERVAL": 10,
+
+  // soglia che fa scattare lo stato di Alert
+  "ALERT_TRESHOLD": 7
+}
+```
 
 ## Descrizione API
 
@@ -193,7 +220,6 @@ Esempio:
   "sessionID": 1640400,
   "readingID": 1640800,
   "canID": 3,
-  "sensorNumber": 2,
   "alertID": "63186eab0ca2d54a5c258384",
   "raisedAt": 1640830
 }
