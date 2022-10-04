@@ -36,10 +36,16 @@ def to_mobius_payload(reading: Reading, sensorId: str) -> dict:
 def insert(reading: Reading):
     sensorId = config.nodeID_to_sensorId(reading["nodeID"])
     sensorPath = config.nodeID_to_sensorPath(reading["nodeID"])
+    originator = config.originator
 
     mobius_payload: dict = to_mobius_payload(reading, sensorId)
 
     requests.post(
         f"{config.host}:{config.port}/{sensorPath}",
+        headers={
+            "X-M2M-Origin": originator,
+            "Content-Type": "application/vnd.onem2m-res+json;ty=4",
+            "X-M2M-RI": int(datetime.now().timestamp() * 1000),
+        },
         json=mobius_payload,
     )

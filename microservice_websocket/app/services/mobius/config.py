@@ -32,6 +32,10 @@ class MobiusConfig:
     def port(self) -> int:
         return self.config["port"]
 
+    @property
+    def originator(self) -> str:
+        return self.config["originator"]
+
     def nodeID_to_sensorId(self, nodeID: int) -> str:
         return self.config["conversion"][str(nodeID)]["sensorId"]
 
