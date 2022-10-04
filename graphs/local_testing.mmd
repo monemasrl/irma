@@ -1,0 +1,8 @@
+flowchart LR;
+rpi4[Raspberry PI 4 - mock_rilevatore.py]
+rpi2[Raspberry PI 2 - node]
+msw[microservice_websocket]
+
+rpi2 <-- CAN --> rpi4
+rpi2 -- HTTP --> msw
+msw -- MQTT --> rpi2
