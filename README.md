@@ -21,22 +21,30 @@ flowchart TD;
 msw[microservice_websocket]
 mm[mock_mobius]
 irma-ui[Irma UI]
+mqtt[Broker MQTT]
+redis[Redis]
+mongo[(MongoDB)]
 
 nodo[Nodo]
 rilevatori[Rilevatori]
 
-msw -- POST 5002 --> mm
+msw -- HTTP 5000 --> mm
+msw -- MONGO 27017 --> mongo
+mm -- MONGO 27017 --> mongo
 irma-ui -- HTTP 5000 --> msw
 nodo -- HTTP 5000 --> msw
-msw -- MQTT** 1883 --> nodo
+irma-ui <-- WEBSOCKET 5000 --> msw
 rilevatori <-- CAN --> nodo
-```
+msw -- REDIS 6379 --> redis
 
-> \*\*Per effettuare la comunicazione tramite MQTT è necessario un **Broker MQTT**.
+msw -- PUB --> mqtt
+nodo -- SUB --> mqtt
+
+```
 
 ## DEPLOYMENT
 
-All'interno della **root** principale sono è presente il file [docker-compose.yaml](./docker-compose.yaml), grazie al quale è possibile dispiegare l'intero **stack di servizi**.
+All'interno della **root** principale è presente il file [docker-compose.yaml](./docker-compose.yaml), grazie al quale è possibile dispiegare l'intero **stack di servizi**.
 
 ### Schema docker-compose.yaml
 
@@ -49,15 +57,17 @@ subgraph docker
     mobius[mock_mobius]
     mongo[(MongoDB)]
     msw[microservice_websocket]
+    redis[Redis]
 
     msw -- TCP 1883 --> mqtt
+    msw -- TCP 6379 --> redis
     mobius <--> mongo
     msw <--> mongo
-    msw -- HTTP 5002 --> mobius
+    msw -- HTTP 5000 --> mobius
 end
 out([host network])
-out -- TCP 1883 --> mqtt
-out -- HTTP 5000 --> msw
+out -- 1883 --> mqtt
+out -- 5000 --> msw
 
 ```
 
@@ -132,9 +142,10 @@ Per maggiori informazioni su **microservice_websocket** consultare la sua [docum
 
 ## TESTING IN LOCALE
 
-Al fine di eseguire dei test in locale, per mancanza di rilevatori da utilizzare, viene usato lo script [mock_rilevatore.py](./utils/mock_rilevatore.py), che si occupa di **simulare** la presenza di un rilevatore.
+Al fine di eseguire dei test in locale, per mancanza di rilevatori da utilizzare, vengono usati rispettivamente: 
 
-Qualora vengano richieste delle letture dal **nodo**, lo script mostrerà un prompt dove inserire i valori da inviare.
+- [mock_rilevatore.py](./utils/mock_rilevatore.py), che si occupa di **simulare** la presenza di **un rilevatore**.
+- [mock_4rilevatori.py](./utils/mock_rilevatore.py), che si occupa di **simulare** la presenza di **4 rilevatori**.
 
 ### Struttura testing locale
 
