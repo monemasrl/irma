@@ -3,7 +3,6 @@ import json
 from fakeredis import FakeRedis
 from flask import Flask
 
-# da togliere
 from flask_cors import CORS
 from flask_redis import FlaskRedis
 from flask_socketio import SocketIO

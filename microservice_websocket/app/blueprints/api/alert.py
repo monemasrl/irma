@@ -15,7 +15,7 @@ alert_bp = Blueprint("alert", __name__, url_prefix="/alert")
 def _handle_alert_route():
     received: dict = json.loads(request.data)
 
-    user_id = get_jwt_identity()["_id"]["$oid"]
+    user_id = get_jwt_identity()["id"]
 
     try:
         handle_alert(received, user_id)

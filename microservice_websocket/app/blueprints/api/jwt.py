@@ -30,8 +30,8 @@ def authenticate():
         return jsonify({"message": "User not found"}), 404
 
     if user_manager.verify(user, password):
-        access_token = create_access_token(identity=user)
-        refresh_token = create_refresh_token(identity=user)
+        access_token = create_access_token(identity=user.serialize())
+        refresh_token = create_refresh_token(identity=user.serialize())
         return jsonify(access_token=access_token, refresh_token=refresh_token)
 
     return jsonify({"message": "wrong username or password"}), 401
@@ -41,6 +41,7 @@ def authenticate():
 @jwt_required(refresh=True)
 def refresh_token():
     identity = get_jwt_identity()
+    print(type(identity))
     if identity is None:
         return {"message": "User Not Found"}, 401
 

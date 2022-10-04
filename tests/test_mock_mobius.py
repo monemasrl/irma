@@ -4,7 +4,6 @@ from datetime import datetime
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
-from flask_api import status
 from werkzeug.test import TestResponse
 
 from microservice_websocket.app.services.mobius.utils import to_mobius_payload
@@ -31,14 +30,14 @@ class TestFlaskApp:
         print(payload)
         response: TestResponse = app_client.post(f"/{sensorPath}", json=payload)
 
-        assert status.is_success(
-            response.status_code
+        assert (
+            response.status_code == 200
         ), "Invalid response code from server when submitting valid payload"
 
         response = app_client.post("/", json=payload)
 
-        assert status.is_client_error(
-            response.status_code
+        assert (
+            response.status_code == 404
         ), "Invalid response code from server when submitting on invalid route"
 
     def test_db_consistency(self, app_client, reading):
@@ -53,8 +52,8 @@ class TestFlaskApp:
 
         response: TestResponse = app_client.post(f"/{sensorPath}", json=payload)
 
-        assert status.is_success(
-            response.status_code
+        assert (
+            response.status_code == 200
         ), "Invalid response code from server when submitting valid payload"
 
         data = app_client.get(f"/{sensorPath}").data
@@ -85,16 +84,16 @@ class TestFlaskApp:
 
             response: TestResponse = app_client.post(f"/{sensorPath}", json=payload)
 
-            assert status.is_success(
-                response.status_code
+            assert (
+                response.status_code == 200
             ), "Invalid response code from server when submitting valid payload"
 
         inf_limit: str = reading_timestamps[0].strftime("%Y%m%dT%H%M%S")
         sup_limit: str = reading_timestamps[-1].strftime("%Y%m%dT%H%M%S")
         response = app_client.get(f"/{sensorPath}?crb={sup_limit}&cra={inf_limit}")
 
-        assert status.is_success(
-            response.status_code
+        assert (
+            response.status_code == 200
         ), "Invalid response code from server when querying with time limits"
 
         decoded_response: dict = json.loads(response.data)
@@ -111,8 +110,8 @@ class TestFlaskApp:
             f"/{sensorPath}?crb={sup_limit}&cra={inf_limit}&lim=2"
         )
 
-        assert status.is_success(
-            response.status_code
+        assert (
+            response.status_code == 200
         ), "Invalid response code from server when querying \
             with time limits and quantity limits"
 
@@ -141,8 +140,8 @@ class TestFlaskApp:
 
         response = app_client.get(f"/{sensorPath}/la")
 
-        assert status.is_success(
-            response.status_code
+        assert (
+            response.status_code == 200
         ), "Invalid response code from server when querying last sensor reading"
 
         decoded_response = json.loads(response.data)

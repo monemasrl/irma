@@ -35,6 +35,12 @@ class Role(Document):
     name = StringField(max_length=80, unique=True)
     description = StringField(max_length=255)
 
+    def serialize(self) -> dict:
+        return {
+            "name": self.name,
+            "description": self.description,
+        }
+
 
 class User(Document):
     email = StringField(max_length=255)
@@ -43,12 +49,13 @@ class User(Document):
     last_name = StringField(default="")
     roles = ListField(ReferenceField(Role), default=[])
 
-    def to_json(self):
+    def serialize(self) -> dict:
         return {
+            "id": str(self.id),
             "email": self.email,
             "first_name": self.first_name,
             "last_name": self.last_name,
-            "roles": self.roles,
+            "roles": [x.serialize() for x in self.roles],
         }
 
 

@@ -3,7 +3,6 @@ import secrets
 from datetime import datetime
 
 from flask import Flask, jsonify, make_response, request
-from flask_api import status
 from flask_mongoengine import MongoEngine
 
 from .database import Reading
@@ -29,20 +28,20 @@ def create_app(config_filename: str = "config.json") -> Flask:
     @app.route("/<SENSOR_PATH>", methods=["POST"])
     def publish(SENSOR_PATH: str = ""):
         if SENSOR_PATH == "":
-            return {}, status.HTTP_404_NOT_FOUND
+            return {}, 404
 
         reading: Reading = Reading.from_json(request.data.decode())
         reading.sensorPath = SENSOR_PATH
         reading.readingId = secrets.token_urlsafe(16)
         reading.save()
 
-        return {}, status.HTTP_200_OK
+        return {}, 200
 
     @app.route("/<SENSOR_PATH>", methods=["GET"])
     # Impostare header
     def read(SENSOR_PATH: str = ""):
         if SENSOR_PATH == "":
-            return {}, status.HTTP_404_NOT_FOUND
+            return {}, 404
 
         # Request args parsing
         sup_time_limit: str = request.args.get("crb", "")
@@ -74,7 +73,7 @@ def create_app(config_filename: str = "config.json") -> Flask:
 
         # Return if no reading is found
         if len(letture_raw) == 0:
-            return {}, status.HTTP_404_NOT_FOUND
+            return {}, 404
 
         # Convert remaining readings to json
         letture: list[dict] = [x.to_json() for x in letture_raw]
@@ -95,7 +94,7 @@ def create_app(config_filename: str = "config.json") -> Flask:
         )
 
         if len(descending_time_readings) == 0:
-            return {}, status.HTTP_404_NOT_FOUND
+            return {}, 404
 
         response = make_response(
             jsonify({"m2m:cin": descending_time_readings[0].to_json()})
