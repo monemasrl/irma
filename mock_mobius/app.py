@@ -2,10 +2,9 @@ import json
 import secrets
 from datetime import datetime
 
+from database import Reading
 from flask import Flask, jsonify, make_response, request
 from flask_mongoengine import MongoEngine
-
-from .database import Reading
 
 
 def create_app(config_filename: str = "config.json") -> Flask:
