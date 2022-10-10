@@ -1,0 +1,38 @@
+flowchart TD;
+A[\Start/] --> B[Caricamento configurazione]
+B --> C[Inizializzazione CAN e MQTT]
+C --> a[Lancio KEEP_ALIVE daemon]
+a --> b{E' disponbile un messaggio<br />sul topic mqtt?}
+b -- SI --> c[Decodifica il messaggio]
+c --> d{E' START_REC?}
+d -- SI --> e[Lancio requst task]
+d -- NO --> f{E' END_REC?}
+f -- SI --> h[Fermo request task]
+f -- NO --> g[ERRORE]
+e --> i
+h --> i
+
+b -- NO --> i{E' disponbile un<br />messagio sul CAN BUS?}
+i -- NO --> b
+i -- SI --> j[Decodifico il messagio]
+j --> k[Invio il messaggio<br />a microservice_websocket]
+k --> b
+
+subgraph KEEP_ALIVE daemon
+  D[Invio END_REC] --> E[Sleep]
+  E --> F[Invio KEEP_ALIVE]
+  F --> E
+end
+
+subgraph request task
+  G[Inzio] --> H[Richiesta TOTAL COUNT a S1]
+  H --> I[Richiesta TOTAL COUNT a S2]
+  I --> J[Richiesta WINDOW COUNT 1 a S1]
+  J --> K[Richiesta WINDOW COUNT 1 a S2]
+  K --> L[Richiesta WINDOW COUNT 2 a S1]
+  L --> M[Richiesta WINDOW COUNT 2 a S2]
+  M --> N[Richiesta WINDOW COUNT 3 a S1]
+  N --> O[Richiesta WINDOW COUNT 3 a S2]
+  O --> P[Sleep]
+  P --> H
+end
