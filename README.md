@@ -19,7 +19,7 @@ Rete di comunicazione per **trasmissione e raccolta** dati dei sensori. Il serve
 flowchart TD;
 
 msw[microservice_websocket]
-mm[mock_mobius]
+mobius[Mobius]
 irma-ui[Irma UI]
 mqtt[Broker MQTT]
 redis[Redis]
@@ -28,9 +28,8 @@ mongo[(MongoDB)]
 nodo[Nodo]
 rilevatori[Rilevatori]
 
-msw -- HTTP 5000 --> mm
+msw --> mobius
 msw -- MONGO 27017 --> mongo
-mm -- MONGO 27017 --> mongo
 irma-ui -- HTTP 5000 --> msw
 nodo -- HTTP 5000 --> msw
 irma-ui <-- WEBSOCKET 5000 --> msw
@@ -39,7 +38,6 @@ msw -- REDIS 6379 --> redis
 
 msw -- PUB --> mqtt
 nodo -- SUB --> mqtt
-
 ```
 
 ## DEPLOYMENT
