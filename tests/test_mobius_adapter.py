@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from microservice_websocket.app.services.mobius.utils import to_mobius_payload
+from mobius_adapter.utils import to_mobius_payload
 
 
 def test_to_mobius_payload(reading):

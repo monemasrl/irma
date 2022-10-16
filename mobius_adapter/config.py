@@ -1,4 +1,5 @@
 import json
+import os
 from typing import TypedDict
 
 
@@ -15,7 +16,12 @@ class MobiusConfig:
     conversion: dict[str, ConversionEntry]
 
     def __init__(self):
-        with open("./config.json") as f:
+        script_path = os.path.abspath(__file__)
+        path_list = script_path.split(os.sep)
+        relpath = "/config.json"
+
+        path = "/".join(path_list[:-1]) + relpath
+        with open(path) as f:
             self.config = json.load(f)
 
     @property

@@ -6,7 +6,7 @@ from flask import Flask
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
 
-from microservice_websocket.app.services.mobius.utils import to_mobius_payload
+from mobius_adapter.utils import to_mobius_payload
 from mock_mobius import app as mobius_app
 
 
