@@ -52,7 +52,7 @@ Sono disponibili i seguenti **parametri**:
 
 Corpo della **risposta**:
 
-- `readings`: un array di [Reading](./app/services/database/database.md#reading), conformi al metodo `to_dashboard()` della classe.
+- `readings`: un array di [Reading](./app/services/database/database.md#reading), conformi al metodo `serialize()` della classe.
 
 Esempio:
 

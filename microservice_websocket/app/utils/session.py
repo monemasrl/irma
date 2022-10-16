@@ -15,9 +15,9 @@ def get_session(nodeID: int, sessionID: int) -> list[dict]:
 
         sessionID = latest_reading["sessionID"]
 
-    readings = Reading.objects(nodeID=nodeID, sessionID=sessionID)
+    readings: list[Reading] = Reading.objects(nodeID=nodeID, sessionID=sessionID)
 
-    return [x.to_dashboard() for x in readings]
+    return [x.serialize() for x in readings]
 
 
 def get_sessions_id(nodeID: int) -> list[int]:

@@ -93,7 +93,7 @@ class Reading(Document):
     window3_count = IntField(default=0)
     publishedAt = DateTimeField(required=True)
 
-    def to_dashboard(self) -> dict:
+    def serialize(self) -> dict:
         return {
             "nodeID": self.nodeID,
             "canID": self.canID,

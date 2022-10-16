@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from ..config import config
 from ..services.database import Reading
-from ..services.mobius import utils as mobius_utils
+from .external_archiviation import send_payload
 
 
 def add_to_cache(readingObjectID: str):
@@ -18,7 +18,7 @@ def sync_cached():
 
     # Loop set items
     for readingObjectId in [x.decode() for x in ids]:
-        reading = Reading.objects(id=readingObjectId).first()
+        reading: Reading = Reading.objects(id=readingObjectId).first()
         if reading is None:
             redis_client.srem("idCache", readingObjectId)
 
@@ -27,5 +27,5 @@ def sync_cached():
         if datetime.now() - publishedAt > timedelta(
             seconds=config["READING_SYNC_WAIT"]
         ):
-            mobius_utils.insert(reading)
+            send_payload(reading.serialize())
             redis_client.srem("idCache", readingObjectId)

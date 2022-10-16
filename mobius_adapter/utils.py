@@ -2,12 +2,11 @@ from datetime import datetime
 
 import requests
 
-from ..database import Reading
-from .config import config
+from config import config
 
 
 # Conversione reading per mobius
-def to_mobius_payload(reading: Reading, sensorId: str) -> dict:
+def to_mobius_payload(reading: dict, sensorId: str) -> dict:
     return {
         "m2m:cin": {
             "con": {
@@ -33,7 +32,7 @@ def to_mobius_payload(reading: Reading, sensorId: str) -> dict:
     }
 
 
-def insert(reading: Reading):
+def insert(reading: dict):
     sensorId = config.nodeID_to_sensorId(reading["nodeID"])
     sensorPath = config.nodeID_to_sensorPath(reading["nodeID"])
     originator = config.originator

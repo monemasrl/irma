@@ -26,6 +26,10 @@ services:
     links:
       - mongo
 
+  mobius_adapter:
+    build: ./mobius_adapter/
+    restart: unless-stopped
+
   microservice_websocket:
     build: ./microservice_websocket/
     restart: unless-stopped
