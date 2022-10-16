@@ -1,17 +1,17 @@
-from flask import Blueprint, jsonify, current_app
-
-from .organization import organization_bp
-from .application import application_bp
-from .node import node_bp
-from .payload import payload_bp
-from .alert import alert_bp
-from .jwt import jwt_bp
-from .session import session_bp
-from .user import user_bp
+from flask import Blueprint, current_app, jsonify
 
 from ... import socketio
 from ...services.database import Node, user_manager
 from ...utils.node import update_state
+from .alert import alert_bp
+from .application import application_bp
+from .external_archiviation import ext_arch_bp
+from .jwt import jwt_bp
+from .node import node_bp
+from .organization import organization_bp
+from .payload import payload_bp
+from .session import session_bp
+from .user import user_bp
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -23,6 +23,7 @@ bp.register_blueprint(alert_bp)
 bp.register_blueprint(jwt_bp)
 bp.register_blueprint(session_bp)
 bp.register_blueprint(user_bp)
+bp.register_blueprint(ext_arch_bp)
 
 
 @bp.route("/check")
