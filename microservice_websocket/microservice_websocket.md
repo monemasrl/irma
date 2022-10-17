@@ -373,3 +373,41 @@ Esempio:
   "nodes": [{}, {}, {}]
 }
 ```
+
+### Lista endpoint di archiviazione esterna (GET /api/external-archiviations/)
+
+Per ottenere la lista degli **endpoint** di archiviazione esterna è necessario fare una **GET** su **/api/external-archiviations/**.
+
+Corpo della risposta (JSON):
+
+- `endpoints`: **array di stringhe** contenente gli endpoint **inseriti**.
+
+Esempio:
+```jsonc
+{
+  "endpoints": ["http://localhost:3000"]
+}
+```
+
+### Aggiunta endpoint di archiviazione esterna (POST /api/external-archiviations/add)
+
+Per **aggiungere** un **endpoint** è necessario fare una **POST** su **/api/external-archiviations/add**.
+
+Corpo della richiesta (JSON):
+
+- `endpoint`: **stringa** contenente l'url dell'endpoint.
+
+Esempio:
+```jsonc
+{
+  "endpoint": "http://localhost:3000"
+}
+```
+
+### Rimozione endpoint di archiviazione esterna (DELETE /api/external-archivitions/)
+
+Per **eliminare** un **endpoint** è necessario fare una **DELETE** su **/api/external-archiviations/**.
+
+Sono disponibili i seguenti parametri:
+
+- `endpoint`: stringa contenente l'endpoint da **eliminare**.
