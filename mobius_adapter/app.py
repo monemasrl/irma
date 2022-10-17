@@ -1,6 +1,10 @@
+import os
+
 from flask import Flask, request
 
 from utils import insert
+
+TESTING = os.environ.get("TESTING", False)
 
 
 def create_app():
@@ -10,11 +14,19 @@ def create_app():
     def receive_payload():
         payload = request.json
 
-        try:
+        if TESTING:
             insert(payload)
-        except KeyError:
-            return {"message": "bad request"}, 400
+        else:
+            try:
+                insert(payload)
+            except KeyError:
+                return {"message": "bad request"}, 400
 
         return {"message": "forwarded"}, 200
 
     return app
+
+
+if __name__ == "__main__":
+    app = create_app()
+    app.run(host="0.0.0.0", port=5000)
