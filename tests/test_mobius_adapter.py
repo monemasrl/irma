@@ -23,9 +23,9 @@ def test_to_mobius_payload(reading):
                 "canID": reading["canID"],
                 "sensorNumber": reading["sensorNumber"],
                 "dangerLevel": reading["dangerLevel"],
-                "window1Count": reading["window1_count"],
-                "window2Count": reading["window2_count"],
-                "window3Count": reading["window3_count"],
+                "window1Count": reading["window1"],
+                "window2Count": reading["window2"],
+                "window3Count": reading["window3"],
             },
         }
     }

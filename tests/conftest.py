@@ -95,7 +95,7 @@ def obj_id() -> str:
 
 
 @pytest.fixture()
-def reading() -> Reading:
+def reading() -> dict:
     return Reading(
         nodeID=1,
         canID=2,
@@ -107,4 +107,4 @@ def reading() -> Reading:
         window2_count=222,
         window3_count=333,
         publishedAt=datetime.now(),
-    )
+    ).serialize()
