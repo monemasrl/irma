@@ -3,6 +3,7 @@ flowchart TD;
 subgraph docker
     mqtt[eclipse-mosquitto]
     mobius[mock_mobius]
+    ma[mobius_adapter]
     mongo[(MongoDB)]
     msw[microservice_websocket]
     redis[Redis]
@@ -11,7 +12,8 @@ subgraph docker
     msw -- TCP 6379 --> redis
     mobius <--> mongo
     msw <--> mongo
-    msw -- HTTP 5000 --> mobius
+    msw -- HTTP 5000 --> ma
+    ma -- HTTP 5000 --> mobius
 end
 out([host network])
 out -- 1883 --> mqtt

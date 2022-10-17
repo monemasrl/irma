@@ -20,6 +20,7 @@ flowchart TD;
 
 msw[microservice_websocket]
 mobius[Mobius]
+ma[mobius_adapter]
 irma-ui[Irma UI]
 mqtt[Broker MQTT]
 redis[Redis]
@@ -28,7 +29,8 @@ mongo[(MongoDB)]
 nodo[Nodo]
 rilevatori[Rilevatori]
 
-msw --> mobius
+msw -- POST 5000 --> ma
+ma --> mobius
 msw -- MONGO 27017 --> mongo
 irma-ui -- HTTP 5000 --> msw
 nodo -- HTTP 5000 --> msw
@@ -53,6 +55,7 @@ flowchart TD;
 subgraph docker
     mqtt[eclipse-mosquitto]
     mobius[mock_mobius]
+    ma[mobius_adapter]
     mongo[(MongoDB)]
     msw[microservice_websocket]
     redis[Redis]
@@ -61,7 +64,8 @@ subgraph docker
     msw -- TCP 6379 --> redis
     mobius <--> mongo
     msw <--> mongo
-    msw -- HTTP 5000 --> mobius
+    msw -- HTTP 5000 --> ma
+    ma -- HTTP 5000 --> mobius
 end
 out([host network])
 out -- 1883 --> mqtt
