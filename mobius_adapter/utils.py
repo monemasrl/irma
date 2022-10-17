@@ -24,9 +24,9 @@ def to_mobius_payload(reading: dict, sensorId: str) -> dict:
                 "canID": reading["canID"],
                 "sensorNumber": reading["sensorNumber"],
                 "dangerLevel": reading["dangerLevel"],
-                "window1Count": reading["window1_count"],
-                "window2Count": reading["window2_count"],
-                "window3Count": reading["window3_count"],
+                "window1Count": reading["window1"],
+                "window2Count": reading["window2"],
+                "window3Count": reading["window3"],
             },
         }
     }
@@ -44,7 +44,7 @@ def insert(reading: dict):
         headers={
             "X-M2M-Origin": originator,
             "Content-Type": "application/vnd.onem2m-res+json;ty=4",
-            "X-M2M-RI": int(datetime.now().timestamp() * 1000),
+            "X-M2M-RI": str(int(datetime.now().timestamp() * 1000)),
         },
         json=mobius_payload,
     )
