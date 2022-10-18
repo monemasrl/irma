@@ -81,13 +81,14 @@ Per **ridurre** il **numero di dati** trasmessi, ma al contempo **mantenere la l
 
 Identifica i messaggi inviati.
 
-| Nome         | Valore |
-|--------------|--------|
-| READING      |   0    |
-| START_REC    |   1    |
-| END_REC      |   2    |
-| KEEP_ALIVE   |   3    |
-| HANDLE_ALERT |   4    |
+| Nome           | Valore |
+|----------------|--------|
+| TOTAL_READING  |   0    |
+| WINDOW_READING |   1    |
+| START_REC      |   2    |
+| END_REC        |   3    |
+| KEEP_ALIVE     |   4    |
+| HANDLE_ALERT   |   5    |
 
 
 ### CommandType
