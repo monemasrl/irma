@@ -32,7 +32,7 @@ services:
     links:
       - mobius
     environment:
-      - TESTING=1
+      - DEBUG=1
 
   microservice_websocket:
     build: ./microservice_websocket/
@@ -47,6 +47,8 @@ services:
     networks:
       - default
       - proxy
+    environment:
+      - DEBUG=1
 
 networks:
   default:
