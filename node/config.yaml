@@ -5,14 +5,14 @@ settings:
     nodeID: 1
     nodeName: "Nodo1"
   microservice:
-    url: "http://localhost"
-    port: 5000
+    url: "https://irma.monema.dev"
+    port: 443
     api_key: "verysecret"
     keep_alive_seconds: 30
   mqtt:
-    url: "localhost"
-    port: 1883
+    url: "irma.monema.dev"
+    port: 1884
   can:
-    bustype: 'socketcan'
-    channel: 'can0'
+    bustype: "socketcan"
+    channel: "can0"
     bitrate: 12500

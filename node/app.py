@@ -45,6 +45,7 @@ class Node:
 
     def init_mqtt_client(self):
         self.client = mqtt.Client()
+        self.client.tls_set()
 
         def on_connect(client, userdata, flags, rc):
             print("Connected with result code " + str(rc))
