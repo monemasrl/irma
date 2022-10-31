@@ -11,7 +11,6 @@ from can.interface import Bus
 class IrmaBus:
     def __init__(self, bustype, channel, bitrate, interval_minutes=2):
         self._bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate)
-        # TODO: ????????
         self._sessionID = None
         self._readingID = None
         self._scheduler = BackgroundScheduler()
