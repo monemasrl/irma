@@ -14,9 +14,9 @@ class Sipm(IntEnum):
 
 
 class Window(IntEnum):
-    W1 = 0b00000001
-    W2 = 0b00000010
-    W3 = 0b00000011
+    W1 = 0b00000000
+    W2 = 0b00000001
+    W3 = 0b00000010
 
     def __int__(self) -> int:
         CONVERSION = {
