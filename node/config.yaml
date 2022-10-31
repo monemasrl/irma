@@ -12,6 +12,8 @@ settings:
   mqtt:
     url: "irma.monema.dev"
     port: 1884
+    user: "admin"
+    password: "admin"
   can:
     bustype: "socketcan"
     channel: "can0"

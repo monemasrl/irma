@@ -16,6 +16,8 @@
     "Access-Control-Allow-Credentials": true
   },
 
+  "MQTT_USERNAME": "admin",
+  "MQTT_PASSWORD": "admin",
   "MQTT_BROKER_URL": "irma.monema.dev",
   "MQTT_BROKER_PORT": 1884,
   "MQTT_TLS_ENABLED": true,
