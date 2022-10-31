@@ -16,9 +16,10 @@
     "Access-Control-Allow-Credentials": true
   },
 
-  "MQTT_BROKER_URL": "mqtt",
-  "MQTT_BROKER_PORT": 1883,
-  "MQTT_TLS_ENABLED": false,
+  "MQTT_BROKER_URL": "irma.monema.dev",
+  "MQTT_BROKER_PORT": 1884,
+  "MQTT_TLS_ENABLED": true,
+  "MQTT_TLS_VERSION": 5,
 
   "REDIS_URL": "redis://cache:6379/0"
 }

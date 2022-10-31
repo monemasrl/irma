@@ -3,10 +3,11 @@ services:
   mqtt:
     image: eclipse-mosquitto
     restart: unless-stopped
-    ports:
-      - 1883:1883
     volumes:
       - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - certs:/etc/letsencrypt/cert:ro
+    ports:
+      - 1884:1884
 
   cache:
     build: ./cache
@@ -42,16 +43,14 @@ services:
       - mobius_adapter
       - mqtt
       - cache
-    ports:
-      - 5000:5000
-    networks:
-      - default
-      - proxy
     environment:
       - DEBUG=1
 
 networks:
   default:
-    driver: bridge
-  proxy:
-    name: nginx-proxy
+    external:
+      name: nginx-proxy
+
+volumes:
+  certs:
+    external: true
