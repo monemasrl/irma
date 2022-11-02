@@ -20,13 +20,13 @@ def hash_password(password: str) -> str:
     ).decode("utf-8")
 
 
-def create_user(email: str, password: str) -> bool:
+def create_user(email: str, password: str, role="standard") -> bool:
     user = User.objects(email=email).first()
 
     if user is not None:
         return False
 
-    User(email=email, password=hash_password(password)).save()
+    User(email=email, password=hash_password(password), role=role).save()
 
     return True
 

@@ -52,4 +52,6 @@ def _check_for_updates():
 @bp.before_app_first_request
 def create_user():
     current_app.logger.info("Creo utente")
-    user_manager.create_user(email="bettarini@monema.it", password="password")
+    user_manager.create_user(
+        email="bettarini@monema.it", password="password", role="admin"
+    )
