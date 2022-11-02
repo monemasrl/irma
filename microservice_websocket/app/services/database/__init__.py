@@ -31,23 +31,12 @@ class Application(Document):
     organization = ReferenceField(Organization)
 
 
-class Role(Document):
-    name = StringField(max_length=80, unique=True)
-    description = StringField(max_length=255)
-
-    def serialize(self) -> dict:
-        return {
-            "name": self.name,
-            "description": self.description,
-        }
-
-
 class User(Document):
     email = StringField(max_length=255)
     password = StringField(max_length=255)  # User information
     first_name = StringField(default="")
     last_name = StringField(default="")
-    roles = ListField(ReferenceField(Role), default=[])
+    role = StringField(default="standard")
 
     def serialize(self) -> dict:
         return {
@@ -55,7 +44,7 @@ class User(Document):
             "email": self.email,
             "first_name": self.first_name,
             "last_name": self.last_name,
-            "roles": [x.serialize() for x in self.roles],
+            "role": self.role,
         }
 
 
