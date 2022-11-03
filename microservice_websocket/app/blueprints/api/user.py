@@ -16,4 +16,4 @@ def get_user_info_route():
     if user is None:
         return {"msg": "Not Found"}, 404
 
-    return jsonify(user.to_json())
+    return jsonify(user.serialize())
