@@ -9,7 +9,7 @@ user_bp = Blueprint("blueprint", __name__, url_prefix="/user")
 @user_bp.route("/info", methods=["GET"])
 @jwt_required()
 def get_user_info_route():
-    user_id = get_jwt_identity()["_id"]["$oid"]
+    user_id = get_jwt_identity()["id"]
 
     user = get_user_info(user_id)
 
