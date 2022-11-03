@@ -34,13 +34,6 @@ class TestGetUserInfo:
             if user["email"] != "bettarini@monema.it":
                 user.delete()
 
-    def test_get_user_info_invalid_id(self, app_client: FlaskClient, auth_header):
-        response = app_client.get(self.endpoint, headers=auth_header)
-
-        assert (
-            response.status_code == 400
-        ), "Invalid response code when trying to get invalid id"
-
     def test_get_non_existing_user(self, app_client: FlaskClient, auth_header, obj_id):
         response = app_client.get(self.endpoint + obj_id, headers=auth_header)
 
@@ -129,22 +122,6 @@ class TestUpdateUser:
             response.status_code == 400
         ), "Invalid response code when trying to update user with invalid payload"
 
-    def test_update_user_invalid_id(self, app_client: FlaskClient, auth_header):
-        response = app_client.put(
-            self.endpoint,
-            json={
-                "email": "foo",
-                "newPassword": "bar",
-                "oldPassword": "baz",
-                "role": "admin",
-            },
-            headers=auth_header,
-        )
-
-        assert (
-            response.status_code == 400
-        ), "Invalid response code when trying to update user with invalid id"
-
     def test_update_non_existing_user(
         self, app_client: FlaskClient, auth_header, obj_id
     ):
@@ -194,13 +171,6 @@ class TestUpdateUser:
 
 class TestDeleteUser:
     endpoint = "/api/user/"
-
-    def test_delete_invalid_user_id(self, app_client: FlaskClient, auth_header):
-        response = app_client.delete(self.endpoint, headers=auth_header)
-
-        assert (
-            response.status_code == 400
-        ), "Invalid response code when trying to delete user with invalid user id"
 
     def test_delete_non_existing_user(
         self, app_client: FlaskClient, auth_header, obj_id
