@@ -3,13 +3,7 @@ from __future__ import annotations
 from flask import Flask
 from flask_mongoengine import Document, MongoEngine
 from mongoengine import IntField
-from mongoengine.fields import (
-    BooleanField,
-    DateTimeField,
-    ListField,
-    ReferenceField,
-    StringField,
-)
+from mongoengine.fields import BooleanField, DateTimeField, ReferenceField, StringField
 
 from ...utils.enums import NodeState
 
