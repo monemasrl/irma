@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from ...services.database.models import User
+from ...services.database import User
 from ...services.jwt import get_user_from_jwt
 
 user_router = APIRouter(prefix="/user")
