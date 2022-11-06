@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 
+from beanie import PydanticObjectId
+
 from ..config import config
 from ..services.database import Reading
 from .external_archiviation import send_payload
@@ -11,21 +13,22 @@ def add_to_cache(readingObjectID: str):
     redis_client.sadd("idCache", readingObjectID)
 
 
-def sync_cached():
+async def sync_cached():
     from .. import redis_client
 
-    ids: list[str] = redis_client.smembers("idCache")
+    ids: set[bytes] = redis_client.smembers("idCache")
 
     # Loop set items
-    for readingObjectId in [x.decode() for x in ids]:
-        reading: Reading = Reading.objects(id=readingObjectId).first()
+    for reading_object_id in [x.decode() for x in ids]:
+        reading: Reading | None = await Reading.get(PydanticObjectId(reading_object_id))
         if reading is None:
-            redis_client.srem("idCache", readingObjectId)
+            redis_client.srem("idCache", reading_object_id)
+            continue
 
-        publishedAt = reading["publishedAt"]
+        publishedAt = reading.publishedAt
 
         if datetime.now() - publishedAt > timedelta(
             seconds=config["READING_SYNC_WAIT"]
         ):
-            send_payload(reading.serialize())
-            redis_client.srem("idCache", readingObjectId)
+            send_payload(reading)
+            redis_client.srem("idCache", reading_object_id)

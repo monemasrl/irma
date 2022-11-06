@@ -1,19 +1,27 @@
-from flask import Blueprint, jsonify
-from flask_jwt_extended import get_jwt_identity, jwt_required
+from typing import Optional
 
-from ...utils.user import get_user_info
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
-user_bp = Blueprint("blueprint", __name__, url_prefix="/user")
+from ...services.database.models import User
+from ...services.jwt import get_user_from_jwt
+
+user_router = APIRouter(prefix="/user")
 
 
-@user_bp.route("/info", methods=["GET"])
-@jwt_required()
-def get_user_info_route():
-    user_id = get_jwt_identity()["id"]
+class UserInfoResponse(BaseModel):
+    email: str
+    first_name: Optional[str]
+    last_name: Optional[str]
+    role: str
 
-    user = get_user_info(user_id)
 
-    if user is None:
-        return {"msg": "Not Found"}, 404
+@user_router.get("/info", response_model=UserInfoResponse)
+def get_user_info_route(user: User = Depends(get_user_from_jwt)):
 
-    return jsonify(user.serialize())
+    return UserInfoResponse(
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        role=user.role,
+    )

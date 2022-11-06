@@ -1,25 +1,15 @@
-class ObjectNotFoundException(Exception):
-    """Exception raised when a database query returns no objects
+from fastapi import HTTPException, status
 
-    Attributes:
-        object_type -- the object-type that has been queried
-    """
 
-    def __init__(self, obj):
-        self.object_type = type(obj)
+class DuplicateException(HTTPException):
+    def __init__(self, field_name: str):
         super().__init__(
-            f"Database query of object-type {self.object_type} returned no objects"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Duplicate field '{field_name}'",
         )
 
 
-class ObjectAttributeAlreadyUsedException(Exception):
-    """Exception raised when attempting to create an object with an attribute
-    that conflicts with an attribute with an object alreay in the db.
-
-    Attributes:
-        attribute -- the attrbiute that's already been used
-    """
-
-    def __init__(self, attribute):
-        self.attribute = attribute
-        super().__init__(f"Value '{attribute}' is already used")
+class NotFoundException(HTTPException):
+    def __init__(self, detail: str | None = None):
+        detail = "Not found" if detail is None else f"'{detail}' not found"
+        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=detail)

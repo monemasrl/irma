@@ -1,13 +1,12 @@
-from flask import Flask
-from flask_apscheduler import APScheduler
 import requests
-from ...utils.sync_cache import sync_cached
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 from ...config import config
+from ...utils.sync_cache import sync_cached
 
 
-def init_scheduler(app: Flask):
-    scheduler = APScheduler()
-    scheduler.init_app(app)
+def init_scheduler():
+    scheduler = AsyncIOScheduler()
 
     @scheduler.task(
         "interval", id="update_state", seconds=config["NODE_TIMEOUT_CHECK_INTERVAL"]
@@ -16,7 +15,7 @@ def init_scheduler(app: Flask):
         requests.get("http://localhost:5000/api/check")
 
     @scheduler.task("interval", id="sync_cache", seconds=config["CHECK_SYNC_READY"])
-    def periodically_sync_cache():
-        sync_cached()
+    async def periodically_sync_cache():
+        await sync_cached()
 
     scheduler.start()

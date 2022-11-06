@@ -1,47 +1,49 @@
 from datetime import datetime
 
-from ..services.database import Alert, User
-from .exceptions import ObjectNotFoundException
+from beanie import PydanticObjectId
+
+from ..blueprints.api.models import HandlePayload
+from ..services.database import Alert, Node, Reading, User
+from ..services.database.utils import fetch_or_raise
+from .exceptions import NotFoundException
 from .node import update_state
 from .payload import PayloadType
 
 
-def handle_alert(received: dict, user_id: str):
-    alert = Alert.objects(id=received["alertID"]).first()
-
+async def handle_alert(payload: HandlePayload, user: User):
+    alert: Alert | None = await Alert.get(PydanticObjectId(payload.alertID))
     if alert is None:
-        raise ObjectNotFoundException(Alert)
+        raise NotFoundException("Alert")
 
-    node = alert["node"]
-    user = User.objects(id=user_id).first()
+    node = await fetch_or_raise(alert.node)
 
-    alert["isConfirmed"] = received["isConfirmed"]
-    alert["isHandled"] = True
-    alert["handledBy"] = user
-    alert["handledAt"] = datetime.now()
-    alert["handleNote"] = received["handleNote"]
-    alert.save()
+    alert.isConfirmed = payload.isConfirmed
+    alert.isHandled = True
+    alert.handledBy = User.link_from_id(user.id)
+    alert.handledAt = datetime.now()
+    alert.handleNote = payload.handleNote
+    await alert.save()
 
-    if Alert.objects(node=node, isHandled=False).first() is None:
-        node["state"] = update_state(
-            node["state"], node["lastSeenAt"], PayloadType.HANDLE_ALERT
-        )
-        node.save()
+    if await Alert.find_one(Alert.node == node and not Alert.isHandled) is None:
+        node.state = update_state(node.state, node.lastSeenAt, PayloadType.HANDLE_ALERT)
+        await node.save()
 
     return alert
 
 
-def alert_info(alertID: str) -> dict:
-    alert = Alert.objects(id=alertID).first()
-
+async def alert_info(alert_id: str) -> dict:
+    alert: Alert | None = await Alert.get(PydanticObjectId(alert_id))
     if alert is None:
-        raise ObjectNotFoundException(Alert)
+        raise NotFoundException("Alert")
+
+    reading: Reading = await fetch_or_raise(alert.reading)
+    node: Node = await fetch_or_raise(alert.node)
 
     return {
-        "nodeID": alert["reading"]["nodeID"],
-        "sessionID": alert["reading"]["sessionID"],
-        "readingID": alert["reading"]["readingID"],
-        "canID": alert["reading"]["canID"],
-        "alertID": alertID,
-        "raisedAt": int(alert["raisedAt"].timestamp()),
+        "nodeID": node.nodeID,
+        "sessionID": reading.sessionID,
+        "readingID": reading.readingID,
+        "canID": reading.canID,
+        "alertID": alert_id,
+        "raisedAt": int(alert.raisedAt.timestamp()),
     }

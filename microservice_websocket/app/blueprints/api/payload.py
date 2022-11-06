@@ -1,45 +1,36 @@
-import json
-
-from flask import Blueprint, request
-from flask_jwt_extended import jwt_required
+from fastapi import APIRouter, Depends, Header
+from pydantic import BaseModel
 
 from ... import socketio
-from ...utils.api_token import api_token_required
-from ...utils.exceptions import ObjectNotFoundException
+from ...services.jwt import jwt_required
+from ...utils.api_token import verify_api_token
 from ...utils.payload import publish, send_mqtt_command
+from .models import PublishPayload
 
-payload_bp = Blueprint("payload", __name__, url_prefix="/payload")
+payload_routr = APIRouter(prefix="/payload")
 
 
-@payload_bp.route("/publish", methods=["POST"])
-@api_token_required
-def _publish_route():
-    data = request.data.decode()
+class MqttCommandPayload(BaseModel):
+    nodeID: str
+    applicationID: str
+    command: int
 
-    record: dict = json.loads(data)
 
-    try:
-        publish(record)
-    except ObjectNotFoundException:
-        return {"message": "Not Found"}, 404
+@payload_routr.post("/publish")
+async def publish_route(
+    payload: PublishPayload, authorization: str | None = Header(default=None)
+):
+    verify_api_token(authorization)
+
+    await publish(payload)
 
     socketio.emit("change")
     socketio.emit("change-reading")
-    return record
+    return {"message": "Published"}
 
 
-@payload_bp.route("/command", methods=["POST"])
-@jwt_required()
-def _send_mqtt_command_route():
-    received: dict = json.loads(request.data)
+@payload_routr.post("/command", dependencies=[Depends(jwt_required)])
+async def send_mqtt_command_route(payload: MqttCommandPayload):
+    await send_mqtt_command(payload.applicationID, payload.nodeID, payload.command)
 
-    applicationID = received.get("applicationID", None)
-    nodeID = received.get("nodeID", None)
-
-    if applicationID is None or nodeID is None:
-        return {"message": "Bad Request"}, 400
-
-    send_mqtt_command(applicationID, nodeID, received["command"])
-
-    print(received)
-    return received
+    return {"message": "Sent"}

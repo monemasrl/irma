@@ -1,15 +1,17 @@
-from flask_socketio import SocketIO
-
-
-def init_socketio(socketio: SocketIO):
-    @socketio.on("connect")
-    def connected():
-        print("Connected")
-
-    @socketio.on("disconnect")
-    def disconnected():
-        print("Disconnected")
-
-    @socketio.on("change")
-    def onChange():
-        print("Changed")
+# from socketio import Client
+#
+#
+# def init_socketio():
+#     socketio = Client()
+#
+#     @socketio.on("connect")
+#     def connected():
+#         print("Connected")
+#
+#     @socketio.on("disconnect")
+#     def disconnected():
+#         print("Disconnected")
+#
+#     @socketio.on("change")
+#     def onChange():
+#         print("Changed")

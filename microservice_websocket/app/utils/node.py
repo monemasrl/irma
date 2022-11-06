@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
 
+from beanie import PydanticObjectId
+
 from ..config import config
-from ..services.database import Node
+from ..services.database import Application, Node
 from .enums import NodeState, PayloadType
-from .exceptions import ObjectNotFoundException
+from .exceptions import NotFoundException
 
 
 def update_state_total_reading(current_state: NodeState, dato: int) -> NodeState:
@@ -86,12 +88,15 @@ def update_state(
     return current_state
 
 
-def get_nodes(applicationID: str):
-    nodes = Node.objects(application=applicationID)
+async def get_nodes(applicationID: str):
+    application: Application | None = await Application.get(
+        PydanticObjectId(applicationID)
+    )
+    if application is None:
+        raise NotFoundException("Application")
 
-    if len(nodes) == 0:
-        raise ObjectNotFoundException(Node)
+    nodes: list[Node] = await Node.find(Node.application == applicationID).to_list()
 
-    nodes = [x.to_dashboard() for x in nodes]
+    # nodes = [x.to_dashboard() for x in nodes]
 
     return nodes

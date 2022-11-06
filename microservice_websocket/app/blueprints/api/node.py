@@ -1,23 +1,21 @@
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
-from ...utils.exceptions import ObjectNotFoundException
+from ...services.database import Node
+from ...services.jwt import jwt_required
 from ...utils.node import get_nodes
 
-node_bp = Blueprint("node", __name__, url_prefix="/nodes")
+node_router = APIRouter(prefix="/nodes")
 
 
-@node_bp.route("/", methods=["GET"])
-@jwt_required()
-def get_nodes_route():
-    applicationID: str = request.args.get("applicationID", "")
+class GetNodesResponse(BaseModel):
+    nodes: list[Node]
 
-    if applicationID == "":
-        return {"message": "Bad Request"}, 400
 
-    try:
-        nodes = get_nodes(applicationID)
-    except ObjectNotFoundException:
-        return {"message": "Not Found"}, 404
+@node_router.get(
+    "/", dependencies=[Depends(jwt_required)], response_model=GetNodesResponse
+)
+async def get_nodes_route(applicationID: str):
+    nodes: list[Node] = await get_nodes(applicationID)
 
-    return jsonify(nodes=nodes)
+    return {"nodes": nodes}

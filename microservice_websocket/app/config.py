@@ -11,8 +11,6 @@ class Config(TypedDict):
     CHECK_SYNC_READY: int
 
 
-config: Config = {}
-
 script_path = os.path.abspath(__file__)
 path_list = script_path.split(os.sep)
 relpath = "/config/config.json"
@@ -20,4 +18,4 @@ relpath = "/config/config.json"
 path = "/".join(path_list[:-2]) + relpath
 
 with open(path) as f:
-    config = json.load(f)
+    config: Config = json.load(f)

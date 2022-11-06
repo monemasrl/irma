@@ -1,47 +1,33 @@
-import json
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required
-
+from ...services.database import Application
+from ...services.jwt import jwt_required
 from ...utils.application import create_application, get_applications
-from ...utils.exceptions import (
-    ObjectAttributeAlreadyUsedException,
-    ObjectNotFoundException,
+
+application_router = APIRouter(prefix="/applications")
+
+
+class GetOrgsResponse(BaseModel):
+    applications: list[Application]
+
+
+class CreateAppPayload(BaseModel):
+    name: str
+    organizationID: str
+
+
+@application_router.get(
+    "/", dependencies=[Depends(jwt_required)], response_model=GetOrgsResponse
 )
+async def get_applications_route(organizationID: str):
+    applications = await get_applications(organizationID)
 
-application_bp = Blueprint("application", __name__, url_prefix="/applications")
-
-
-@application_bp.route("/<organizationID>", methods=["POST"])
-@jwt_required()
-def _create_application_route(organizationID):
-    record: dict = json.loads(request.data)
-    name = record.get("name", None)
-
-    if name is None:
-        return {"message": "Bad Request"}, 400
-
-    try:
-        application = create_application(organizationID, name)
-    except ObjectNotFoundException:
-        return {"message": "not found"}, 404
-    except ObjectAttributeAlreadyUsedException:
-        return {"message": "name already in use"}, 400
-
-    return application.to_json()
+    return {"applications": applications}
 
 
-@application_bp.route("/", methods=["GET"])
-@jwt_required()
-def _get_applications_route():
-    organizationID: str = request.args.get("organizationID", "")
+@application_router.post("/create")
+async def create_application_route(payload: CreateAppPayload):
+    application = await create_application(payload.organizationID, payload.name)
 
-    if organizationID == "":
-        return {"message": "Bad Request"}, 400
-
-    try:
-        applications = get_applications(organizationID)
-    except ObjectNotFoundException:
-        return {"message": "Not Found"}, 404
-
-    return jsonify(applications=applications)
+    return application

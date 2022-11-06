@@ -1,131 +1,152 @@
 from datetime import datetime
 
+from beanie import PydanticObjectId
+
 from .. import mqtt
+from ..blueprints.api.models import PublishPayload
 from ..config import config
 from ..services.database import Alert, Application, Node, Reading
 from .enums import NodeState, PayloadType
-from .exceptions import ObjectNotFoundException
+from .exceptions import NotFoundException
 from .node import update_state
 from .sync_cache import add_to_cache
 
 DISABLE_MQTT = False
 
 
-def publish(record: dict) -> dict:
-
-    applicationID: str = record["applicationID"]
-    nodeID: str = record["nodeID"]
-
-    application = Application.objects(id=applicationID).first()
-
+async def publish(payload: PublishPayload):
+    application: Application | None = await Application.get(
+        PydanticObjectId(payload.applicationID)
+    )
     if application is None:
-        raise ObjectNotFoundException(Application)
+        raise NotFoundException("Application")
 
-    node = Node.objects(nodeID=nodeID).first()
+    node: Node | None = await Node.find_one(
+        Node.application == application and Node.nodeID == payload.nodeID
+    )
 
     if node is None:
         node = Node(
-            nodeID=nodeID,
-            application=application,
-            organization=application["organization"],
-            nodeName=record["nodeName"],
+            nodeID=payload.nodeID,
+            application=Application.link_from_id(application.id),
+            nodeName=payload.nodeName,
             state=NodeState.READY,
             lastSeenAt=datetime.now(),
         )
-        node.save()
+        await node.save()
 
-    if record["payloadType"] == PayloadType.TOTAL_READING:
-        handle_total_reading(node, record)
+    if payload.payloadType == PayloadType.TOTAL_READING:
+        await handle_total_reading(node, payload)
 
-    elif record["payloadType"] == PayloadType.WINDOW_READING:
-        handle_window_reading(node, record)
+    elif payload.payloadType == PayloadType.WINDOW_READING:
+        await handle_window_reading(node, payload)
 
-    value = record["data"].get("value", 0)
+    data = payload.data
+    value = data.value if data else 0
 
-    node["lastSeenAt"] = datetime.now()
-    node["state"] = update_state(
-        node["state"],
-        node["lastSeenAt"],
-        record["payloadType"],
+    node.lastSeenAt = datetime.now()
+    node.state = update_state(
+        node.state,
+        node.lastSeenAt,
+        payload.payloadType,
         value,
     )
-    node.save()
-
-    return record
+    await node.save()
 
 
-def handle_total_reading(node: Node, record: dict):
-    reading = Reading.objects(
-        nodeID=node["nodeID"],
-        readingID=record["data"]["readingID"],
-        canID=record["data"]["canID"],
-        sensorNumber=record["data"]["sensorNumber"],
-    ).first()
+async def handle_total_reading(node: Node, record: PublishPayload):
+    data = record.data
+    # TODO: fix
+    assert data
+
+    reading: Reading | None = await Reading.find_one(
+        Reading.node == node
+        and Reading.readingID == data.readingID
+        and Reading.canID == data.canID
+        and Reading.sensorNumber == data.sensorNumber
+    )
 
     if reading is None:
         reading = Reading(
-            nodeID=node["nodeID"],
-            canID=record["data"]["canID"],
-            sensorNumber=record["data"]["sensorNumber"],
-            readingID=record["data"]["readingID"],
-            sessionID=record["data"]["sessionID"],
+            node=Node.link_from_id(node.id),
+            canID=data.canID,
+            sensorNumber=data.sensorNumber,
+            readingID=data.readingID,
+            sessionID=data.sessionID,
             publishedAt=datetime.now(),
         )
 
-    reading["dangerLevel"] = record["data"]["value"]
-    reading.save()
-    add_to_cache(str(reading["id"]))
+    reading.dangerLevel = data.value
+    await reading.save()
+    add_to_cache(str(reading.id))
 
-    if reading["dangerLevel"] >= config["ALERT_TRESHOLD"]:
-        alert = Alert.objects(sessionID=reading["sessionID"], isHandled=False).first()
+    if reading.dangerLevel >= config["ALERT_TRESHOLD"]:
+        alert: Alert | None = await Alert.find_one(
+            Alert.sessionID == reading.sessionID and not Alert.isHandled
+        )
 
         if alert is None:
             alert = Alert(
-                reading=reading,
-                node=node,
-                sessionID=reading["sessionID"],
+                reading=Reading.link_from_id(reading.id),
+                node=Node.link_from_id(node.id),
+                sessionID=reading.sessionID,
                 isHandled=False,
                 raisedAt=datetime.now(),
             )
-            alert.save()
+            await alert.save()
 
 
-def handle_window_reading(node: Node, record: dict):
-    reading = Reading.objects(
-        nodeID=node["nodeID"],
-        readingID=record["data"]["readingID"],
-        canID=record["data"]["canID"],
-        sensorNumber=record["data"]["sensorNumber"],
-    ).first()
+async def handle_window_reading(node: Node, payload: PublishPayload):
+    data = payload.data
+    # TODO: FIX
+    assert data
+
+    reading: Reading | None = await Reading.find_one(
+        Reading.node == node
+        and Reading.readingID == data.readingID
+        and Reading.canID == data.canID
+        and Reading.sensorNumber == data.sensorNumber
+    )
 
     if reading is None:
         reading = Reading(
-            nodeID=node["nodeID"],
-            canID=record["data"]["canID"],
-            sensorNumber=record["data"]["sensorNumber"],
-            sessionID=record["data"]["sessionID"],
-            readingID=record["data"]["readingID"],
+            node=Node.link_from_id(node.id),
+            canID=data.canID,
+            sensorNumber=data.sensorNumber,
+            sessionID=data.sessionID,
+            readingID=data.readingID,
             publishedAt=datetime.now(),
         )
 
-    window_number = record["data"]["value"]
+    window_number = data.value
 
     if window_number == 1:
-        reading["window1_count"] = record["data"]["count"]
+        reading.window1_count = data.count
     elif window_number == 2:
-        reading["window2_count"] = record["data"]["count"]
+        reading.window2_count = data.count
     elif window_number == 3:
-        reading["window3_count"] = record["data"]["count"]
+        reading.window3_count = data.count
     else:
         raise ValueError(f"Unexpected window_number: {window_number}")
 
-    reading.save()
-    add_to_cache(str(reading["id"]))
+    await reading.save()
+    add_to_cache(str(reading.id))
 
 
-def send_mqtt_command(applicationID: str, nodeID: str, command: int):
+async def send_mqtt_command(applicationID: str, nodeID: str, command: int):
+    application: Application | None = await Application.get(
+        PydanticObjectId(applicationID)
+    )
+    if application is None:
+        raise NotFoundException("Application")
+
+    node: Node | None = await Node.find_one(
+        Node.application == application and Node.nodeID == nodeID
+    )
+    if node is None:
+        raise NotFoundException("Node")
+
     topic: str = f"{applicationID}/{nodeID}/command"
-
     data: bytes = command.to_bytes(1, "big")
 
     if not DISABLE_MQTT:
