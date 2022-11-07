@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from datetime import datetime
 
-from beanie import Document, Link, PydanticObjectId
+from beanie import Document, PydanticObjectId
 from beanie.exceptions import DocumentWasNotSaved
 from pydantic import Field
 
@@ -56,8 +58,8 @@ class Reading(CustomDocument):
 
 
 class Alert(CustomDocument):
-    reading: Link[Reading]
-    node: Link[Node]
+    reading: PydanticObjectId
+    node: PydanticObjectId
     sessionID: int
     isHandled: bool = False
     raisedAt: datetime

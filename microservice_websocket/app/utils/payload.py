@@ -28,7 +28,7 @@ async def publish(payload: PublishPayload):
     if node is None:
         node = Node(
             nodeID=payload.nodeID,
-            application=Application.link_from_id(application.id),
+            application=application.id,
             nodeName=payload.nodeName,
             state=NodeState.READY,
             lastSeenAt=datetime.now(),
@@ -68,7 +68,7 @@ async def handle_total_reading(node: Node, record: PublishPayload):
 
     if reading is None:
         reading = Reading(
-            node=Node.link_from_id(node.id),
+            node=node.id,
             canID=data.canID,
             sensorNumber=data.sensorNumber,
             readingID=data.readingID,
@@ -87,8 +87,8 @@ async def handle_total_reading(node: Node, record: PublishPayload):
 
         if alert is None:
             alert = Alert(
-                reading=Reading.link_from_id(reading.id),
-                node=Node.link_from_id(node.id),
+                reading=reading.id,
+                node=node.id,
                 sessionID=reading.sessionID,
                 isHandled=False,
                 raisedAt=datetime.now(),
@@ -110,7 +110,7 @@ async def handle_window_reading(node: Node, payload: PublishPayload):
 
     if reading is None:
         reading = Reading(
-            node=Node.link_from_id(node.id),
+            node=node.id,
             canID=data.canID,
             sensorNumber=data.sensorNumber,
             sessionID=data.sessionID,

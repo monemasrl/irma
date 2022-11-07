@@ -1,4 +1,5 @@
 from beanie import PydanticObjectId
+from beanie.operators import And, Eq
 
 from ..services.database import Application, Organization
 from .exceptions import DuplicateException, NotFoundException
@@ -9,7 +10,7 @@ async def get_applications(organizationID: str) -> list[Application]:
     if organization is None:
         raise NotFoundException("Organization")
 
-    return await Application.find(Application.organization == organization).to_list()
+    return await Application.find(Application.organization == organization.id).to_list()
 
 
 async def create_application(organizationID: str, name: str) -> Application:
@@ -18,14 +19,16 @@ async def create_application(organizationID: str, name: str) -> Application:
         raise NotFoundException("Organization")
 
     application = await Application.find_one(
-        Application.applicationName == name
-        and Application.organization == organization,
+        And(
+            Eq(Application.applicationName, name),
+            Eq(Application.organization, organization.id),
+        )
     )
     if application is not None:
         raise DuplicateException("applicationName")
 
     application = Application(
-        applicationName=name, organization=Organization.link_from_id(organization.id)
+        applicationName=name, organization=PydanticObjectId(organizationID)
     )
     await application.save()
 

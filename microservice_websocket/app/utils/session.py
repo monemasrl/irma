@@ -1,9 +1,11 @@
+from beanie.operators import Eq
+
 from ..services.database import Node, Reading
 from .exceptions import NotFoundException
 
 
 async def get_session(nodeID: int, sessionID: int | None) -> list[Reading]:
-    node: Node | None = await Node.find_one(Node.nodeID == nodeID)
+    node: Node | None = await Node.find_one(Eq(Node.nodeID, nodeID))
     if node is None:
         raise NotFoundException("Node")
 

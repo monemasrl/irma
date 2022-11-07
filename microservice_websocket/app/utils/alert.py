@@ -1,10 +1,10 @@
 from datetime import datetime
 
 from beanie import PydanticObjectId
+from beanie.operators import And
 
 from ..blueprints.api.models import HandlePayload
 from ..services.database import Alert, Node, Reading, User
-from ..services.database.utils import fetch_or_raise
 from .exceptions import NotFoundException
 from .node import update_state
 from .payload import PayloadType
@@ -15,16 +15,18 @@ async def handle_alert(payload: HandlePayload, user: User):
     if alert is None:
         raise NotFoundException("Alert")
 
-    node = await fetch_or_raise(alert.node)
+    node: Node | None = await Node.get(PydanticObjectId(alert.node))
+    if node is None:
+        raise NotFoundException("Node")
 
     alert.isConfirmed = payload.isConfirmed
     alert.isHandled = True
-    alert.handledBy = User.link_from_id(user.id)
+    alert.handledBy = user.id
     alert.handledAt = datetime.now()
     alert.handleNote = payload.handleNote
     await alert.save()
 
-    if await Alert.find_one(Alert.node == node and not Alert.isHandled) is None:
+    if (await Alert.find_one(And({"node": node}, {"isHandled": False}))) is None:
         node.state = update_state(node.state, node.lastSeenAt, PayloadType.HANDLE_ALERT)
         await node.save()
 
@@ -36,8 +38,13 @@ async def alert_info(alert_id: str) -> dict:
     if alert is None:
         raise NotFoundException("Alert")
 
-    reading: Reading = await fetch_or_raise(alert.reading)
-    node: Node = await fetch_or_raise(alert.node)
+    reading: Reading | None = await Reading.get(alert.reading)
+    if reading is None:
+        raise NotFoundException("Reading")
+
+    node: Node | None = await Node.get(alert.node)
+    if node is None:
+        raise NotFoundException("Node")
 
     return {
         "nodeID": node.nodeID,
