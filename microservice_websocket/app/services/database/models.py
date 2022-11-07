@@ -1,39 +1,49 @@
 from datetime import datetime
-from typing import Optional
 
-from beanie import Document, Link
+from beanie import Document, Link, PydanticObjectId
+from beanie.exceptions import DocumentWasNotSaved
 from pydantic import Field
 
 from ...utils.enums import NodeState
 
 
-class Organization(Document):
+class CustomDocument(Document):
+    @property
+    def id(self) -> PydanticObjectId:
+        obj_id = super().id
+        if obj_id is None:
+            raise DocumentWasNotSaved
+
+        return obj_id
+
+
+class Organization(CustomDocument):
     organizationName: str
 
 
-class Application(Document):
+class Application(CustomDocument):
     applicationName: str
-    organization: Link[Organization]
+    organization: PydanticObjectId
 
 
-class User(Document):
+class User(CustomDocument):
     email: str
     hashed_password: str
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    first_name: str = ""
+    last_name: str = ""
     role: str = "standard"
 
 
-class Node(Document):
+class Node(CustomDocument):
     nodeID: int
     nodeName: str
-    application: Link[Application]
+    application: PydanticObjectId
     state: NodeState
     lastSeenAt: datetime
 
 
-class Reading(Document):
-    node: Link[Node]
+class Reading(CustomDocument):
+    node: PydanticObjectId
     canID: int = Field(default=..., lt=5, gt=0)
     sensorNumber: int = Field(default=..., lt=3, gt=0)
     readingID: int
@@ -45,13 +55,13 @@ class Reading(Document):
     publishedAt: datetime
 
 
-class Alert(Document):
+class Alert(CustomDocument):
     reading: Link[Reading]
     node: Link[Node]
     sessionID: int
     isHandled: bool = False
     raisedAt: datetime
     isConfirmed: bool = False
-    handledBy: Optional[Link[User]] = None
-    handledAt: Optional[datetime] = None
+    handledBy: PydanticObjectId | None = None
+    handledAt: datetime | None = None
     handleNote: str = ""
