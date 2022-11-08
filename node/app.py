@@ -90,11 +90,11 @@ class Node:
     def send_data(
         self,
         payload_type: PayloadType,
-        data: DecodedMessage = None,
+        data: DecodedMessage | None = None,
     ):
 
         if data is None:
-            data_entry = {}
+            data_entry = None
         else:
             data_entry = {
                 "canID": data["n_detector"],

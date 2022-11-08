@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from beanie import PydanticObjectId
+from beanie.operators import And, Eq
 
 from .. import mqtt
 from ..blueprints.api.models import PublishPayload
@@ -22,7 +23,7 @@ async def publish(payload: PublishPayload):
         raise NotFoundException("Application")
 
     node: Node | None = await Node.find_one(
-        Node.application == application and Node.nodeID == payload.nodeID
+        And(Eq(Node.application, application.id), Eq(Node.nodeID, payload.nodeID))
     )
 
     if node is None:
@@ -60,10 +61,12 @@ async def handle_total_reading(node: Node, record: PublishPayload):
     assert data
 
     reading: Reading | None = await Reading.find_one(
-        Reading.node == node
-        and Reading.readingID == data.readingID
-        and Reading.canID == data.canID
-        and Reading.sensorNumber == data.sensorNumber
+        And(
+            Eq(Reading.node, node.id),
+            Eq(Reading.readingID, data.readingID),
+            Eq(Reading.canID, data.canID),
+            Eq(Reading.sensorNumber, data.sensorNumber),
+        )
     )
 
     if reading is None:
@@ -82,7 +85,7 @@ async def handle_total_reading(node: Node, record: PublishPayload):
 
     if reading.dangerLevel >= config["ALERT_TRESHOLD"]:
         alert: Alert | None = await Alert.find_one(
-            Alert.sessionID == reading.sessionID and not Alert.isHandled
+            And(Eq(Alert.sessionID, reading.sessionID), Eq(Alert.isHandled, False))
         )
 
         if alert is None:
@@ -102,10 +105,12 @@ async def handle_window_reading(node: Node, payload: PublishPayload):
     assert data
 
     reading: Reading | None = await Reading.find_one(
-        Reading.node == node
-        and Reading.readingID == data.readingID
-        and Reading.canID == data.canID
-        and Reading.sensorNumber == data.sensorNumber
+        And(
+            Eq(Reading.node, node.id),
+            Eq(Reading.readingID, data.readingID),
+            Eq(Reading.canID, data.canID),
+            Eq(Reading.sensorNumber, data.sensorNumber),
+        )
     )
 
     if reading is None:
@@ -121,11 +126,11 @@ async def handle_window_reading(node: Node, payload: PublishPayload):
     window_number = data.value
 
     if window_number == 1:
-        reading.window1_count = data.count
+        reading.window1 = data.count
     elif window_number == 2:
-        reading.window2_count = data.count
+        reading.window2 = data.count
     elif window_number == 3:
-        reading.window3_count = data.count
+        reading.window3 = data.count
     else:
         raise ValueError(f"Unexpected window_number: {window_number}")
 
@@ -141,7 +146,7 @@ async def send_mqtt_command(applicationID: str, nodeID: str, command: int):
         raise NotFoundException("Application")
 
     node: Node | None = await Node.find_one(
-        Node.application == application and Node.nodeID == nodeID
+        And(Eq(Node.application, application.id), Eq(Node.nodeID, nodeID))
     )
     if node is None:
         raise NotFoundException("Node")

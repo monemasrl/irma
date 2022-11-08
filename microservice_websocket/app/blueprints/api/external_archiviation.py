@@ -36,7 +36,7 @@ def add_external_endpoint_route(payload: ExternalPayload):
 
 
 @ext_arch_router.delete("/", dependencies=[Depends(jwt_required)])
-def delete_external_endpoint_route(payload: ExternalPayload):
-    delete_external_endpoint(payload.endpoint)
+def delete_external_endpoint_route(endpoint: str):
+    delete_external_endpoint(endpoint)
 
     return {"message": "Deleted"}, 200

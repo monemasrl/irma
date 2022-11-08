@@ -9,16 +9,11 @@
 #     access_token = create_access_token(identity=identity)
 #     return jsonify(access_token=access_token)
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel
 
-from ...services.database import User
 from ...services.database.user_manager import auth_user
-from ...services.jwt import (
-    create_access_token,
-    credentials_exception,
-    get_user_from_jwt,
-)
+from ...services.jwt import create_access_token, credentials_exception
 
 jwt_router = APIRouter(prefix="/jwt")
 
@@ -36,8 +31,3 @@ async def authenticate_route(payload: AuthPayload):
     access_token: str = create_access_token(payload.email)
 
     return {"access_token": access_token}
-
-
-@jwt_router.get("/test")
-async def test_rotue(user: User = Depends(get_user_from_jwt)):
-    return {"message": f"Hi {user.email}"}

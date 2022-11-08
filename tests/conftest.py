@@ -1,7 +1,12 @@
+from datetime import datetime
+
 import pytest
+from beanie import PydanticObjectId
 from fastapi.testclient import TestClient
+from test_microservice_websocket.router_test_routes import test_router
 
 from microservice_websocket.app import app
+from microservice_websocket.app.services.database import Reading
 
 # @pytest.fixture()
 # def isoTimestamp() -> str:
@@ -37,6 +42,7 @@ from microservice_websocket.app import app
 
 @pytest.fixture
 def app_client() -> TestClient:
+    app.include_router(test_router)
     with TestClient(app) as client:
         return client
 
@@ -75,17 +81,17 @@ def obj_id() -> str:
     return "63186eab0ca2d54a5c258384"
 
 
-# @pytest.fixture()
-# def reading() -> dict:
-#     return Reading(
-#         nodeID=1,
-#         canID=2,
-#         sensorNumber=1,
-#         readingID=1_640_200,
-#         sessionID=1_640_000,
-#         dangerLevel=4,
-#         window1_count=111,
-#         window2_count=222,
-#         window3_count=333,
-#         publishedAt=datetime.now(),
-#     ).serialize()
+@pytest.fixture()
+def reading(obj_id: str) -> Reading:
+    return Reading(
+        node=PydanticObjectId(obj_id),
+        canID=2,
+        sensorNumber=1,
+        readingID=1_640_200,
+        sessionID=1_640_000,
+        dangerLevel=4,
+        window1=111,
+        window2=222,
+        window3=333,
+        publishedAt=datetime.now(),
+    )

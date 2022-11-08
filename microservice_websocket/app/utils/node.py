@@ -95,7 +95,7 @@ async def get_nodes(applicationID: str):
     if application is None:
         raise NotFoundException("Application")
 
-    nodes: list[Node] = await Node.find(Node.application == applicationID).to_list()
+    nodes: list[Node] = await Node.find(Node.application == application.id).to_list()
 
     # nodes = [x.to_dashboard() for x in nodes]
 

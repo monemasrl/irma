@@ -44,8 +44,9 @@
 #
 #     return app
 
+# from redis import Redis
+from fakeredis import FakeStrictRedis
 from fastapi import FastAPI
-from redis import Redis
 from socketio import Client as SocketIOClient
 
 from .services.database import init_db, user_manager
@@ -58,7 +59,8 @@ DISABLE_MQTT = True
 socketio = SocketIOClient()
 mqtt = None
 # TODO: move to config
-redis_client = Redis(host="lolcahost", port=6379)
+# redis_client = Redis(host="localhost", port=6379)
+redis_client = FakeStrictRedis()
 
 app = FastAPI()
 

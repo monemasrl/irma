@@ -24,3 +24,12 @@ class PublishPayload(BaseModel):
     nodeName: str
     payloadType: PayloadType
     data: PublishPayloadData | None
+
+
+class AlertInfo(BaseModel):
+    alertID: str
+    nodeID: int
+    sessionID: int
+    readingID: int
+    canID: int
+    raisedAt: int

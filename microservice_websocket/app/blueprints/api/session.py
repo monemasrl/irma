@@ -13,14 +13,14 @@ class GetSessionResponse(BaseModel):
 
 
 class GetSessionIDsResponse(BaseModel):
-    IDS: list[int]
+    IDs: list[int]
 
 
 @session_router.get(
     "/", dependencies=[Depends(jwt_required)], response_model=GetSessionResponse
 )
 async def get_reading_session(nodeID: int, sessionID: int | None = None):
-    readings = get_session(nodeID, sessionID)
+    readings = await get_session(nodeID, sessionID)
 
     return {"readings": readings}
 
@@ -28,7 +28,7 @@ async def get_reading_session(nodeID: int, sessionID: int | None = None):
 @session_router.get(
     "/ids", dependencies=[Depends(jwt_required)], response_model=GetSessionIDsResponse
 )
-def get_sessions_id_route(nodeID: int):
-    sessions_id = get_sessions_id(nodeID)
+async def get_sessions_id_route(nodeID: int):
+    sessions_id = await get_sessions_id(nodeID)
 
     return {"IDs": sessions_id}
