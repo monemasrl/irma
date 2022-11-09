@@ -5,8 +5,6 @@ from mock import mock_open, patch
 from microservice_websocket.app.services import database as db
 from microservice_websocket.app.utils.enums import NodeState, PayloadType
 
-# TODO: ALERT_TRESHOLD from configs
-
 
 class TestPublishPayload:
     endpoint = "/api/payload/publish"

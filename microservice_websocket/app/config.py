@@ -17,7 +17,7 @@ class AppConfig(BaseModel):
 
 class JwtConfig(BaseModel):
     secret_key: str
-    access_token_expires: int = 3600
+    access_token_expires_minutes: int = 10
 
 
 class MQTTConfig(BaseModel):

@@ -22,13 +22,13 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
+from ...config import config as Config
 from ..database import User
 from ..database.user_manager import get_user_from_mail
 
-# TODO: move to config
-SECRET_KEY = "2f74b51642e77be0adf1c1d61ca95fd47a2a458f2859362f93e2af53cd002ecd"
+SECRET_KEY = Config.jwt.secret_key
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = Config.jwt.access_token_expires_minutes
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

@@ -10,7 +10,7 @@ config:
 
   jwt:
     secret_key: "pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw"
-    access_token_expires: 3600
+    access_token_expires_minutes: 10
 
   mqtt:
     username: "admin"
