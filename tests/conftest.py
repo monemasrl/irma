@@ -3,9 +3,9 @@ from datetime import datetime
 import pytest
 from beanie import PydanticObjectId
 from fastapi.testclient import TestClient
+from mock import patch
 from test_microservice_websocket.router_test_routes import test_router
 
-from microservice_websocket.app import app
 from microservice_websocket.app.services.database import Reading
 
 # @pytest.fixture()
@@ -42,9 +42,13 @@ from microservice_websocket.app.services.database import Reading
 
 @pytest.fixture
 def app_client() -> TestClient:
-    app.include_router(test_router)
-    with TestClient(app) as client:
-        return client
+    with patch("microservice_websocket.app.config.TESTING", True):
+
+        from microservice_websocket.app import app
+
+        app.include_router(test_router)
+        with TestClient(app) as client:
+            return client
 
 
 # @pytest.fixture()

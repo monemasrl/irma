@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from beanie import PydanticObjectId
 
-from ..config import config
+from ..config import config as Config
 from ..services.database import Application, Node
 from .enums import NodeState, PayloadType
 from .exceptions import NotFoundException
@@ -14,7 +14,7 @@ def update_state_total_reading(current_state: NodeState, dato: int) -> NodeState
     elif current_state == NodeState.ALERT_READY:
         current_state = NodeState.ALERT_RUNNING
 
-    if dato >= config["ALERT_TRESHOLD"] and current_state == NodeState.RUNNING:
+    if dato >= Config.app.ALERT_TRESHOLD and current_state == NodeState.RUNNING:
         return NodeState.ALERT_RUNNING
 
     return current_state
@@ -81,7 +81,7 @@ def update_state(
         current_state = FUNCTIONS[typ](current_state, dato)
 
     if (datetime.now() - lastSeenAt) > timedelta(
-        seconds=config["NODE_TIMEOUT_INTERVAL"]
+        seconds=Config.app.NODE_TIMEOUT_INTERVAL
     ):
         current_state = NodeState.ERROR
 

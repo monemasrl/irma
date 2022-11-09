@@ -5,7 +5,7 @@ from beanie.operators import And, Eq
 
 from .. import mqtt
 from ..blueprints.api.models import PublishPayload
-from ..config import config
+from ..config import config as Config
 from ..services.database import Alert, Application, Node, Reading
 from .enums import NodeState, PayloadType
 from .exceptions import NotFoundException
@@ -83,7 +83,7 @@ async def handle_total_reading(node: Node, record: PublishPayload):
     await reading.save()
     add_to_cache(str(reading.id))
 
-    if reading.dangerLevel >= config["ALERT_TRESHOLD"]:
+    if reading.dangerLevel >= Config.app.ALERT_TRESHOLD:
         alert: Alert | None = await Alert.find_one(
             And(Eq(Alert.sessionID, reading.sessionID), Eq(Alert.isHandled, False))
         )
