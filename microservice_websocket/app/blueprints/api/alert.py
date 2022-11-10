@@ -22,7 +22,7 @@ async def handle_alert_route(
     return {"message": "Handled"}
 
 
-@alert_router.get("/info")
+@alert_router.get("/info", response_model=AlertInfo)
 async def alert_info_route(alertID: str):
     response: AlertInfo = await alert_info(alertID)
 
