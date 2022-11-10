@@ -9,7 +9,7 @@ def init_scheduler():
     scheduler = AsyncIOScheduler()
 
     def periodically_get_route():
-        requests.get("http://localhost:5000/api/check")
+        requests.get("http://localhost:8000/api/check")
 
     scheduler.add_job(
         periodically_get_route,
