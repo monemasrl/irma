@@ -4,7 +4,7 @@ import yaml
 from pydantic import BaseModel
 from yaml.loader import Loader
 
-TESTING = False
+TESTING = os.environ.get("TESTING", False)
 
 
 class AppConfig(BaseModel):
