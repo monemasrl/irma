@@ -2,8 +2,10 @@ from datetime import datetime
 
 from mobius_adapter.utils import to_mobius_payload
 
+from .conftest import MockReading
 
-def test_to_mobius_payload(reading):
+
+def test_to_mobius_payload(reading: MockReading):
     """
     Coherence test for to_mobius_payload() function
     """
@@ -15,17 +17,17 @@ def test_to_mobius_payload(reading):
                 "metadata": {
                     "sensorId": sensorId,
                     "readingTimestamp": datetime.fromtimestamp(
-                        reading["readingID"]
+                        reading.readingID
                     ).isoformat(),
                 }
             },
             "sensorData": {
-                "canID": reading["canID"],
-                "sensorNumber": reading["sensorNumber"],
-                "dangerLevel": reading["dangerLevel"],
-                "window1Count": reading["window1"],
-                "window2Count": reading["window2"],
-                "window3Count": reading["window3"],
+                "canID": reading.canID,
+                "sensorNumber": reading.sensorNumber,
+                "dangerLevel": reading.dangerLevel,
+                "window1Count": reading.window1,
+                "window2Count": reading.window2,
+                "window3Count": reading.window3,
             },
         }
     }

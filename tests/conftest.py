@@ -4,9 +4,8 @@ import pytest
 from beanie import PydanticObjectId
 from fastapi.testclient import TestClient
 from mock import patch
+from pydantic import BaseModel, Field
 from test_microservice_websocket.router_test_routes import test_router
-
-from microservice_websocket.app.services.database import Reading
 
 # @pytest.fixture()
 # def isoTimestamp() -> str:
@@ -85,9 +84,24 @@ def obj_id() -> str:
     return "63186eab0ca2d54a5c258384"
 
 
+class MockReading(BaseModel):
+    id: PydanticObjectId
+    node: PydanticObjectId
+    canID: int = Field(default=..., lt=5, gt=0)
+    sensorNumber: int = Field(default=..., lt=3, gt=0)
+    readingID: int
+    sessionID: int
+    dangerLevel: int = 0
+    window1: int = 0
+    window2: int = 0
+    window3: int = 0
+    publishedAt: datetime
+
+
 @pytest.fixture()
-def reading(obj_id: str) -> Reading:
-    return Reading(
+def reading(obj_id: str) -> MockReading:
+    return MockReading(
+        id=PydanticObjectId(obj_id),
         node=PydanticObjectId(obj_id),
         canID=2,
         sensorNumber=1,
