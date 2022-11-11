@@ -125,11 +125,11 @@ async def handle_window_reading(node: Node, payload: PublishPayload):
 
     window_number = data.value
 
-    if window_number == 1:
+    if window_number == 0:
         reading.window1 = data.count
-    elif window_number == 2:
+    elif window_number == 1:
         reading.window2 = data.count
-    elif window_number == 3:
+    elif window_number == 2:
         reading.window3 = data.count
     else:
         raise ValueError(f"Unexpected window_number: {window_number}")
