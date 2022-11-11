@@ -1,11 +1,9 @@
 from datetime import datetime
 
-from mobius_adapter.utils import to_mobius_payload
-
-from .conftest import MockReading
+from mobius_adapter.utils import Reading, to_mobius_payload
 
 
-def test_to_mobius_payload(reading: MockReading):
+def test_to_mobius_payload(reading: Reading):
     """
     Coherence test for to_mobius_payload() function
     """

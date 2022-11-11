@@ -5,7 +5,8 @@ from beanie import PydanticObjectId
 from fastapi.testclient import TestClient
 from mock import patch
 from pydantic import BaseModel, Field
-from test_microservice_websocket.router_test_routes import test_router
+
+from microservice_websocket.app.blueprints.api.test import test_router
 
 # @pytest.fixture()
 # def isoTimestamp() -> str:
