@@ -87,7 +87,7 @@ class TestPublishPayload:
         data_w1 = {
             "canID": 1,
             "sensorNumber": 2,
-            "value": 1,
+            "value": 0,
             "count": 111,
             "sessionID": 3,
             "readingID": 1,
@@ -96,7 +96,7 @@ class TestPublishPayload:
         data_w2 = {
             "canID": 1,
             "sensorNumber": 2,
-            "value": 2,
+            "value": 1,
             "count": 222,
             "sessionID": 3,
             "readingID": 1,
@@ -105,7 +105,7 @@ class TestPublishPayload:
         data_w3 = {
             "canID": 1,
             "sensorNumber": 2,
-            "value": 3,
+            "value": 2,
             "count": 333,
             "sessionID": 3,
             "readingID": 1,
@@ -149,7 +149,7 @@ class TestPublishPayload:
         data_w1 = {
             "canID": 1,
             "sensorNumber": 2,
-            "value": 1,
+            "value": 0,
             "count": 111,
             "sessionID": 5,
             "readingID": 7,
@@ -158,7 +158,7 @@ class TestPublishPayload:
         data_w2 = {
             "canID": 1,
             "sensorNumber": 2,
-            "value": 2,
+            "value": 1,
             "count": 222,
             "sessionID": 5,
             "readingID": 7,
@@ -167,7 +167,7 @@ class TestPublishPayload:
         data_w3 = {
             "canID": 1,
             "sensorNumber": 2,
-            "value": 3,
+            "value": 2,
             "count": 333,
             "sessionID": 5,
             "readingID": 7,

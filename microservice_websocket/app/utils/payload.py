@@ -110,11 +110,11 @@ def handle_window_reading(node: Node, record: dict):
 
     window_number = record["data"]["value"]
 
-    if window_number == 1:
+    if window_number == 0:
         reading["window1_count"] = record["data"]["count"]
-    elif window_number == 2:
+    elif window_number == 1:
         reading["window2_count"] = record["data"]["count"]
-    elif window_number == 3:
+    elif window_number == 2:
         reading["window3_count"] = record["data"]["count"]
     else:
         raise ValueError(f"Unexpected window_number: {window_number}")
