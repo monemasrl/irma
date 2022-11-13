@@ -7,8 +7,8 @@ from flask_socketio import SocketIO, SocketIOTestClient
 from mock import patch
 
 from microservice_websocket.app import create_app, socketio
+from microservice_websocket.app.blueprints.api.test import test_bp
 from microservice_websocket.app.services.database import Reading
-from tests.test_microservice_websocket.blueprint_test_routes import test_bp
 
 
 @pytest.fixture()
