@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Header
 
-from microservice_websocket.app.services.database import User
-from microservice_websocket.app.services.jwt import get_user_from_jwt
-from microservice_websocket.app.utils.api_token import verify_api_token
+from ...services.database import User
+from ...services.jwt import get_user_from_jwt
+from ...utils.api_token import verify_api_token
 
 test_router = APIRouter(prefix="/test")
 

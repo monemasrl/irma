@@ -33,3 +33,20 @@ class AlertInfo(BaseModel):
     readingID: int
     canID: int
     raisedAt: int
+
+
+class CreateUserPayload(BaseModel):
+    email: str
+    password: str
+    first_name: str | None
+    last_name: str | None
+    role: str
+
+
+class UpdateUserPayload(BaseModel):
+    email: str | None = None
+    first_name: str | None
+    last_name: str | None
+    old_password: str | None = None
+    new_password: str | None = None
+    role: str | None = None
