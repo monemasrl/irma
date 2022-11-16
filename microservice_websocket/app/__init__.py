@@ -30,7 +30,7 @@ async def app_init():
         redis_client = FakeStrictRedis()
         await init_db("mongomock://localhost:27017/test", "test")
 
-    await user_manager.create_user("foo@bar.com", "baz")
+    await user_manager.create_user("foo@bar.com", "baz", role="admin")
 
 
 from .blueprints.api import main_router

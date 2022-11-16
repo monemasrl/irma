@@ -3,7 +3,6 @@ from datetime import datetime
 from beanie import PydanticObjectId
 from beanie.operators import And, Eq
 
-from .. import mqtt
 from ..blueprints.api.models import PublishPayload
 from ..config import config as Config
 from ..services.database import Alert, Application, Node, Reading
@@ -155,4 +154,6 @@ async def send_mqtt_command(applicationID: str, nodeID: str, command: int):
     data: bytes = command.to_bytes(1, "big")
 
     if not DISABLE_MQTT:
+        from .. import mqtt
+
         mqtt.publish(topic, data)

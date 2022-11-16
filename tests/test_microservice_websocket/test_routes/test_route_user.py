@@ -32,14 +32,17 @@ class TestGetUserInfo:
     @pytest.mark.asyncio
     async def test_get_user_info(self, app_client: TestClient, auth_header):
         await user_manager.create_user("bar", "baz")
-        user = user_manager.get_user("bar")
+        user = await user_manager.get_user_from_mail("bar")
         assert user
 
         response = app_client.get(self.endpoint + str(user.id), headers=auth_header)
 
-        assert (
-            response.status_code == 200 and response.json() == user
-        ), "Invalid response when trying to get user info"
+        assert response.status_code == 200 and response.json() == {
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "role": user.role,
+        }, "Invalid response when trying to get user info"
 
 
 class TestCreateUser:
@@ -50,7 +53,7 @@ class TestCreateUser:
         response = app_client.post(self.endpoint, json={}, headers=auth_header)
 
         assert (
-            response.status_code == 400
+            response.status_code == 422
         ), "Invalid response code when trying to create user\
             with invalid payload"
 
@@ -68,7 +71,6 @@ class TestCreateUser:
 
         assert (
             response.status_code == 400
-            and response.json()["message"] == "User Already Existing"
         ), "Invalid response when trying to create already existing user"
 
     @pytest.mark.asyncio
@@ -90,15 +92,6 @@ class TestCreateUser:
 
 class TestUpdateUser:
     endpoint = "/api/user/"
-
-    def test_update_user_invalid_paylaod(
-        self, app_client: TestClient, auth_header, obj_id
-    ):
-        response = app_client.put(self.endpoint + obj_id, json={}, headers=auth_header)
-
-        assert (
-            response.status_code == 400
-        ), "Invalid response code when trying to update user with invalid payload"
 
     def test_update_non_existing_user(
         self, app_client: TestClient, auth_header, obj_id
@@ -128,8 +121,8 @@ class TestUpdateUser:
             self.endpoint + str(user.id),
             json={
                 "email": "foo",
-                "newPassword": "bar",
-                "oldPassword": "baz",
+                "new_password": "bar",
+                "old_password": "baz",
                 "role": "admin",
             },
             headers=auth_header,
@@ -140,13 +133,13 @@ class TestUpdateUser:
         ), "Invalid response code when trying to update user"
 
         assert (
-            user := await User.find(email="foo").first_or_none()
+            user := await User.find(User.email == "foo").first_or_none()
         ) and user_manager.verify_password(
             "bar", user.hashed_password
         ), "Password didn't change"
 
         assert (
-            user := await User.find(email="foo").first_or_none()
+            user := await User.find(User.email == "foo").first_or_none()
         ) and user.role == "admin", "Role didn't change"
 
 

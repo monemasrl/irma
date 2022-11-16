@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, Header
 from pydantic import BaseModel
 
-from ... import socketio
 from ...services.jwt import jwt_required
 from ...utils.api_token import verify_api_token
 from ...utils.payload import publish, send_mqtt_command
@@ -23,6 +22,8 @@ async def publish_route(
     verify_api_token(authorization)
 
     await publish(payload)
+
+    from ... import socketio
 
     socketio.emit("change")
     socketio.emit("change-reading")

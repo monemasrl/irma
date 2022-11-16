@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from ...services.database import User
@@ -25,7 +25,11 @@ class UserInfoResponse(BaseModel):
     role: str
 
 
-@user_router.get("/list", response_model=list[User])
+class UserListResponse(BaseModel):
+    users: list[User]
+
+
+@user_router.get("/list", response_model=UserListResponse)
 async def get_user_list_route(user: User = Depends(get_user_from_jwt)):
     verify_admin(user)
 
@@ -34,7 +38,7 @@ async def get_user_list_route(user: User = Depends(get_user_from_jwt)):
     return {"users": users}
 
 
-@user_router.get("/<user_id>", response_model=UserInfoResponse)
+@user_router.get("/{user_id}", response_model=UserInfoResponse)
 async def get_user_info_route(user_id: str, user: User = Depends(get_user_from_jwt)):
     verify_admin(user)
 
@@ -49,18 +53,20 @@ async def get_user_info_route(user_id: str, user: User = Depends(get_user_from_j
 
 
 @user_router.post("/create")
-def create_user_route(
+async def create_user_route(
     payload: CreateUserPayload, user: User = Depends(get_user_from_jwt)
 ):
     verify_admin(user)
 
-    if not create_user(payload):
-        return {"message": "User Already Existing"}, 400
+    if not await create_user(payload):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User Already Existing"
+        )
 
-    return {"message": "Created"}, 200
+    return {"message": "Created"}
 
 
-@user_router.put("/<user_id>")
+@user_router.put("/{user_id}")
 async def update_user_route(
     payload: UpdateUserPayload, user_id: str, user: User = Depends(get_user_from_jwt)
 ):
@@ -68,12 +74,15 @@ async def update_user_route(
         verify_admin(user)
 
     if not await update_user(user_id, payload):
-        return {"message": "Old Password Doesn't Match"}, 401
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Old Password Doesn't Match",
+        )
 
-    return {"message": "Updated"}, 200
+    return {"message": "Updated"}
 
 
-@user_router.delete("/<user_id>")
+@user_router.delete("/{user_id}")
 async def delete_user_route(user_id: str, user: User = Depends(get_user_from_jwt)):
     if str(user.id) == user_id:
         return {"message": "Cannot Delete Current Active User"}, 400
