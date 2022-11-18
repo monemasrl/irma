@@ -5,11 +5,11 @@ from ...services.database import Organization
 from ...services.jwt import jwt_required
 from ...utils.organization import create_organization, get_organizations
 
-organization_router = APIRouter(prefix="/organizations")
+organization_router = APIRouter()
 
 
 class GetOrgsResponse(BaseModel):
-    organizations: list[Organization]
+    organizations: list[Organization.Serialized]
 
 
 class CreateOrgPayload(BaseModel):
@@ -17,18 +17,20 @@ class CreateOrgPayload(BaseModel):
 
 
 @organization_router.get(
-    "/", dependencies=[Depends(jwt_required)], response_model=GetOrgsResponse
+    "/organizations",
+    dependencies=[Depends(jwt_required)],
+    response_model=GetOrgsResponse,
 )
 async def get_organizations_route():
     organizations = await get_organizations()
 
-    return {"organizations": organizations}
+    return {"organizations": [x.serialize() for x in organizations]}
 
 
 @organization_router.post(
-    "/create", dependencies=[Depends(jwt_required)], response_model=Organization
+    "/organization", dependencies=[Depends(jwt_required)], response_model=Organization
 )
 async def create_organization_route(payload: CreateOrgPayload):
-    organization = await create_organization(payload.name)
+    await create_organization(payload.name)
 
-    return organization
+    return {"message": "Created"}

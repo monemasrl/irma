@@ -9,7 +9,7 @@ node_router = APIRouter(prefix="/nodes")
 
 
 class GetNodesResponse(BaseModel):
-    nodes: list[Node]
+    nodes: list[Node.Serialized]
 
 
 @node_router.get(
@@ -18,4 +18,4 @@ class GetNodesResponse(BaseModel):
 async def get_nodes_route(applicationID: str):
     nodes: list[Node] = await get_nodes(applicationID)
 
-    return {"nodes": nodes}
+    return {"nodes": [await x.serialize() for x in nodes]}

@@ -1,20 +1,20 @@
 from fastapi import APIRouter, Depends
 
-from ...services.database import User
+from ...services.database import Alert, User
 from ...services.jwt import get_user_from_jwt
-from ...utils.alert import alert_info, handle_alert
-from .models import AlertInfo, HandlePayload
+from ...utils.alert import get_alert, handle_alert
+from .models import HandlePayload
 
 alert_router = APIRouter(prefix="/alert")
 
 
-@alert_router.post("/handle")
+@alert_router.post("/{alertID}")
 async def handle_alert_route(
-    payload: HandlePayload, user: User = Depends(get_user_from_jwt)
+    alertID: str, payload: HandlePayload, user: User = Depends(get_user_from_jwt)
 ):
     from ....app import socketio
 
-    await handle_alert(payload, user)
+    await handle_alert(alertID, payload, user)
 
     socketio.emit("change")
     socketio.emit("change-reading")
@@ -22,8 +22,8 @@ async def handle_alert_route(
     return {"message": "Handled"}
 
 
-@alert_router.get("/info", response_model=AlertInfo)
-async def alert_info_route(alertID: str):
-    response: AlertInfo = await alert_info(alertID)
+@alert_router.get("/{alertID}", response_model=Alert.Serialized)
+async def get_alert_route(alertID: str):
+    response: Alert = await get_alert(alertID)
 
-    return response
+    return await response.serialize()

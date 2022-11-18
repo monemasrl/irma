@@ -14,5 +14,5 @@ def api_token_test(authorization: str | None = Header(default=None)):
 
 
 @test_router.get("/jwt-test")
-async def test_rotue(user: User = Depends(get_user_from_jwt)):
+async def test_route(user: User = Depends(get_user_from_jwt)):
     return {"message": f"Hi {user.email}"}

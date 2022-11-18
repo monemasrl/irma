@@ -11,8 +11,6 @@ from .exceptions import NotFoundException
 from .node import update_state
 from .sync_cache import add_to_cache
 
-DISABLE_MQTT = False
-
 
 async def publish(payload: PublishPayload):
     application: Application | None = await Application.get(
@@ -135,25 +133,3 @@ async def handle_window_reading(node: Node, payload: PublishPayload):
 
     await reading.save()
     add_to_cache(str(reading.id))
-
-
-async def send_mqtt_command(applicationID: str, nodeID: str, command: int):
-    application: Application | None = await Application.get(
-        PydanticObjectId(applicationID)
-    )
-    if application is None:
-        raise NotFoundException("Application")
-
-    node: Node | None = await Node.find_one(
-        And(Eq(Node.application, application.id), Eq(Node.nodeID, nodeID))
-    )
-    if node is None:
-        raise NotFoundException("Node")
-
-    topic: str = f"{applicationID}/{nodeID}/command"
-    data: bytes = command.to_bytes(1, "big")
-
-    if not DISABLE_MQTT:
-        from .. import mqtt
-
-        mqtt.publish(topic, data)

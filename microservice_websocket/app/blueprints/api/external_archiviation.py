@@ -8,7 +8,7 @@ from ...utils.external_archiviation import (
     get_external_endpoints,
 )
 
-ext_arch_router = APIRouter(prefix="/external-archiviations")
+ext_arch_router = APIRouter()
 
 
 class GetExternalResponse(BaseModel):
@@ -20,7 +20,9 @@ class ExternalPayload(BaseModel):
 
 
 @ext_arch_router.get(
-    "/", dependencies=[Depends(jwt_required)], response_model=GetExternalResponse
+    "/external-archiviations",
+    dependencies=[Depends(jwt_required)],
+    response_model=GetExternalResponse,
 )
 def get_external_endpoint_route():
     endpoints = get_external_endpoints()
@@ -28,15 +30,17 @@ def get_external_endpoint_route():
     return {"endpoints": endpoints}
 
 
-@ext_arch_router.post("/add", dependencies=[Depends(jwt_required)])
+@ext_arch_router.post("/external-archiviation", dependencies=[Depends(jwt_required)])
 def add_external_endpoint_route(payload: ExternalPayload):
     add_external_endpoint(payload.endpoint)
 
-    return {"message": "Inserted"}, 200
+    return {"message": "Inserted"}
 
 
-@ext_arch_router.delete("/", dependencies=[Depends(jwt_required)])
+@ext_arch_router.delete(
+    "/external-archiviation/{endpoint}", dependencies=[Depends(jwt_required)]
+)
 def delete_external_endpoint_route(endpoint: str):
     delete_external_endpoint(endpoint)
 
-    return {"message": "Deleted"}, 200
+    return {"message": "Deleted"}

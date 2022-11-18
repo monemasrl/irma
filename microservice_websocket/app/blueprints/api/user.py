@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
@@ -15,44 +13,37 @@ from ...utils.user import (
 )
 from .models import CreateUserPayload, UpdateUserPayload
 
-user_router = APIRouter(prefix="/user")
-
-
-class UserInfoResponse(BaseModel):
-    email: str
-    first_name: Optional[str]
-    last_name: Optional[str]
-    role: str
+user_router = APIRouter()
 
 
 class UserListResponse(BaseModel):
-    users: list[User]
+    users: list[User.Serialized]
 
 
-@user_router.get("/list", response_model=UserListResponse)
+@user_router.get("/users", response_model=UserListResponse)
 async def get_user_list_route(user: User = Depends(get_user_from_jwt)):
     verify_admin(user)
 
     users: list[User] = await get_user_list()
 
-    return {"users": users}
+    return {"users": [x.serialize() for x in users]}
 
 
-@user_router.get("/{user_id}", response_model=UserInfoResponse)
+@user_router.get("/user/{user_id}", response_model=User.Serialized)
 async def get_user_info_route(user_id: str, user: User = Depends(get_user_from_jwt)):
     verify_admin(user)
 
     user_info = await get_user_info(user_id)
 
-    return UserInfoResponse(
-        email=user_info.email,
-        first_name=user_info.first_name,
-        last_name=user_info.last_name,
-        role=user_info.role,
-    )
+    return user_info.serialize()
 
 
-@user_router.post("/create")
+@user_router.get("/user", response_model=User.Serialized)
+async def get_own_user_info_route(user: User = Depends(get_user_from_jwt)):
+    return user.serialize()
+
+
+@user_router.post("/user")
 async def create_user_route(
     payload: CreateUserPayload, user: User = Depends(get_user_from_jwt)
 ):
@@ -66,7 +57,7 @@ async def create_user_route(
     return {"message": "Created"}
 
 
-@user_router.put("/{user_id}")
+@user_router.put("/user/{user_id}")
 async def update_user_route(
     payload: UpdateUserPayload, user_id: str, user: User = Depends(get_user_from_jwt)
 ):
@@ -82,7 +73,7 @@ async def update_user_route(
     return {"message": "Updated"}
 
 
-@user_router.delete("/{user_id}")
+@user_router.delete("/user/{user_id}")
 async def delete_user_route(user_id: str, user: User = Depends(get_user_from_jwt)):
     if str(user.id) == user_id:
         return {"message": "Cannot Delete Current Active User"}, 400
@@ -92,14 +83,3 @@ async def delete_user_route(user_id: str, user: User = Depends(get_user_from_jwt
     await delete_user(user_id)
 
     return {"message": "Deleted"}
-
-
-@user_router.get("/info", response_model=UserInfoResponse)
-def get_own_user_info_route(user: User = Depends(get_user_from_jwt)):
-
-    return UserInfoResponse(
-        email=user.email,
-        first_name=user.first_name,
-        last_name=user.last_name,
-        role=user.role,
-    )

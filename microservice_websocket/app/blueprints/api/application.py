@@ -5,11 +5,11 @@ from ...services.database import Application
 from ...services.jwt import jwt_required
 from ...utils.application import create_application, get_applications
 
-application_router = APIRouter(prefix="/applications")
+application_router = APIRouter()
 
 
 class GetOrgsResponse(BaseModel):
-    applications: list[Application]
+    applications: list[Application.Serialized]
 
 
 class CreateAppPayload(BaseModel):
@@ -18,16 +18,18 @@ class CreateAppPayload(BaseModel):
 
 
 @application_router.get(
-    "/", dependencies=[Depends(jwt_required)], response_model=GetOrgsResponse
+    "/applications",
+    dependencies=[Depends(jwt_required)],
+    response_model=GetOrgsResponse,
 )
 async def get_applications_route(organizationID: str):
     applications = await get_applications(organizationID)
 
-    return {"applications": applications}
+    return {"applications": [x.serialize() for x in applications]}
 
 
-@application_router.post("/create")
+@application_router.post("/application")
 async def create_application_route(payload: CreateAppPayload):
-    application = await create_application(payload.organizationID, payload.name)
+    await create_application(payload.organizationID, payload.name)
 
-    return application
+    return {"message": "Created"}

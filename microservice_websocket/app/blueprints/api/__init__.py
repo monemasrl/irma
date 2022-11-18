@@ -42,7 +42,7 @@ async def check_for_updates():
             await node.save()
 
     if update_frontend:
-        print("Detected sensor-state change(s), emitting 'change'")
+        print("Detected node-state change(s), emitting 'change'")
         socketio.emit("change-reading")
         socketio.emit("change")
 
