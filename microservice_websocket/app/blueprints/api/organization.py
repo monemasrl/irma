@@ -27,9 +27,7 @@ async def get_organizations_route():
     return {"organizations": [x.serialize() for x in organizations]}
 
 
-@organization_router.post(
-    "/organization", dependencies=[Depends(jwt_required)], response_model=Organization
-)
+@organization_router.post("/organization", dependencies=[Depends(jwt_required)])
 async def create_organization_route(payload: CreateOrgPayload):
     await create_organization(payload.name)
 
