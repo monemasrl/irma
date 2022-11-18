@@ -61,7 +61,7 @@ def app_client() -> TestClient:
 @pytest.fixture
 def token(app_client: TestClient) -> str:
     response = app_client.post(
-        "/api/jwt/authenticate",
+        "/api/jwt/",
         json={"email": "foo@bar.com", "password": "baz"},
     )
 

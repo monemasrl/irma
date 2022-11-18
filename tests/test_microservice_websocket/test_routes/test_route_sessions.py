@@ -8,7 +8,7 @@ from microservice_websocket.app.services.database.models import NodeState
 
 
 class TestGetSessions:
-    endpoint = "/api/session/"
+    endpoint = "/api/session"
 
     # Get without args
     def test_get_no_args(self, app_client: TestClient, auth_header):
@@ -152,7 +152,7 @@ class TestGetSessions:
         # Done setup
 
         response = app_client.get(
-            self.endpoint + f"?nodeID={str(node.nodeID)}&sessionID=2",
+            self.endpoint + f"/2?nodeID={str(node.nodeID)}",
             headers=auth_header,
         )
 
@@ -166,7 +166,7 @@ class TestGetSessions:
 
 
 class TestGetSessionID:
-    endpoint = "/api/session/ids"
+    endpoint = "/api/sessions"
 
     # Get sessionIDs without args
     def test_get_no_args(self, app_client: TestClient, auth_header):

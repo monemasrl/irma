@@ -9,7 +9,7 @@ from microservice_websocket.app.utils.enums import NodeState
 
 
 class TestAlertHandle:
-    endpoint = "/api/alert/handle"
+    endpoint = "/api/alert/"
 
     # Handle not existing alert
     @pytest.mark.asyncio
@@ -38,9 +38,8 @@ class TestAlertHandle:
         # Done setup
 
         response = app_client.post(
-            self.endpoint,
+            self.endpoint + "63186eab0ca2d54a5c258384",
             json={
-                "alertID": "63186eab0ca2d54a5c258384",
                 "isConfirmed": True,
                 "handleNote": "foo",
             },
@@ -102,9 +101,8 @@ class TestAlertHandle:
         # Try to handle newly created alert
         with patch("socketio.Client.emit", return_value=None):
             response = app_client.post(
-                self.endpoint,
+                self.endpoint + str(alert.id),
                 json={
-                    "alertID": str(alert.id),
                     "isConfirmed": True,
                     "handleNote": "foo",
                 },
@@ -132,9 +130,8 @@ class TestAlertHandle:
         # Handle leftover alert
         with patch("socketio.Client.emit", return_value=None):
             response = app_client.post(
-                self.endpoint,
+                self.endpoint + str(alert2.id),
                 json={
-                    "alertID": str(alert2.id),
                     "isConfirmed": True,
                     "handleNote": "foo",
                 },
@@ -147,20 +144,12 @@ class TestAlertHandle:
 
 
 class TestAlertInfo:
-    endpoint = "/api/alert/info"
-
-    # Test get info alert without query args
-    def test_get_info_no_args(self, app_client: TestClient, auth_header):
-        response = app_client.get(self.endpoint, headers=auth_header)
-
-        assert (
-            response.status_code == 422
-        ), "Invalid response code when submitting bad request"
+    endpoint = "/api/alert/"
 
     # Test get info of non-existing alert
     def test_get_info_non_existing_alert(self, app_client: TestClient, auth_header):
         response = app_client.get(
-            self.endpoint + "?alertID=63186eab0ca2d54a5c258384",
+            self.endpoint + "63186eab0ca2d54a5c258384",
             headers=auth_header,
         )
 
@@ -209,9 +198,7 @@ class TestAlertInfo:
         )
         await alert.save()
 
-        response = app_client.get(
-            self.endpoint + f"?alertID={str(alert.id)}", headers=auth_header
-        )
+        response = app_client.get(self.endpoint + str(alert.id), headers=auth_header)
 
         assert (
             response.status_code == 200
@@ -221,7 +208,7 @@ class TestAlertInfo:
             "canID",
             "readingID",
             "nodeID",
-            "alertID",
+            "id",
             "sessionID",
             "raisedAt",
         ]:

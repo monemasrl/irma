@@ -5,7 +5,7 @@ from microservice_websocket.app.services import database as db
 
 
 class TestGetApplications:
-    endpoint = "/api/applications/"
+    endpoint = "/api/applications"
     name = "appName"
 
     # Getting empty Applications with no args
@@ -41,7 +41,7 @@ class TestGetApplications:
 
 
 class TestPostApplications:
-    endpoint = "/api/applications/create"
+    endpoint = "/api/application"
     name = "appName"
 
     # Creating Application

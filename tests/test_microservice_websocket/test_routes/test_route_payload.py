@@ -7,7 +7,7 @@ from microservice_websocket.app.utils.enums import NodeState, PayloadType
 
 
 class TestPublishPayload:
-    endpoint = "/api/payload/publish"
+    endpoint = "/api/payload/"
 
     # Trying to post data to non-existing application
     @pytest.mark.asyncio

@@ -5,7 +5,7 @@ from microservice_websocket.app.services.database import User, user_manager
 
 
 class TestGetUserList:
-    endpoint = "/api/user/list"
+    endpoint = "/api/users"
 
     @pytest.mark.asyncio
     async def test_get_user_list(self, app_client: TestClient, auth_header):
@@ -38,6 +38,7 @@ class TestGetUserInfo:
         response = app_client.get(self.endpoint + str(user.id), headers=auth_header)
 
         assert response.status_code == 200 and response.json() == {
+            "id": str(user.id),
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
@@ -46,7 +47,7 @@ class TestGetUserInfo:
 
 
 class TestCreateUser:
-    endpoint = "/api/user/create"
+    endpoint = "/api/user"
 
     # Test creating user with invalid payloa
     def test_create_user_invalid_payload(self, app_client: TestClient, auth_header):

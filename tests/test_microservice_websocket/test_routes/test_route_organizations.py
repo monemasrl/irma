@@ -5,7 +5,7 @@ from microservice_websocket.app.services import database as db
 
 
 class TestPostOrganizations:
-    endpoint = "/api/organizations/create"
+    endpoint = "/api/organization"
     name = "orgName"
 
     # Creating Organization
@@ -54,7 +54,7 @@ class TestPostOrganizations:
 
 
 class TestGetOrganizations:
-    endpoint = "/api/organizations/"
+    endpoint = "/api/organizations"
     name = "orgName"
 
     @pytest.mark.asyncio

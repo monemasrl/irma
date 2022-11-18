@@ -22,7 +22,7 @@ class TestJwtAuth:
 
 
 class TestJwtAuthentication:
-    endpoint = "/api/jwt/authenticate"
+    endpoint = "/api/jwt/"
 
     # Trying to authenticate with invalid payload
     def test_auth_invalid_payload(self, app_client: TestClient):

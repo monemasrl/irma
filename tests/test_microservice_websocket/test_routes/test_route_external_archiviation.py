@@ -4,7 +4,7 @@ from microservice_websocket.app.utils.external_archiviation import SET_NAME
 
 
 class TestGetExternalArchiviation:
-    endpoint = "/api/external-archiviations/"
+    endpoint = "/api/external-archiviations"
 
     # Test get external archiviations endopoints
     def test_get_data(self, app_client: TestClient, auth_header):
@@ -23,7 +23,7 @@ class TestGetExternalArchiviation:
 
 
 class TestPostExternalArchiviation:
-    endpoint = "/api/external-archiviations/add"
+    endpoint = "/api/external-archiviation"
 
     # Test adding url of external archiviation adapter
     # with wrong payload
@@ -59,22 +59,11 @@ class TestPostExternalArchiviation:
 
 
 class TestDeleteExternalArchiviation:
-    endpoint = "/api/external-archiviations/"
-
-    # Test deleting the endpoint of external archiviation
-    # adapter with wrong arguments
-    def test_delete_invalid_arguments(self, app_client: TestClient, auth_header):
-        response = app_client.delete(self.endpoint, headers=auth_header)
-
-        assert (
-            response.status_code == 422
-        ), "Invalid response code when trying to delete endpoint with invalid arguments"
+    endpoint = "/api/external-archiviation/"
 
     # Test deleting non-existing endpoint of external archiviation adapter
     def test_delete_non_existing_endpoint(self, app_client: TestClient, auth_header):
-        response = app_client.delete(
-            self.endpoint + "?endpoint=foobar", headers=auth_header
-        )
+        response = app_client.delete(self.endpoint + "foobar", headers=auth_header)
 
         assert (
             response.status_code == 404
@@ -87,9 +76,7 @@ class TestDeleteExternalArchiviation:
         mock_endpoint = "bazqux"
         redis_client.sadd(SET_NAME, mock_endpoint)
 
-        response = app_client.delete(
-            self.endpoint + f"?endpoint={mock_endpoint}", headers=auth_header
-        )
+        response = app_client.delete(self.endpoint + mock_endpoint, headers=auth_header)
 
         assert (
             response.status_code == 200
