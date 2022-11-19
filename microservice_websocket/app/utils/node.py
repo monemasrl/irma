@@ -7,13 +7,11 @@ from .exceptions import ObjectNotFoundException
 
 
 def update_state_total_reading(current_state: NodeState, dato: int) -> NodeState:
-    if current_state == NodeState.READY or current_state == NodeState.ERROR:
-        current_state = NodeState.RUNNING
-    elif current_state == NodeState.ALERT_READY:
-        current_state = NodeState.ALERT_RUNNING
+    if current_state == NodeState.ERROR:
+        current_state = NodeState.READY
 
-    if dato >= config["ALERT_TRESHOLD"] and current_state == NodeState.RUNNING:
-        return NodeState.ALERT_RUNNING
+    if dato >= config["ALERT_TRESHOLD"] and current_state == NodeState.READY:
+        return NodeState.ALERT_READY
 
     return current_state
 
