@@ -116,7 +116,7 @@ class Reading(CustomDocument):
     publishedAt: datetime
 
     class Serialized(BaseModel):
-        node: str
+        nodeID: int
         canID: int
         sensorNumber: int
         readingID: int
@@ -127,9 +127,13 @@ class Reading(CustomDocument):
         window3: int
         publishedAt: int
 
-    def serialize(self) -> Reading.Serialized:
+    async def serialize(self) -> Reading.Serialized:
+        node = await Node.get(self.node)
+        if node is None:
+            raise NotFoundException("Node")
+
         return Reading.Serialized(
-            node=str(self.node),
+            nodeID=node.nodeID,
             canID=self.canID,
             sensorNumber=self.sensorNumber,
             readingID=self.readingID,

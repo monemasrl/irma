@@ -24,7 +24,7 @@ class GetSessionIDsResponse(BaseModel):
 async def get_reading_session(nodeID: int, sessionID: int):
     readings = await get_session(nodeID, sessionID)
 
-    return {"readings": [x.serialize() for x in readings]}
+    return {"readings": [await x.serialize() for x in readings]}
 
 
 @session_router.get(
@@ -35,7 +35,7 @@ async def get_reading_session(nodeID: int, sessionID: int):
 async def get_reading_session_no_sessionID(nodeID: int):
     readings = await get_session(nodeID, None)
 
-    return {"readings": [x.serialize() for x in readings]}
+    return {"readings": [await x.serialize() for x in readings]}
 
 
 @session_router.get(
