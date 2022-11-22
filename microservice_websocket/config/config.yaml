@@ -21,7 +21,9 @@ config:
     tls_version: 5
 
   redis:
-    uri: "redis://cache:6379/0"
+    host: "cache"
+    port: 6379
+    db: 0
 
   mongo:
     db: "irma"

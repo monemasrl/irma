@@ -23,8 +23,10 @@ async def app_init():
     from .config import TESTING, config as Config
 
     if not TESTING:
-        mqtt = init_mqtt("localhost", 1883)
-        redis_client = Redis(host="localhost", port=6379)
+        mqtt = init_mqtt(Config.mqtt)
+        redis_client = Redis(
+            host=Config.redis.host, port=Config.redis.port, db=Config.redis.db
+        )
         await init_db(Config.mongo.uri, Config.mongo.db)
     else:
         redis_client = FakeStrictRedis()

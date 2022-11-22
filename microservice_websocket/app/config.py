@@ -25,12 +25,14 @@ class MQTTConfig(BaseModel):
     password: str
     host: str = "localhost"
     port: int = 1883
-    tls_enabled: bool | None = None
-    tls_versione: int = 1
+    tls_enabled: bool = False
+    tls_version: int = 1
 
 
 class RedisConfig(BaseModel):
-    uri: str = "redis://localhost:6379/0"
+    host: str = "localhost"
+    port: int = 6379
+    db: int = 0
 
 
 class MongoConfig(BaseModel):
