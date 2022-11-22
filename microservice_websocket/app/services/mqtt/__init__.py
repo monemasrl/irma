@@ -17,13 +17,15 @@
 
 from paho.mqtt.client import Client as MQTTClient
 
+from ...config import MQTTConfig
 
-def init_mqtt(host: str, port: int, tls: bool = False) -> MQTTClient:
+
+def init_mqtt(mqtt_config: MQTTConfig) -> MQTTClient:
     mqtt = MQTTClient()
-    if tls:
+    if mqtt_config.tls_enabled:
         mqtt.tls_set()
 
-    mqtt.connect(host=host, port=port)
+    mqtt.connect(host=mqtt_config.host, port=mqtt_config.port)
     mqtt.loop_start()
 
     return mqtt
