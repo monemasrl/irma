@@ -15,9 +15,9 @@ async def publish_route(
 
     await publish(payload)
 
-    from ... import socketio
+    from ... import socketManager
 
-    socketio.emit("change")
-    socketio.emit("change-reading")
+    await socketManager.emit("change")
+    await socketManager.emit("change-reading")
 
     return {"message": "Published"}

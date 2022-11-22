@@ -27,7 +27,7 @@ main_router.include_router(user_router)
 
 @main_router.get("/check")
 async def check_for_updates():
-    from ... import socketio
+    from ... import socketManager
 
     nodes: list[Node] = await Node.find_all().to_list()
 
@@ -43,7 +43,7 @@ async def check_for_updates():
 
     if update_frontend:
         print("Detected node-state change(s), emitting 'change'")
-        socketio.emit("change-reading")
-        socketio.emit("change")
+        await socketManager.emit("change-reading")
+        await socketManager.emit("change")
 
     return {"message": ("Changed" if update_frontend else "Not Changed")}

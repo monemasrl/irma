@@ -1,16 +1,28 @@
 from fakeredis import FakeStrictRedis
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi_socketio import SocketManager
 from redis import Redis
-from socketio import Client as SocketIOClient
 
 from .services.database import init_db, user_manager
 from .services.mqtt import init_mqtt
 from .services.scheduler import init_scheduler
 
-socketio = SocketIOClient()
+# from .services.socketio import init_socketio
+
 mqtt = None
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+socketManager = SocketManager(app=app, cors_allowed_origins=[])
+# init_socketio()
 
 
 @app.on_event("startup")
