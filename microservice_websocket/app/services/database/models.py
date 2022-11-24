@@ -85,7 +85,7 @@ class Node(CustomDocument):
         nodeID: int
         nodeName: str
         application: str
-        state: NodeState
+        state: str
         lastSeenAt: int
         unhandledAlertIDs: list[str]
 
@@ -97,7 +97,7 @@ class Node(CustomDocument):
             nodeID=self.nodeID,
             nodeName=self.nodeName,
             application=str(self.application),
-            state=self.state,
+            state=NodeState.to_irma_ui_state(self.state),
             lastSeenAt=int(self.lastSeenAt.timestamp()),
             unhandledAlertIDs=unhandledAlertIDs,
         )
