@@ -8,6 +8,7 @@ import requests
 import yaml
 from can_protocol import DecodedMessage, MessageType
 from irma_bus import IrmaBus
+from mock_bus import MockBus
 
 BYPASS_CAN = bool(environ.get("BYPASS_CAN", 0))
 
@@ -39,13 +40,19 @@ class Node:
 
             self.bus = IrmaBus(bustype=bustype, channel=channel, bitrate=bitrate)
             print(f"Can type '{bustype}', on channel '{channel}' @{bitrate}")
+        else:
+            self.bus = MockBus()
+            print("Started MockBus")
 
         self.launch_keep_alive_daemon()
         self.init_mqtt_client()
 
     def init_mqtt_client(self):
         self.client = mqtt.Client()
-        self.client.tls_set()
+
+        if self.config["mqtt"]["tls"]:
+            self.client.tls_set()
+
         self.client.username_pw_set(
             self.config["mqtt"]["user"], self.config["mqtt"]["password"]
         )
@@ -119,7 +126,7 @@ class Node:
         api_key = self.config["microservice"]["api_key"]
 
         requests.post(
-            url=f"{host}:{port}/api/payload/publish",
+            url=f"{host}:{port}/api/payload/",
             json=payload,
             headers={
                 "Authorization": f"Bearer {api_key}",
