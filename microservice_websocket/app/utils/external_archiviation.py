@@ -27,6 +27,7 @@ def delete_external_endpoint(endpoint: str):
         raise NotFoundException(endpoint)
 
 
-def send_payload(payload: Reading):
+async def send_payload(payload: Reading):
     for endpoint in get_external_endpoints():
-        requests.post(endpoint, json=payload)
+        serialized_payload = await payload.serialize()
+        requests.post(endpoint, json=serialized_payload)
