@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from beanie import PydanticObjectId
 
-from ..config import config
+from ..config import config as Config
 from ..services.database import Reading
 from .external_archiviation import send_payload
 
@@ -28,7 +28,7 @@ async def sync_cached():
         publishedAt = reading.publishedAt
 
         if datetime.now() - publishedAt > timedelta(
-            seconds=config["READING_SYNC_WAIT"]
+            seconds=Config.app.READING_SYNC_WAIT
         ):
-            send_payload(reading)
+            await send_payload(reading)
             redis_client.srem("idCache", reading_object_id)
