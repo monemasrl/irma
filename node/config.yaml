@@ -12,6 +12,7 @@ settings:
   mqtt:
     url: "irma.monema.dev"
     port: 1884
+    tls: false
     user: "admin"
     password: "admin"
   can:
