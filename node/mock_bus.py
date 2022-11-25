@@ -1,11 +1,11 @@
 import time
-from queue import Queue
+from queue import Empty, Queue
 from random import randint
 from threading import Lock
 
 import can_protocol
 from apscheduler.schedulers.background import BackgroundScheduler
-from can import Message
+from can.message import Message
 from can_protocol import Detector, Sipm, Window
 
 
@@ -107,8 +107,11 @@ class MockBus:
         self._msgqueue.put(gen_window_count(Detector.D4, Window.W3, Sipm.S2))
         self._msgqueue.put(gen_window_count(Detector.D4, Window.W3, Sipm.S2))
 
-    def listen(self) -> can_protocol.DecodedMessage | None:
-        message = self._msgqueue.get()
+    def listen(self, timeout=0.5) -> can_protocol.DecodedMessage | None:
+        try:
+            message = self._msgqueue.get(timeout=timeout)
+        except Empty:
+            message = None
 
         if message is None:
             return None
