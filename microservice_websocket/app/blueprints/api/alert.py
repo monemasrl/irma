@@ -12,7 +12,7 @@ alert_router = APIRouter(prefix="/alert")
 async def handle_alert_route(
     alertID: str, payload: HandlePayload, user: User = Depends(get_user_from_jwt)
 ):
-    from ....app import socketManager
+    from ... import socketManager
 
     await handle_alert(alertID, payload, user)
 
