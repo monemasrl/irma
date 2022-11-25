@@ -7,7 +7,7 @@ from .enums import CommandType
 from .exceptions import NotFoundException
 
 
-async def send_mqtt_command(applicationID: str, nodeID: str, command: CommandType):
+async def send_mqtt_command(applicationID: str, nodeID: int, command: CommandType):
     application: Application | None = await Application.get(
         PydanticObjectId(applicationID)
     )

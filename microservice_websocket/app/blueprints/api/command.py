@@ -9,7 +9,7 @@ command_router = APIRouter(prefix="/command")
 
 
 class MqttCommandPayload(BaseModel):
-    nodeID: str
+    nodeID: int
     applicationID: str
 
 
