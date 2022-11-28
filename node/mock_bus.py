@@ -71,40 +71,40 @@ class MockBus:
         self._msgqueue.put(gen_total_count(Detector.D1, Sipm.S1))
         self._msgqueue.put(gen_total_count(Detector.D1, Sipm.S2))
         self._msgqueue.put(gen_total_count(Detector.D2, Sipm.S1))
-        self._msgqueue.put(gen_total_count(Detector.D2, Sipm.S1))
+        self._msgqueue.put(gen_total_count(Detector.D2, Sipm.S2))
         self._msgqueue.put(gen_total_count(Detector.D3, Sipm.S1))
         self._msgqueue.put(gen_total_count(Detector.D3, Sipm.S2))
-        self._msgqueue.put(gen_total_count(Detector.D4, Sipm.S2))
+        self._msgqueue.put(gen_total_count(Detector.D4, Sipm.S1))
         self._msgqueue.put(gen_total_count(Detector.D4, Sipm.S2))
 
         # Richiesta finestra1
         self._msgqueue.put(gen_window_count(Detector.D1, Window.W1, Sipm.S1))
         self._msgqueue.put(gen_window_count(Detector.D1, Window.W1, Sipm.S2))
         self._msgqueue.put(gen_window_count(Detector.D2, Window.W1, Sipm.S1))
-        self._msgqueue.put(gen_window_count(Detector.D2, Window.W1, Sipm.S1))
+        self._msgqueue.put(gen_window_count(Detector.D2, Window.W1, Sipm.S2))
         self._msgqueue.put(gen_window_count(Detector.D3, Window.W1, Sipm.S1))
         self._msgqueue.put(gen_window_count(Detector.D3, Window.W1, Sipm.S2))
-        self._msgqueue.put(gen_window_count(Detector.D4, Window.W1, Sipm.S2))
+        self._msgqueue.put(gen_window_count(Detector.D4, Window.W1, Sipm.S1))
         self._msgqueue.put(gen_window_count(Detector.D4, Window.W1, Sipm.S2))
 
         # Richiesta finestra2
         self._msgqueue.put(gen_window_count(Detector.D1, Window.W2, Sipm.S1))
         self._msgqueue.put(gen_window_count(Detector.D1, Window.W2, Sipm.S2))
         self._msgqueue.put(gen_window_count(Detector.D2, Window.W2, Sipm.S1))
-        self._msgqueue.put(gen_window_count(Detector.D2, Window.W2, Sipm.S1))
+        self._msgqueue.put(gen_window_count(Detector.D2, Window.W2, Sipm.S2))
         self._msgqueue.put(gen_window_count(Detector.D3, Window.W2, Sipm.S1))
         self._msgqueue.put(gen_window_count(Detector.D3, Window.W2, Sipm.S2))
-        self._msgqueue.put(gen_window_count(Detector.D4, Window.W2, Sipm.S2))
+        self._msgqueue.put(gen_window_count(Detector.D4, Window.W2, Sipm.S1))
         self._msgqueue.put(gen_window_count(Detector.D4, Window.W2, Sipm.S2))
 
         # Richiesta finestra3
         self._msgqueue.put(gen_window_count(Detector.D1, Window.W3, Sipm.S1))
         self._msgqueue.put(gen_window_count(Detector.D1, Window.W3, Sipm.S2))
         self._msgqueue.put(gen_window_count(Detector.D2, Window.W3, Sipm.S1))
-        self._msgqueue.put(gen_window_count(Detector.D2, Window.W3, Sipm.S1))
+        self._msgqueue.put(gen_window_count(Detector.D2, Window.W3, Sipm.S2))
         self._msgqueue.put(gen_window_count(Detector.D3, Window.W3, Sipm.S1))
         self._msgqueue.put(gen_window_count(Detector.D3, Window.W3, Sipm.S2))
-        self._msgqueue.put(gen_window_count(Detector.D4, Window.W3, Sipm.S2))
+        self._msgqueue.put(gen_window_count(Detector.D4, Window.W3, Sipm.S1))
         self._msgqueue.put(gen_window_count(Detector.D4, Window.W3, Sipm.S2))
 
     def listen(self, timeout=0.5) -> can_protocol.DecodedMessage | None:
