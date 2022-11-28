@@ -30,4 +30,4 @@ def delete_external_endpoint(endpoint: str):
 async def send_payload(payload: Reading):
     for endpoint in get_external_endpoints():
         serialized_payload = await payload.serialize()
-        requests.post(endpoint, json=serialized_payload)
+        requests.post(endpoint, json=serialized_payload.dict())
