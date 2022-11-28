@@ -5,6 +5,7 @@ from datetime import datetime
 from app.utils.exceptions import NotFoundException
 from beanie import Document, PydanticObjectId
 from beanie.exceptions import DocumentWasNotSaved
+from beanie.operators import And, Eq
 from pydantic import BaseModel, Field
 
 from ...utils.enums import NodeState
@@ -90,7 +91,9 @@ class Node(CustomDocument):
         unhandledAlertIDs: list[str]
 
     async def serialize(self) -> Node.Serialized:
-        unhandledAlerts = await Alert.find(Alert.node == self.id).to_list()
+        unhandledAlerts = await Alert.find(
+            And(Eq(Alert.node, self.id), Eq(Alert.isHandled, False))
+        ).to_list()
         unhandledAlertIDs = [str(x.id) for x in unhandledAlerts]
 
         return Node.Serialized(
