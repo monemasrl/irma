@@ -8,13 +8,45 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from can.message import Message
 from can_protocol import Detector, Sipm, Window
 
+x = {
+    1: {
+        1: 0,
+        2: 0,
+        3: 0,
+    },
+    2: {
+        1: 0,
+        2: 0,
+        3: 0,
+    },
+    "dangerLevel": 0,
+}
+
+
+cache = [dict.copy(x) for _ in range(4)]
+
+
+def init_cache():
+    for detector in cache:
+        detector[1][1] = 0
+        detector[1][2] = 0
+        detector[1][3] = 0
+        detector[2][1] = 0
+        detector[2][2] = 0
+        detector[2][3] = 0
+        detector["dangerLevel"] = randint(0, 9)
+
 
 def gen_total_count(detector: Detector, sipm: Sipm) -> Message:
-    count = randint(0, 10_000_000)
+    count = 0
+    for sensor in [1, 2]:
+        for key in cache[detector - 1][sensor]:
+            count += cache[detector - 1][sensor][key]
+
     encoded_count = count.to_bytes(3, "little")
     byte0 = sipm
 
-    danger_level = randint(0, 9)
+    danger_level = cache[detector - 1]["dangerLevel"]
 
     return Message(
         arbitration_id=0,
@@ -32,7 +64,8 @@ def gen_total_count(detector: Detector, sipm: Sipm) -> Message:
 
 
 def gen_window_count(detector: Detector, window: Window, sipm: Sipm) -> Message:
-    reading = randint(0, 10_000_000)
+    cache[detector - 1][int(sipm)][int(window)] += randint(0, 100)
+    reading = cache[detector - 1][int(sipm)][int(window)]
     encoded_reading = reading.to_bytes(3, "little")
     byte0 = window | sipm
 
@@ -113,6 +146,7 @@ class MockBus:
 
     def start_session(self):
         self._sessionID = int(time.time())
+        init_cache()
         # TODO: tweak
         time.sleep(0.5)
         self._scheduler.resume()
