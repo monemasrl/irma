@@ -11,7 +11,7 @@ from can_protocol import Detector, Sipm, Window
 
 def gen_total_count(detector: Detector, sipm: Sipm) -> Message:
     count = randint(0, 10_000_000)
-    encoded_count = count.to_bytes(3, "big")
+    encoded_count = count.to_bytes(3, "little")
     byte0 = sipm
 
     danger_level = randint(0, 9)
@@ -33,7 +33,7 @@ def gen_total_count(detector: Detector, sipm: Sipm) -> Message:
 
 def gen_window_count(detector: Detector, window: Window, sipm: Sipm) -> Message:
     reading = randint(0, 10_000_000)
-    encoded_reading = reading.to_bytes(3, "big")
+    encoded_reading = reading.to_bytes(3, "little")
     byte0 = window | sipm
 
     return Message(
@@ -66,16 +66,6 @@ class MockBus:
     def loop(self):
         with self._lock:
             self._readingID = int(time.time())
-
-        # Richiesta total count ai sipm
-        self._msgqueue.put(gen_total_count(Detector.D1, Sipm.S1))
-        self._msgqueue.put(gen_total_count(Detector.D1, Sipm.S2))
-        self._msgqueue.put(gen_total_count(Detector.D2, Sipm.S1))
-        self._msgqueue.put(gen_total_count(Detector.D2, Sipm.S2))
-        self._msgqueue.put(gen_total_count(Detector.D3, Sipm.S1))
-        self._msgqueue.put(gen_total_count(Detector.D3, Sipm.S2))
-        self._msgqueue.put(gen_total_count(Detector.D4, Sipm.S1))
-        self._msgqueue.put(gen_total_count(Detector.D4, Sipm.S2))
 
         # Richiesta finestra1
         self._msgqueue.put(gen_window_count(Detector.D1, Window.W1, Sipm.S1))
@@ -132,3 +122,13 @@ class MockBus:
         self._scheduler.pause()
         # TODO: tweak
         time.sleep(0.5)
+
+        # Richiesta total count ai sipm
+        self._msgqueue.put(gen_total_count(Detector.D1, Sipm.S1))
+        self._msgqueue.put(gen_total_count(Detector.D1, Sipm.S2))
+        self._msgqueue.put(gen_total_count(Detector.D2, Sipm.S1))
+        self._msgqueue.put(gen_total_count(Detector.D2, Sipm.S2))
+        self._msgqueue.put(gen_total_count(Detector.D3, Sipm.S1))
+        self._msgqueue.put(gen_total_count(Detector.D3, Sipm.S2))
+        self._msgqueue.put(gen_total_count(Detector.D4, Sipm.S1))
+        self._msgqueue.put(gen_total_count(Detector.D4, Sipm.S2))

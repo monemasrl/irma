@@ -24,8 +24,6 @@ class IrmaBus:
         with self._lock:
             self._readingID = int(time.time())
 
-        # Richiesta total count ai sipm
-
         # Richiesta finestra1
         self.send(can_protocol.get_window(can_protocol.Window.W1, can_protocol.Sipm.S1))
         sleep(0.5)
