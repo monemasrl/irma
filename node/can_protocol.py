@@ -43,6 +43,9 @@ class MessageType(IntEnum):
     DISABLE_BOARD = auto()
     RETURN_COUNT_WINDOW = auto()
     RETURN_COUNT_TOTAL = auto()
+    PING = auto()
+    DEMO1 = auto()
+    DEMO2 = auto()
 
 
 class Detector(IntEnum):
@@ -167,6 +170,32 @@ def disable_board(can_id: Detector) -> Message:
         arbitration_id=can_id,
         is_extended_id=False,
         data=[0, 0, 0, 0, 0, 0, MessageType.DISABLE_BOARD, 0],
+    )
+
+
+def ping(can_id: Detector) -> Message:
+    # TODO: filtro
+
+    return Message(
+        arbitration_id=can_id,
+        is_extended_id=False,
+        data=[0, 0, 0, 0, 0, 0, MessageType.PING, 0],
+    )
+
+
+def demo1() -> Message:
+    return Message(
+        arbitration_id=Detector.BROADCAST,
+        is_extended_id=False,
+        data=[0, 0, 0, 0, 0, 0, MessageType.DEMO1, 0],
+    )
+
+
+def demo2() -> Message:
+    return Message(
+        arbitration_id=Detector.BROADCAST,
+        is_extended_id=False,
+        data=[0, 0, 0, 0, 0, 0, MessageType.DEMO2, 0],
     )
 
 
