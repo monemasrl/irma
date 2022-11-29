@@ -18,4 +18,4 @@ settings:
   can:
     bustype: "socketcan"
     channel: "can0"
-    bitrate: 12500
+    bitrate: 20000

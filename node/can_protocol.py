@@ -70,6 +70,7 @@ class DecodedMessage(TypedDict):
 def start_count() -> Message:
     return Message(
         arbitration_id=Detector.BROADCAST,
+        is_extended_id=False,
         data=[0, 0, 0, 0, 0, 0, MessageType.START_COUNT, 0],
     )
 
@@ -77,6 +78,7 @@ def start_count() -> Message:
 def stop_count() -> Message:
     return Message(
         arbitration_id=Detector.BROADCAST,
+        is_extended_id=False,
         data=[0, 0, 0, 0, 0, 0, MessageType.STOP_COUNT, 0],
     )
 
@@ -86,6 +88,7 @@ def get_window(n_window: Window, sipm: Sipm) -> Message:
 
     return Message(
         arbitration_id=Detector.BROADCAST,
+        is_extended_id=False,
         data=[byte0, 0, 0, 0, 0, 0, MessageType.GET_WINDOW, 0],
     )
 
@@ -93,6 +96,7 @@ def get_window(n_window: Window, sipm: Sipm) -> Message:
 def get_total_count(sipm: Sipm) -> Message:
     return Message(
         arbitration_id=Detector.BROADCAST,
+        is_extended_id=False,
         data=[sipm, 0, 0, 0, 0, 0, MessageType.GET_TOTAL_COUNT, 0],
     )
 
@@ -109,6 +113,7 @@ def set_window_low(
 
     return Message(
         arbitration_id=can_id,
+        is_extended_id=False,
         data=[byte0, 0, 0, 0, value[0], value[1], MessageType.SET_WINDOW_LOW, 0],
     )
 
@@ -125,6 +130,7 @@ def set_window_high(
 
     return Message(
         arbitration_id=can_id,
+        is_extended_id=False,
         data=[byte0, 0, 0, 0, value[0], value[1], MessageType.SET_WINDOW_HIGH, 0],
     )
 
@@ -137,6 +143,7 @@ def set_hv(can_id: Detector, sipm: Sipm, value: int) -> Message:
 
     return Message(
         arbitration_id=can_id,
+        is_extended_id=False,
         data=[sipm, 0, 0, 0, value[0], value[1], MessageType.SET_HV, 0],
     )
 
@@ -147,6 +154,7 @@ def enable_board(can_id: Detector) -> Message:
 
     return Message(
         arbitration_id=can_id,
+        is_extended_id=False,
         data=[0, 0, 0, 0, 0, 0, MessageType.ENABLE_BOARD, 0],
     )
 
@@ -157,6 +165,7 @@ def disable_board(can_id: Detector) -> Message:
 
     return Message(
         arbitration_id=can_id,
+        is_extended_id=False,
         data=[0, 0, 0, 0, 0, 0, MessageType.DISABLE_BOARD, 0],
     )
 
@@ -167,7 +176,7 @@ def decode(message: Message, sessionID: int, readingID: int) -> DecodedMessage:
     n_detector = data[7]
 
     if data[6] == MessageType.RETURN_COUNT_WINDOW:
-        count = int.from_bytes(data[3:6], "big")
+        count = int.from_bytes(data[3:6], "little")
         n_window = data[0] & 0b00111111
         sipm = data[0] >> 7
         return {
@@ -181,7 +190,7 @@ def decode(message: Message, sessionID: int, readingID: int) -> DecodedMessage:
         }
 
     elif data[6] == MessageType.RETURN_COUNT_TOTAL:
-        count = int.from_bytes(data[3:6], "big")
+        count = int.from_bytes(data[3:6], "little")
         danger_level = data[2]
         sipm = data[0] >> 7
         return {
@@ -193,5 +202,9 @@ def decode(message: Message, sessionID: int, readingID: int) -> DecodedMessage:
             "sessionID": sessionID,
             "readingID": readingID,
         }
+
+    elif data[6] == MessageType.ENABLE_BOARD:
+        print("ENABLE BOARD")
     else:
-        raise ValueError(f"Unexpected MessageType '{data[6]}'")
+        print(f"Unexpected MessageType '{data[6]}'")
+        # raise ValueError(f"Unexpected MessageType '{data[6]}'")
