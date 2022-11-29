@@ -1,7 +1,7 @@
 from enum import IntEnum, auto
 from typing import TypedDict
 
-from can import Message
+from can.message import Message
 
 
 class Sipm(IntEnum):
@@ -107,7 +107,7 @@ def set_window_low(
     if can_id == Detector.BROADCAST:
         raise ValueError("Cannot send 'SET WINDOW LOW' as BROADCAST")
 
-    value.to_bytes(2, "big")
+    value.to_bytes(2, "little")
 
     byte0 = n_window | sipm | WINDOW_LOW
 
@@ -124,7 +124,7 @@ def set_window_high(
     if can_id == Detector.BROADCAST:
         raise ValueError("Cannot send 'SET WINDOW HIGH' as BROADCAST")
 
-    value.to_bytes(2, "big")
+    value.to_bytes(2, "little")
 
     byte0 = n_window | sipm | WINDOW_HIGH
 
@@ -139,7 +139,7 @@ def set_hv(can_id: Detector, sipm: Sipm, value: int) -> Message:
     if can_id == Detector.BROADCAST:
         raise ValueError("Cannot send 'SET HV' as BROADCAST")
 
-    value.to_bytes(2, "big")
+    value.to_bytes(2, "little")
 
     return Message(
         arbitration_id=can_id,
