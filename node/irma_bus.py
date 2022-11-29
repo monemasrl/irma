@@ -5,13 +5,26 @@ from typing import Optional
 
 import can_protocol
 from apscheduler.schedulers.background import BackgroundScheduler
-from can import Message
 from can.interface import Bus
+from can.message import Message
 
 
 class IrmaBus:
-    def __init__(self, bustype, channel, bitrate, interval_minutes=1):
+    def __init__(
+        self,
+        bustype,
+        channel,
+        bitrate,
+        interval_minutes=1,
+        filter_id: int | None = None,
+        filter_mask: int | None = None,
+    ):
         self._bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate)
+        if filter_id and filter_mask:
+            self._bus.set_filters(
+                # [{"can_id": 0b01100000, "can_mask": 0b11111000, "extended": False}]
+                [{"can_id": filter_id, "can_mask": filter_mask, "extended": False}]
+            )
         self._sessionID = None
         self._readingID = None
         self._scheduler = BackgroundScheduler()

@@ -38,7 +38,16 @@ class Node:
             channel = self.config["can"]["channel"]
             bitrate = self.config["can"]["bitrate"]
 
-            self.bus = IrmaBus(bustype=bustype, channel=channel, bitrate=bitrate)
+            filter_id = self.config["can"].get("filter_id", None)
+            filter_mask = self.config["can"].get("filter_mask", None)
+
+            self.bus = IrmaBus(
+                bustype=bustype,
+                channel=channel,
+                bitrate=bitrate,
+                filter_id=filter_id,
+                filter_mask=filter_mask,
+            )
             print(f"Can type '{bustype}', on channel '{channel}' @{bitrate}")
         else:
             self.bus = MockBus()
