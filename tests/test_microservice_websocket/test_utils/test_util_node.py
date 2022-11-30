@@ -25,14 +25,14 @@ def _test_update_state_case(
 def test_get_state():
     # From error
     _test_update_state_case(
-        NodeState.ERROR, datetime.now(), PayloadType.TOTAL_READING, 0, NodeState.RUNNING
+        NodeState.ERROR, datetime.now(), PayloadType.TOTAL_READING, 0, NodeState.READY
     )
     _test_update_state_case(
         NodeState.ERROR,
         datetime.now(),
         PayloadType.TOTAL_READING,
         ALERT_TRESHOLD,
-        NodeState.ALERT_RUNNING,
+        NodeState.ALERT_READY,
     )
     _test_update_state_case(
         NodeState.ERROR,
@@ -60,14 +60,14 @@ def test_get_state():
 
     # From ready
     _test_update_state_case(
-        NodeState.READY, datetime.now(), PayloadType.TOTAL_READING, 0, NodeState.RUNNING
+        NodeState.READY, datetime.now(), PayloadType.TOTAL_READING, 0, NodeState.READY
     )
     _test_update_state_case(
         NodeState.READY,
         datetime.now(),
         PayloadType.TOTAL_READING,
         ALERT_TRESHOLD,
-        NodeState.ALERT_RUNNING,
+        NodeState.ALERT_READY,
     )
     _test_update_state_case(
         NodeState.READY,
@@ -113,7 +113,7 @@ def test_get_state():
         datetime.now(),
         PayloadType.TOTAL_READING,
         ALERT_TRESHOLD,
-        NodeState.ALERT_RUNNING,
+        NodeState.RUNNING,
     )
     _test_update_state_case(
         NodeState.RUNNING,
@@ -153,7 +153,7 @@ def test_get_state():
         datetime.now(),
         PayloadType.TOTAL_READING,
         0,
-        NodeState.ALERT_RUNNING,
+        NodeState.ALERT_READY,
     )
     _test_update_state_case(
         NodeState.ALERT_READY,

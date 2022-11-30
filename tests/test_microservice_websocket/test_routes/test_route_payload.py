@@ -78,6 +78,9 @@ class TestPublishPayload:
         assert (
             len(await db.Reading.find_all().to_list()) == 1
         ), "Couldn't create reading upon posting data"
+        assert (
+            db.Node.objects().first()["state"] == NodeState.READY
+        ), "Invalid Node state"
 
     # Post all window readings
     @pytest.mark.asyncio
@@ -163,6 +166,9 @@ class TestPublishPayload:
                 ), "Invalid response code when publishing valid payload"
 
         assert len(await db.Node.find_all().to_list()) == 1, "Invalid node count"
+        assert (node := await db.Node.find_one() and
+            node.state == NodeState.RUNNING
+        ), "Invalid Node state"
         assert (
             len(await db.Reading.find_all().to_list()) == 1
         ), "Couldn't merge readings with same readingID, canID and sensorNumber"
@@ -243,6 +249,11 @@ class TestPublishPayload:
                     response.status_code == 200
                 ), "Invalid response code when publishing valid payload"
 
+            # End the registration
+            node = db.Node.objects().first()
+            node["state"] = NodeState.READY
+            node.save()
+
             response = app_client.post(
                 self.endpoint,
                 json={
@@ -266,10 +277,14 @@ class TestPublishPayload:
             assert (
                 len(await db.Reading.find_all().to_list()) == 1
             ), "Invalid number of Reading"
+            
+            assert (node := db.Node.find_one() and
+                node.state == NodeState.READY
+            ), "Invalid Node state"
 
             reading = await db.Reading.find_one(db.Reading.sessionID == 5)
             assert reading
-
+            
             assert (
                 reading.dangerLevel == 4
                 and reading.window1 == 111
@@ -315,16 +330,17 @@ class TestPublishPayload:
         ), "Invalid response code when publishing valid payload"
 
         assert (
+
             len(await db.Reading.find_all().to_list()) == 1
         ), "Invalid number of Reading"
         assert len(await db.Alert.find_all().to_list()) == 1, "Invalid number of Alert"
         assert (
             node := await db.Node.find_one()
-        ) and node.state == NodeState.ALERT_RUNNING, "Invalid Node state"
-
+        ) and node.state == NodeState.ALERT_READY, "Invalid Node state"
+        
     # Publish reading with dangerLevel > ALERT_TRESHOLD while already in alert
     @pytest.mark.asyncio
-    async def test_publish_alert_from_state_alert_running(self, app_client: TestClient):
+    async def test_publish_alert_from_state_alert_ready(self, app_client: TestClient):
         org = db.Organization(organizationName="foo")
         await org.save()
         app = db.Application(applicationName="bar", organization=org.id)
@@ -335,6 +351,7 @@ class TestPublishPayload:
             patch("builtins.open", mock_open(read_data="1234")),
             patch("socketio.Client.emit", return_value=None),
         ):
+
             response = app_client.post(
                 self.endpoint,
                 json={
@@ -365,7 +382,7 @@ class TestPublishPayload:
         assert len(await db.Alert.find_all().to_list()) == 1, "Invalid number of Alert"
         assert (
             node := await db.Node.find_one()
-        ) and node.state == NodeState.ALERT_RUNNING, "Invalid Node state"
+        ) and node.state == NodeState.ALERT_READY, "Invalid Node state"
 
     # Publish reading with dangerLevel > ALERT_TRESHOLD with an already handled alert
     @pytest.mark.asyncio
@@ -446,7 +463,7 @@ class TestPublishPayload:
         assert len(await db.Alert.find_all().to_list()) == 2, "Invalid number of Alert"
         assert (
             node := await db.Node.find_one()
-        ) and node.state == NodeState.ALERT_RUNNING, "Invalid Node state"
+        ) and node.state == NodeState.ALERT_READY, "Invalid Node state"
 
     @pytest.mark.asyncio
     async def test_publish_window_reading_wrong_value(self, app_client: TestClient):

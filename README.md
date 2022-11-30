@@ -2,12 +2,11 @@
 
 I risultati dei test al seguente url:
 
-* [https://irma-tests.netlify.app/](https://irma-tests.netlify.app/)
+- [https://irma-tests.netlify.app/](https://irma-tests.netlify.app/)
 
 Per visualizzare la copertura del codice:
 
-* [https://irma-tests.netlify.app/coverage](https://irma-tests.netlify.app/coverage)
-
+- [https://irma-tests.netlify.app/coverage](https://irma-tests.netlify.app/coverage)
 
 ## Descrizione progetto
 
@@ -48,7 +47,6 @@ All'interno della **root** principale è presente il file [docker-compose.yaml](
 
 ### Schema docker-compose.yaml
 
-
 ```mermaid
 flowchart TD;
 
@@ -82,48 +80,44 @@ Per **ridurre** il **numero di dati** trasmessi, ma al contempo **mantenere la l
 Identifica i messaggi inviati.
 
 | Nome           | Valore |
-|----------------|--------|
-| TOTAL_READING  |   0    |
-| WINDOW_READING |   1    |
-| START_REC      |   2    |
-| END_REC        |   3    |
-| KEEP_ALIVE     |   4    |
-| HANDLE_ALERT   |   5    |
-
+| -------------- | ------ |
+| TOTAL_READING  | 0      |
+| WINDOW_READING | 1      |
+| START_REC      | 2      |
+| END_REC        | 3      |
+| KEEP_ALIVE     | 4      |
+| HANDLE_ALERT   | 5      |
 
 ### CommandType
 
-| Nome       | Valore |
-|------------|--------|
-| START_REC  |    0   |
-| END_REC    |    1   |
+| Nome      | Valore |
+| --------- | ------ |
+| START_REC | 0      |
+| END_REC   | 1      |
 
 ### SensorState
 
 Rappresenta lo stato che può essere assunto dai vari sensori.
 
 | Nome          | Valore |
-|---------------|--------|
-| ERROR         |   0    |
-| READY         |   1    |
-| RUNNING       |   2    |
-| ALERT_READY   |   3    |
-| ALERT_RUNNING |   4    |
+| ------------- | ------ |
+| ERROR         | 0      |
+| READY         | 1      |
+| RUNNING       | 2      |
+| ALERT_READY   | 3      |
+| ALERT_RUNNING | 4      |
 
 Il **cambiamento di stato** varia secondo il seguente schema:
 
 ```mermaid
 stateDiagram-v2
   [*] --> READY
-  ERROR --> READY: KEEP_ALIVE
+  ERROR --> READY: KEEP_ALIVE, TOTAL_READING
   READY --> ERROR: timeout
-  READY --> RUNNING: START_REC, lettura
+  READY --> RUNNING: START_REC, WINDOW_READING
   RUNNING --> READY: END_REC
-  RUNNING --> ALERT_RUNNING: dangerLevel >= ALERT_TRESHOLD
-  ALERT_RUNNING --> RUNNING: HANDLE_ALERT
-  ALERT_RUNNING --> ALERT_READY: END_REC
+  READY --> ALERT_READY: dangerLevel >= ALERT_TRESHOLD
   ALERT_READY --> READY: HANDLE_ALERT
-  ALERT_READY --> ALERT_RUNNING: lettura
 ```
 
 ## NODO
@@ -145,7 +139,7 @@ Per maggiori informazioni su **microservice_websocket** consultare la sua [docum
 
 ## TESTING IN LOCALE
 
-Al fine di eseguire dei test in locale, per mancanza di rilevatori da utilizzare, vengono usati rispettivamente: 
+Al fine di eseguire dei test in locale, per mancanza di rilevatori da utilizzare, vengono usati rispettivamente:
 
 - [mock_rilevatore.py](./utils/mock_rilevatore.py), che si occupa di **simulare** la presenza di **un rilevatore**.
 - [mock_4rilevatori.py](./utils/mock_rilevatore.py), che si occupa di **simulare** la presenza di **4 rilevatori**.
@@ -153,7 +147,7 @@ Al fine di eseguire dei test in locale, per mancanza di rilevatori da utilizzare
 ### Struttura testing locale
 
 ```mermaid
-flowchart LR; 
+flowchart LR;
 rpi4[Raspberry PI 4 - mock_rilevatore.py]
 rpi2[Raspberry PI 2 - node]
 msw[microservice_websocket]
@@ -165,7 +159,7 @@ msw -- MQTT --> rpi2
 
 ## CONTRIBUTING
 
-Nella repo sono presenti i file di **configurazione per un pre-commit hook**, che avvia tool di *linting* e *formattazione*.
+Nella repo sono presenti i file di **configurazione per un pre-commit hook**, che avvia tool di _linting_ e _formattazione_.
 
 Per installare pre-commit: [sito ufficiale](https://pre-commit.com/).
 
