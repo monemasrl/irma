@@ -25,6 +25,8 @@ def init_mqtt(mqtt_config: MQTTConfig) -> MQTTClient:
     if mqtt_config.tls_enabled:
         mqtt.tls_set()
 
+    mqtt.username_pw_set(mqtt_config.username, mqtt_config.password)
+
     mqtt.connect(host=mqtt_config.host, port=mqtt_config.port)
     mqtt.loop_start()
 
