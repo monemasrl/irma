@@ -43,9 +43,12 @@ class MessageType(IntEnum):
     DISABLE_BOARD = auto()
     RETURN_COUNT_WINDOW = auto()
     RETURN_COUNT_TOTAL = auto()
+    SET_THRESHOLD = auto()
     PING = auto()
     DEMO1 = auto()
     DEMO2 = auto()
+    RETURN_PING = auto()
+
 
 
 class Detector(IntEnum):
