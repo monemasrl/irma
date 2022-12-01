@@ -69,6 +69,12 @@ class IrmaBus:
     def send(self, message: Message, timeout: Optional[float] = None):
         self._bus.send(message, timeout)
 
+    def set_demo(self, version:1 | 2):
+        if version == 1:
+            self.send(can_protocol.demo1())
+        else:
+            self.send(can_protocol.demo2())
+
     def start_session(self):
         self._sessionID = int(time.time())
         self.send(can_protocol.start_count())

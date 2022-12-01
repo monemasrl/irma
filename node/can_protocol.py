@@ -47,7 +47,7 @@ class MessageType(IntEnum):
     PING = auto()
     DEMO1 = auto()
     DEMO2 = auto()
-    PONG = auto()
+    RETURN_PING = auto()
 
 
 

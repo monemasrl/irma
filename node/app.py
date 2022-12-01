@@ -25,6 +25,8 @@ class PayloadType(IntEnum):
 class CommandType(IntEnum):
     START_REC = 0
     END_REC = auto()
+    SET_DEMO_1 = auto()
+    SET_DEMO_2 = auto()
 
 
 class Node:
@@ -82,6 +84,10 @@ class Node:
                 self.start_rec()
             elif command == CommandType.END_REC:
                 self.end_rec()
+            elif command == CommandType.SET_DEMO_1:
+                self.bus.set_demo(1)
+            elif command == CommandType.SET_DEMO_2:
+                self.bus.set_demo(2)
 
         self.client.on_connect = on_connect
         self.client.on_message = on_message
