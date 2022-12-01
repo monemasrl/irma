@@ -43,12 +43,18 @@ async def get_user_from_mail(email: str) -> Optional[User]:
 
 
 async def create_user(
-    email: str, password: str, role: str = "standard"
+    email: str, password: str, first_name: str, last_name: str, role: str = "standard"
 ) -> Optional[User]:
     if await get_user_from_mail(email):
         return None
 
-    user = User(email=email, hashed_password=hash_password(password), role=role)
+    user = User(
+        email=email,
+        hashed_password=hash_password(password),
+        first_name=first_name,
+        last_name=last_name,
+        role=role,
+    )
     await user.save()
     return user
 

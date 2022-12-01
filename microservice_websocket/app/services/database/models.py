@@ -54,8 +54,8 @@ class Application(CustomDocument):
 class User(CustomDocument):
     email: str
     hashed_password: str
-    first_name: str = ""
-    last_name: str = ""
+    first_name: str
+    last_name: str
     role: str = "standard"
 
     class Serialized(BaseModel):
