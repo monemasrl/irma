@@ -43,18 +43,12 @@ class MessageType(IntEnum):
     DISABLE_BOARD = auto()
     RETURN_COUNT_WINDOW = auto()
     RETURN_COUNT_TOTAL = auto()
-<<<<<<< Updated upstream
-    PING = auto()
-    DEMO1 = auto()
-    DEMO2 = auto()
-=======
     SET_THRESHOLD = auto()
     PING = auto()
     DEMO1 = auto()
     DEMO2 = auto()
     PONG = auto()
 
->>>>>>> Stashed changes
 
 
 class Detector(IntEnum):
