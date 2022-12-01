@@ -144,6 +144,9 @@ class MockBus:
 
         return can_protocol.decode(message, self._sessionID, readingID)
 
+    def set_demo(self, version: 1 | 2):
+        print("Received SET DEMO " + str(version))
+
     def start_session(self):
         self._sessionID = int(time.time())
         init_cache()

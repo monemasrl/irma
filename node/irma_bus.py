@@ -74,7 +74,7 @@ class IrmaBus:
     def send(self, message: Message, timeout: Optional[float] = None):
         self._bus.send(message, timeout)
 
-    def set_demo(self, version:1 | 2):
+    def set_demo(self, version: 1 | 2):
         if version == 1:
             self.send(can_protocol.demo1())
         else:
