@@ -63,7 +63,7 @@ class Detector(IntEnum):
 class DecodedMessage(TypedDict):
     message_type: MessageType
     n_detector: int
-    sipm: Sipm
+    sipm: int
     count: int
     value: int
     sessionID: int
@@ -110,14 +110,23 @@ def set_window_low(
     if can_id == Detector.BROADCAST:
         raise ValueError("Cannot send 'SET WINDOW LOW' as BROADCAST")
 
-    value.to_bytes(2, "little")
+    val_bytes = value.to_bytes(2, "little")
 
     byte0 = n_window | sipm | WINDOW_LOW
 
     return Message(
         arbitration_id=can_id,
         is_extended_id=False,
-        data=[byte0, 0, 0, 0, value[0], value[1], MessageType.SET_WINDOW_LOW, 0],
+        data=[
+            byte0,
+            0,
+            0,
+            0,
+            val_bytes[0],
+            val_bytes[1],
+            MessageType.SET_WINDOW_LOW,
+            0,
+        ],
     )
 
 
@@ -127,14 +136,23 @@ def set_window_high(
     if can_id == Detector.BROADCAST:
         raise ValueError("Cannot send 'SET WINDOW HIGH' as BROADCAST")
 
-    value.to_bytes(2, "little")
+    val_bytes = value.to_bytes(2, "little")
 
     byte0 = n_window | sipm | WINDOW_HIGH
 
     return Message(
         arbitration_id=can_id,
         is_extended_id=False,
-        data=[byte0, 0, 0, 0, value[0], value[1], MessageType.SET_WINDOW_HIGH, 0],
+        data=[
+            byte0,
+            0,
+            0,
+            0,
+            val_bytes[0],
+            val_bytes[1],
+            MessageType.SET_WINDOW_HIGH,
+            0,
+        ],
     )
 
 
@@ -142,12 +160,12 @@ def set_hv(can_id: Detector, sipm: Sipm, value: int) -> Message:
     if can_id == Detector.BROADCAST:
         raise ValueError("Cannot send 'SET HV' as BROADCAST")
 
-    value.to_bytes(2, "little")
+    val_bytes = value.to_bytes(2, "little")
 
     return Message(
         arbitration_id=can_id,
         is_extended_id=False,
-        data=[sipm, 0, 0, 0, value[0], value[1], MessageType.SET_HV, 0],
+        data=[sipm, 0, 0, 0, val_bytes[0], val_bytes[1], MessageType.SET_HV, 0],
     )
 
 
@@ -199,7 +217,7 @@ def demo2() -> Message:
     )
 
 
-def decode(message: Message, sessionID: int, readingID: int) -> DecodedMessage:
+def decode(message: Message, sessionID: int, readingID: int) -> DecodedMessage | None:
     data = message.data
 
     n_detector = data[7]

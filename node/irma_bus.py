@@ -55,13 +55,18 @@ class IrmaBus:
         self.send(can_protocol.get_window(can_protocol.Window.W3, can_protocol.Sipm.S2))
         sleep(0.5)
 
-    def listen(self, timeout=0.5) -> Optional[can_protocol.DecodedMessage]:
+    def listen(self, timeout=0.5) -> can_protocol.DecodedMessage | None:
         message = self._bus.recv(timeout)
+
+        if self._sessionID is None:
+            self._sessionID = int(time.time())
 
         if message is None:
             return None
 
         with self._lock:
+            if self._readingID is None:
+                self._readingID = int(time.time())
             readingID = self._readingID
 
         return can_protocol.decode(message, self._sessionID, readingID)
