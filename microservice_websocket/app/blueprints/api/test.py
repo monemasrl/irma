@@ -1,18 +1,18 @@
-from flask import Blueprint, jsonify
-from flask_jwt_extended import jwt_required
+from fastapi import APIRouter, Depends, Header
 
-from microservice_websocket.app.utils.api_token import api_token_required
+from ...services.database import User
+from ...services.jwt import get_user_from_jwt
+from ...utils.api_token import verify_api_token
 
-test_bp = Blueprint("test", __name__, url_prefix="/test")
-
-
-@test_bp.route("/api-token-test")
-@api_token_required
-def api_token_test():
-    return jsonify({"message": "Valid API Token!"})
+test_router = APIRouter(prefix="/test")
 
 
-@test_bp.route("/jwt-test")
-@jwt_required()
-def jwttest():
-    return jsonify({"foo": "bar", "baz": "qux"})
+@test_router.get("/api-token-test")
+def api_token_test(authorization: str | None = Header(default=None)):
+    verify_api_token(authorization)
+    return {"message": "Valid API Token!"}
+
+
+@test_router.get("/jwt-test")
+async def test_route(user: User = Depends(get_user_from_jwt)):
+    return {"message": f"Hi {user.email}"}

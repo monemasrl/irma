@@ -1,23 +1,18 @@
 from ..services.database import Organization
-from .exceptions import ObjectNotFoundException
+from .exceptions import DuplicateException
 
 
-def get_organizations():
-    organizations = Organization.objects()
-
-    if len(organizations) == 0:
-        raise ObjectNotFoundException(Organization)
-
-    return organizations
+async def get_organizations() -> list[Organization]:
+    return await Organization.find_all().to_list()
 
 
-def create_organization(name: str) -> Organization:
-    organization = Organization.objects(organizationName=name).first()
+async def create_organization(name: str) -> Organization:
+    organization = await Organization.find_one(Organization.organizationName == name)
 
     if organization is not None:
-        raise ObjectNotFoundException(Organization)
+        raise DuplicateException("organizationName")
 
     organization = Organization(organizationName=name)
-    organization.save()
+    await organization.save()
 
     return organization

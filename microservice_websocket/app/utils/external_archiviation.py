@@ -1,6 +1,7 @@
 import requests
 
-from .exceptions import ObjectNotFoundException
+from ..services.database import Reading
+from .exceptions import NotFoundException
 
 SET_NAME = "ext-archiviation-endpoints"
 
@@ -9,9 +10,6 @@ def get_external_endpoints() -> list[str]:
     from .. import redis_client
 
     endpoints = redis_client.smembers(SET_NAME)
-
-    if len(endpoints) == 0:
-        raise ObjectNotFoundException(str)
 
     return [x.decode() for x in endpoints]
 
@@ -26,12 +24,10 @@ def delete_external_endpoint(endpoint: str):
     from .. import redis_client
 
     if redis_client.srem(SET_NAME, endpoint) == 0:
-        raise ObjectNotFoundException(str)
+        raise NotFoundException(endpoint)
 
 
-def send_payload(payload: dict):
-    try:
-        for endpoint in get_external_endpoints():
-            requests.post(endpoint, json=payload)
-    except ObjectNotFoundException:
-        pass
+async def send_payload(payload: Reading):
+    for endpoint in get_external_endpoints():
+        serialized_payload = await payload.serialize()
+        requests.post(endpoint, json=serialized_payload.dict())

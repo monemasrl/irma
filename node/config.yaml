@@ -12,9 +12,12 @@ settings:
   mqtt:
     url: "irma.monema.dev"
     port: 1884
+    tls: false
     user: "admin"
     password: "admin"
   can:
     bustype: "socketcan"
     channel: "can0"
-    bitrate: 12500
+    bitrate: 20000
+    filter_id: 96
+    filter_mask: 248

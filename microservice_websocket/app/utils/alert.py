@@ -1,47 +1,43 @@
 from datetime import datetime
 
-from ..services.database import Alert, User
-from .exceptions import ObjectNotFoundException
+from beanie import PydanticObjectId
+from beanie.operators import And, Eq
+
+from ..blueprints.api.models import HandlePayload
+from ..services.database import Alert, Node, User
+from .exceptions import NotFoundException
 from .node import update_state
 from .payload import PayloadType
 
 
-def handle_alert(received: dict, user_id: str):
-    alert = Alert.objects(id=received["alertID"]).first()
-
+async def handle_alert(alertID: str, payload: HandlePayload, user: User):
+    alert: Alert | None = await Alert.get(PydanticObjectId(alertID))
     if alert is None:
-        raise ObjectNotFoundException(Alert)
+        raise NotFoundException("Alert")
 
-    node = alert["node"]
-    user = User.objects(id=user_id).first()
+    node: Node | None = await Node.get(PydanticObjectId(alert.node))
+    if node is None:
+        raise NotFoundException("Node")
 
-    alert["isConfirmed"] = received["isConfirmed"]
-    alert["isHandled"] = True
-    alert["handledBy"] = user
-    alert["handledAt"] = datetime.now()
-    alert["handleNote"] = received["handleNote"]
-    alert.save()
+    alert.isConfirmed = payload.isConfirmed
+    alert.isHandled = True
+    alert.handledBy = user.id
+    alert.handledAt = datetime.now()
+    alert.handleNote = payload.handleNote
+    await alert.save()
 
-    if Alert.objects(node=node, isHandled=False).first() is None:
-        node["state"] = update_state(
-            node["state"], node["lastSeenAt"], PayloadType.HANDLE_ALERT
-        )
-        node.save()
+    if (
+        await Alert.find_one(And(Eq(Alert.node, node.id), Eq(Alert.isHandled, False)))
+    ) is None:
+        node.state = update_state(node.state, node.lastSeenAt, PayloadType.HANDLE_ALERT)
+        await node.save()
 
     return alert
 
 
-def alert_info(alertID: str) -> dict:
-    alert = Alert.objects(id=alertID).first()
-
+async def get_alert(alert_id: str) -> Alert:
+    alert: Alert | None = await Alert.get(PydanticObjectId(alert_id))
     if alert is None:
-        raise ObjectNotFoundException(Alert)
+        raise NotFoundException("Alert")
 
-    return {
-        "nodeID": alert["reading"]["nodeID"],
-        "sessionID": alert["reading"]["sessionID"],
-        "readingID": alert["reading"]["readingID"],
-        "canID": alert["reading"]["canID"],
-        "alertID": alertID,
-        "raisedAt": int(alert["raisedAt"].timestamp()),
-    }
+    return alert

@@ -1,55 +1,34 @@
-from flask.testing import FlaskClient
+import pytest
+from fastapi.testclient import TestClient
 
 from microservice_websocket.app.services import database as db
 
 
 class TestGetApplications:
-    endpoint = "/api/applications/"
+    endpoint = "/api/applications"
     name = "appName"
 
-    @classmethod
-    def setup_class(cls):
-        o = db.Organization(organizationName="orgName")
-        o.save()
-
-    @classmethod
-    def teardown_class(cls):
-        db.Application.drop_collection()
-        db.Organization.drop_collection()
-
     # Getting empty Applications with no args
-    def test_get_no_args(self, app_client: FlaskClient, auth_header):
+    def test_get_no_args(self, app_client: TestClient, auth_header):
+
         response = app_client.get(self.endpoint, headers=auth_header)
 
         assert (
-            response.status_code == 400
+            response.status_code == 422
         ), "Invalid response code when getting Application with no args"
 
-    # Getting empty Applications with right args
-    def test_get_no_applications(self, app_client: FlaskClient, auth_header):
-        organizationID = str(db.Organization.objects().first()["id"])
-
-        response = app_client.get(
-            self.endpoint,
-            headers=auth_header,
-            query_string={"organizationID": organizationID},
-        )
-
-        assert (
-            response.status_code == 404
-        ), "Invalid response code when getting Application with right args"
-
     # Getting created application
-    def test_get(self, app_client: FlaskClient, auth_header):
-        # Manually create application
-        o = db.Organization.objects().first()
-        a = db.Application(applicationName=self.name, organization=o)
-        a.save()
+    @pytest.mark.asyncio
+    async def test_get(self, app_client: TestClient, auth_header):
+        o = db.Organization(organizationName="orgName")
+        await o.save()
+        a = db.Application(applicationName=self.name, organization=o.id)
+        await a.save()
+        # Done setup
 
         response = app_client.get(
-            self.endpoint,
+            self.endpoint + f"?organizationID={str(o.id)}",
             headers=auth_header,
-            query_string={"organizationID": str(o["id"])},
         )
 
         assert (
@@ -57,31 +36,24 @@ class TestGetApplications:
         ), "Invalid response code when getting Application"
 
         assert (
-            response.json["applications"][0]["applicationName"] == self.name
+            response.json()["applications"][0]["applicationName"] == self.name
         ), "Invalid Application name"
 
 
 class TestPostApplications:
-    endpoint = "/api/applications/"
+    endpoint = "/api/application"
     name = "appName"
 
-    @classmethod
-    def setup_class(cls):
-        o = db.Organization(organizationName="orgName")
-        o.save()
-
-    @classmethod
-    def teardown_class(cls):
-        db.Application.drop_collection()
-        db.Organization.drop_collection()
-
     # Creating Application
-    def test_create(self, app_client: FlaskClient, auth_header):
-        organizationID = str(db.Organization.objects().first()["id"])
+    @pytest.mark.asyncio
+    async def test_create(self, app_client: TestClient, auth_header):
+        o = db.Organization(organizationName="orgName")
+        await o.save()
+        # Done setup
 
         response = app_client.post(
-            self.endpoint + organizationID,
-            json={"name": self.name},
+            self.endpoint,
+            json={"name": self.name, "organizationID": str(o.id)},
             headers=auth_header,
         )
 
@@ -90,13 +62,15 @@ class TestPostApplications:
         ), "Invalid response code when posting valid data in create route"
 
         assert (
-            db.Application.objects().first()["applicationName"] == self.name
-        ), "Invalid name for Application object"
+            app := await db.Application.find_one()
+        ) and app.applicationName == self.name, "Invalid name for Application object"
 
     # Creating application with wrong orgID
-    def test_create_with_no_org(self, app_client: FlaskClient, auth_header, obj_id):
+    def test_create_with_no_org(self, app_client: TestClient, auth_header, obj_id):
         response = app_client.post(
-            self.endpoint + obj_id, json={"name": "qux"}, headers=auth_header
+            self.endpoint,
+            json={"name": "qux", "organizationID": obj_id},
+            headers=auth_header,
         )
 
         assert (
@@ -104,27 +78,34 @@ class TestPostApplications:
         ), "Invalid response code when posting data to wrong orgID"
 
     # Creating application with same name
-    def test_create_invalid_name(self, app_client: FlaskClient, auth_header):
-        organizationID = str(db.Organization.objects().first()["id"])
+    @pytest.mark.asyncio
+    async def test_create_invalid_name(self, app_client: TestClient, auth_header):
+        o = db.Organization(organizationName="orgName")
+        await o.save()
+        a = db.Application(applicationName=self.name, organization=o.id)
+        await a.save()
+        # Done setup
 
         response = app_client.post(
-            self.endpoint + organizationID,
-            json={"name": self.name},
+            self.endpoint,
+            json={"name": self.name, "organizationID": str(o.id)},
             headers=auth_header,
         )
+        print(await db.Application.find_all().to_list())
 
         assert (
             response.status_code == 400
         ), "Invalid response code when posting data with already existing name"
 
     # Creating application with invalid payload
-    def test_create_invalid_payload(self, app_client: FlaskClient, auth_header, obj_id):
-        organizationID = str(db.Organization.objects().first()["id"])
+    @pytest.mark.asyncio
+    async def test_create_invalid_payload(self, app_client: TestClient, auth_header):
+        o = db.Organization(organizationName="orgName")
+        await o.save()
+        # Done setup
 
-        response = app_client.post(
-            self.endpoint + organizationID, json={}, headers=auth_header
-        )
+        response = app_client.post(self.endpoint, json={}, headers=auth_header)
 
         assert (
-            response.status_code == 400
+            response.status_code == 422
         ), "Invalid response code when posting invalid data"

@@ -1,7 +1,7 @@
 #!/bin/sh
 
-if [ -z "${DEBUG}" ]; then
-    gunicorn -w 1 --threads 100 'app:create_app()' -b '0.0.0.0:5000'
+if [ -z "${TESTING}" ]; then
+    uvicorn app:app --host 0.0.0.0 --reload
 else
-    python3 app.py
+    uvicorn app:app --host 0.0.0.0
 fi

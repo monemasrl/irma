@@ -1,22 +1,21 @@
-from functools import wraps
-
-from flask import jsonify, make_response, request
+from fastapi import HTTPException, status
 
 
-def api_token_required(f):
-    @wraps(f)
-    def decorator(*args, **kwargs):
-        if "Authorization" not in request.headers:
-            return make_response(jsonify({"message": "No API Token Provided"}), 401)
+def verify_api_token(token: str | None):
+    invalid_token_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token"
+    )
 
-        token: str = request.headers["Authorization"].split(" ")[1]
+    if token is None:
+        raise invalid_token_exception
 
-        with open("./api-tokens.txt", "r") as file:
-            tokens: list[str] = [x.strip() for x in file.readlines()]
+    try:
+        token = token.split(" ")[1]
+    except IndexError:
+        raise invalid_token_exception
 
-            if token not in tokens:
-                return make_response(jsonify({"message": "Invalid Token"}), 401)
+    with open("./api-tokens.txt", "r") as file:
+        tokens: list[str] = [x.strip() for x in file.readlines()]
 
-        return f(*args, **kwargs)
-
-    return decorator
+        if token not in tokens:
+            raise invalid_token_exception

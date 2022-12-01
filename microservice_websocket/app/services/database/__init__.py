@@ -1,103 +1,33 @@
-from __future__ import annotations
-
-from flask import Flask
-from flask_mongoengine import Document, MongoEngine
-from mongoengine import IntField
-from mongoengine.fields import BooleanField, DateTimeField, ReferenceField, StringField
-
-from ...utils.enums import NodeState
-
-
-def init_db(app: Flask):
-    database = MongoEngine()
-    database.init_app(app)
-
-
-###############################################################
-# definizione della struttura del documento inserito in mongo #
-###############################################################
-class Organization(Document):
-    organizationName = StringField(max_length=100, required=True)
+# class Node(Document):
+#     def to_dashboard(self) -> dict:
+#         unhandledAlerts = Alert.objects(node=self, isHandled=False)
+#
+#         unhandledAlertIDs = [str(x["id"]) for x in unhandledAlerts]
+#
+#         return {
+#             "nodeID": self.nodeID,
+#             "nodeName": self.nodeName,
+#             "applicationID": str(self.application["id"]),
+#             "state": NodeState.to_irma_ui_state(self.state),
+#             "unhandledAlertIDs": unhandledAlertIDs,
+#         }
 
 
-class Application(Document):
-    applicationName = StringField(max_length=100, required=True)
-    organization = ReferenceField(Organization)
+from beanie import init_beanie
+from mongomock_motor import AsyncMongoMockClient
+from motor.motor_asyncio import AsyncIOMotorClient
+
+from .models import Alert, Application, Node, Organization, Reading, User
 
 
-class User(Document):
-    email = StringField(max_length=255)
-    password = StringField(max_length=255)  # User information
-    first_name = StringField(default="")
-    last_name = StringField(default="")
-    role = StringField(default="standard")
+async def init_db(db_uri: str, db_name: str):
+    if "mongomock" in db_uri:
+        client = AsyncMongoMockClient()
+    else:
+        client = AsyncIOMotorClient(db_uri)
+    db = client[db_name]
 
-    def serialize(self) -> dict:
-        return {
-            "id": str(self.id),
-            "email": self.email,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "role": self.role,
-        }
-
-
-class Node(Document):
-    nodeID = IntField(required=True)
-    nodeName = StringField(default="", required=True)
-    application = ReferenceField(Application, required=True)
-    organization = ReferenceField(Organization, required=True)
-    state = IntField(required=True)
-    lastSeenAt = DateTimeField(required=True)
-
-    def to_dashboard(self) -> dict:
-        unhandledAlerts = Alert.objects(node=self, isHandled=False)
-
-        unhandledAlertIDs = [str(x["id"]) for x in unhandledAlerts]
-
-        return {
-            "nodeID": self.nodeID,
-            "nodeName": self.nodeName,
-            "applicationID": str(self.application["id"]),
-            "state": NodeState.to_irma_ui_state(self.state),
-            "unhandledAlertIDs": unhandledAlertIDs,
-        }
-
-
-class Reading(Document):
-    nodeID = IntField(required=True)
-    canID = IntField(required=True)
-    sensorNumber = IntField(required=True)
-    readingID = IntField(required=True)
-    sessionID = IntField(required=True)
-    dangerLevel = IntField(default=0)
-    window1_count = IntField(default=0)
-    window2_count = IntField(default=0)
-    window3_count = IntField(default=0)
-    publishedAt = DateTimeField(required=True)
-
-    def serialize(self) -> dict:
-        return {
-            "nodeID": self.nodeID,
-            "canID": self.canID,
-            "sensorNumber": self.sensorNumber,
-            "readingID": self.readingID,
-            "sessionID": self.sessionID,
-            "dangerLevel": self.dangerLevel,
-            "window1": self.window1_count,
-            "window2": self.window2_count,
-            "window3": self.window3_count,
-            "publishedAt": str(self.publishedAt),
-        }
-
-
-class Alert(Document):
-    reading = ReferenceField(Reading, required=True)
-    node = ReferenceField(Node, required=True)
-    sessionID = IntField(required=True)
-    isHandled = BooleanField(required=True)
-    raisedAt = DateTimeField(required=True)
-    isConfirmed = BooleanField()
-    handledBy = ReferenceField(User)
-    handledAt = DateTimeField()
-    handleNote = StringField()
+    await init_beanie(
+        database=db,
+        document_models=[Organization, Application, User, Node, Reading, Alert],
+    )

@@ -1,7 +1,7 @@
 from enum import IntEnum, auto
 from typing import TypedDict
 
-from can import Message
+from can.message import Message
 
 
 class Sipm(IntEnum):
@@ -43,6 +43,9 @@ class MessageType(IntEnum):
     DISABLE_BOARD = auto()
     RETURN_COUNT_WINDOW = auto()
     RETURN_COUNT_TOTAL = auto()
+    PING = auto()
+    DEMO1 = auto()
+    DEMO2 = auto()
 
 
 class Detector(IntEnum):
@@ -70,6 +73,7 @@ class DecodedMessage(TypedDict):
 def start_count() -> Message:
     return Message(
         arbitration_id=Detector.BROADCAST,
+        is_extended_id=False,
         data=[0, 0, 0, 0, 0, 0, MessageType.START_COUNT, 0],
     )
 
@@ -77,6 +81,7 @@ def start_count() -> Message:
 def stop_count() -> Message:
     return Message(
         arbitration_id=Detector.BROADCAST,
+        is_extended_id=False,
         data=[0, 0, 0, 0, 0, 0, MessageType.STOP_COUNT, 0],
     )
 
@@ -86,6 +91,7 @@ def get_window(n_window: Window, sipm: Sipm) -> Message:
 
     return Message(
         arbitration_id=Detector.BROADCAST,
+        is_extended_id=False,
         data=[byte0, 0, 0, 0, 0, 0, MessageType.GET_WINDOW, 0],
     )
 
@@ -93,6 +99,7 @@ def get_window(n_window: Window, sipm: Sipm) -> Message:
 def get_total_count(sipm: Sipm) -> Message:
     return Message(
         arbitration_id=Detector.BROADCAST,
+        is_extended_id=False,
         data=[sipm, 0, 0, 0, 0, 0, MessageType.GET_TOTAL_COUNT, 0],
     )
 
@@ -103,12 +110,13 @@ def set_window_low(
     if can_id == Detector.BROADCAST:
         raise ValueError("Cannot send 'SET WINDOW LOW' as BROADCAST")
 
-    value.to_bytes(2, "big")
+    value.to_bytes(2, "little")
 
     byte0 = n_window | sipm | WINDOW_LOW
 
     return Message(
         arbitration_id=can_id,
+        is_extended_id=False,
         data=[byte0, 0, 0, 0, value[0], value[1], MessageType.SET_WINDOW_LOW, 0],
     )
 
@@ -119,12 +127,13 @@ def set_window_high(
     if can_id == Detector.BROADCAST:
         raise ValueError("Cannot send 'SET WINDOW HIGH' as BROADCAST")
 
-    value.to_bytes(2, "big")
+    value.to_bytes(2, "little")
 
     byte0 = n_window | sipm | WINDOW_HIGH
 
     return Message(
         arbitration_id=can_id,
+        is_extended_id=False,
         data=[byte0, 0, 0, 0, value[0], value[1], MessageType.SET_WINDOW_HIGH, 0],
     )
 
@@ -133,10 +142,11 @@ def set_hv(can_id: Detector, sipm: Sipm, value: int) -> Message:
     if can_id == Detector.BROADCAST:
         raise ValueError("Cannot send 'SET HV' as BROADCAST")
 
-    value.to_bytes(2, "big")
+    value.to_bytes(2, "little")
 
     return Message(
         arbitration_id=can_id,
+        is_extended_id=False,
         data=[sipm, 0, 0, 0, value[0], value[1], MessageType.SET_HV, 0],
     )
 
@@ -147,6 +157,7 @@ def enable_board(can_id: Detector) -> Message:
 
     return Message(
         arbitration_id=can_id,
+        is_extended_id=False,
         data=[0, 0, 0, 0, 0, 0, MessageType.ENABLE_BOARD, 0],
     )
 
@@ -157,7 +168,34 @@ def disable_board(can_id: Detector) -> Message:
 
     return Message(
         arbitration_id=can_id,
+        is_extended_id=False,
         data=[0, 0, 0, 0, 0, 0, MessageType.DISABLE_BOARD, 0],
+    )
+
+
+def ping(can_id: Detector) -> Message:
+    # TODO: filtro
+
+    return Message(
+        arbitration_id=can_id,
+        is_extended_id=False,
+        data=[0, 0, 0, 0, 0, 0, MessageType.PING, 0],
+    )
+
+
+def demo1() -> Message:
+    return Message(
+        arbitration_id=Detector.BROADCAST,
+        is_extended_id=False,
+        data=[0, 0, 0, 0, 0, 0, MessageType.DEMO1, 0],
+    )
+
+
+def demo2() -> Message:
+    return Message(
+        arbitration_id=Detector.BROADCAST,
+        is_extended_id=False,
+        data=[0, 0, 0, 0, 0, 0, MessageType.DEMO2, 0],
     )
 
 
@@ -167,7 +205,7 @@ def decode(message: Message, sessionID: int, readingID: int) -> DecodedMessage:
     n_detector = data[7]
 
     if data[6] == MessageType.RETURN_COUNT_WINDOW:
-        count = int.from_bytes(data[3:6], "big")
+        count = int.from_bytes(data[3:6], "little")
         n_window = data[0] & 0b00111111
         sipm = data[0] >> 7
         return {
@@ -181,7 +219,7 @@ def decode(message: Message, sessionID: int, readingID: int) -> DecodedMessage:
         }
 
     elif data[6] == MessageType.RETURN_COUNT_TOTAL:
-        count = int.from_bytes(data[3:6], "big")
+        count = int.from_bytes(data[3:6], "little")
         danger_level = data[2]
         sipm = data[0] >> 7
         return {
@@ -193,5 +231,9 @@ def decode(message: Message, sessionID: int, readingID: int) -> DecodedMessage:
             "sessionID": sessionID,
             "readingID": readingID,
         }
+
+    elif data[6] == MessageType.ENABLE_BOARD:
+        print("ENABLE BOARD")
     else:
-        raise ValueError(f"Unexpected MessageType '{data[6]}'")
+        print(f"Unexpected MessageType '{data[6]}'")
+        # raise ValueError(f"Unexpected MessageType '{data[6]}'")

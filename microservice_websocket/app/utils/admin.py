@@ -1,17 +1,12 @@
-from functools import wraps
+from fastapi import HTTPException, status
 
-from flask import jsonify, make_response
-from flask_jwt_extended import get_jwt_identity
+from ..services.database.models import User
 
 
-def admin_required(f):
-    @wraps(f)
-    def decorator(*args, **kwargs):
-        user = get_jwt_identity()
+def verify_admin(user: User):
+    not_an_admin_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin Privileges Required"
+    )
 
-        if not user["role"] == "admin":
-            return make_response(jsonify({"msg": "Unauthorized"}), 401)
-
-        return f(*args, **kwargs)
-
-    return decorator
+    if user.role != "admin":
+        raise not_an_admin_exception

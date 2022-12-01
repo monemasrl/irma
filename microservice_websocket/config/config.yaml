@@ -1,0 +1,30 @@
+config:
+  app:
+    READING_SYNC_WAIT: 60
+    CHECK_SYNC_READY: 30
+
+    NODE_TIMEOUT_CHECK_INTERVAL: 10
+    NODE_TIMEOUT_INTERVAL: 30
+
+    ALERT_TRESHOLD: 7
+
+  jwt:
+    secret_key: "pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw"
+    access_token_expires_minutes: 10
+
+  mqtt:
+    username: "admin"
+    password: "admin"
+    host: "irma.monema.dev"
+    port: 1884
+    tls_enabled: true
+    tls_version: 5
+
+  redis:
+    host: "cache"
+    port: 6379
+    db: 0
+
+  mongo:
+    db: "irma"
+    uri: "mongodb://mongo:27017/irma"

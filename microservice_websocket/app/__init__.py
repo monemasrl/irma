@@ -1,52 +1,52 @@
-import json
+from fakeredis import FakeStrictRedis
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi_socketio import SocketManager
+from redis import Redis
 
-from fakeredis import FakeRedis
-from flask import Flask
-
-from flask_cors import CORS
-from flask_redis import FlaskRedis
-from flask_socketio import SocketIO
-
-from .services.database import init_db
-from .services.jwt import init_jwt
-from .services.mqtt import create_mqtt
+from .services.database import init_db, user_manager
+from .services.mqtt import init_mqtt
 from .services.scheduler import init_scheduler
-from .services.socketio import init_socketio
 
-DISABLE_MQTT = False
+# from .services.socketio import init_socketio
 
-socketio = SocketIO(cors_allowed_origins="*")
 mqtt = None
-redis_client = FlaskRedis()
+
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+socketManager = SocketManager(app=app, cors_allowed_origins=[])
+# init_socketio()
 
 
-def create_app(testing=False, debug=False):
-    app = Flask(__name__)
-    global mqtt
+@app.on_event("startup")
+async def app_init():
     global redis_client
+    global mqtt
 
-    app.config.from_file("../config/config_server.json", load=json.load)
-    if testing:
-        app.config.from_file("../config/config_server_testing.json", load=json.load)
-        redis_client = FlaskRedis.from_custom_provider(FakeRedis)
-        print(f"{redis_client=}")
+    init_scheduler()
 
-    app.debug = debug
+    from .config import TESTING, config as Config
 
-    redis_client.init_app(app)
-    init_scheduler(app)
-    init_jwt(app)
-    init_db(app)
-    CORS(app)
+    if not TESTING:
+        mqtt = init_mqtt(Config.mqtt)
+        redis_client = Redis(
+            host=Config.redis.host, port=Config.redis.port, db=Config.redis.db
+        )
+        await init_db(Config.mongo.uri, Config.mongo.db)
+    else:
+        redis_client = FakeStrictRedis()
+        await init_db("mongomock://localhost:27017/test", "test")
 
-    if not DISABLE_MQTT:
-        mqtt = create_mqtt(app)
+    await user_manager.create_user("foo@bar.com", "baz", role="admin")
 
-    from .blueprints.api import bp
 
-    app.register_blueprint(bp)
-    socketio.init_app(app)
+from .blueprints.api import main_router
 
-    init_socketio(socketio)
-
-    return app
+app.include_router(main_router)

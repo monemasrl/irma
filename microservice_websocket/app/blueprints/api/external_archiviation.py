@@ -1,53 +1,46 @@
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
-from ...utils.exceptions import ObjectNotFoundException
+from ...services.jwt import jwt_required
 from ...utils.external_archiviation import (
     add_external_endpoint,
     delete_external_endpoint,
     get_external_endpoints,
 )
 
-ext_arch_bp = Blueprint(
-    "external_archiviation", __name__, url_prefix="/external-archiviations"
+ext_arch_router = APIRouter()
+
+
+class GetExternalResponse(BaseModel):
+    endpoints: list[str]
+
+
+class ExternalPayload(BaseModel):
+    endpoint: str
+
+
+@ext_arch_router.get(
+    "/external-archiviations",
+    dependencies=[Depends(jwt_required)],
+    response_model=GetExternalResponse,
 )
-
-
-@ext_arch_bp.route("/", methods=["GET"])
-@jwt_required()
 def get_external_endpoint_route():
-    try:
-        endpoints = get_external_endpoints()
-    except ObjectNotFoundException:
-        return {"message": "not found"}, 404
+    endpoints = get_external_endpoints()
 
-    return jsonify(endpoints=endpoints)
+    return {"endpoints": endpoints}
 
 
-@ext_arch_bp.route("/add", methods=["POST"])
-@jwt_required()
-def add_external_endpoint_route():
-    endpoint = request.json.get("endpoint", None)
+@ext_arch_router.post("/external-archiviation", dependencies=[Depends(jwt_required)])
+def add_external_endpoint_route(payload: ExternalPayload):
+    add_external_endpoint(payload.endpoint)
 
-    if endpoint is None:
-        return {"message": "bad request"}, 400
-
-    add_external_endpoint(endpoint)
-
-    return {"message": "inserted"}, 200
+    return {"message": "Inserted"}
 
 
-@ext_arch_bp.route("/", methods=["DELETE"])
-@jwt_required()
-def delete_external_endpoint_route():
-    endpoint = request.args.get("endpoint", None)
+@ext_arch_router.delete(
+    "/external-archiviation/{endpoint}", dependencies=[Depends(jwt_required)]
+)
+def delete_external_endpoint_route(endpoint: str):
+    delete_external_endpoint(endpoint)
 
-    if endpoint is None:
-        return {"message": "bad request"}, 400
-
-    try:
-        delete_external_endpoint(endpoint)
-    except ObjectNotFoundException:
-        return {"message": "not found"}, 404
-
-    return {"message": "deleted"}, 200
+    return {"message": "Deleted"}

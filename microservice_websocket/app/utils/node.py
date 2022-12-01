@@ -1,16 +1,18 @@
 from datetime import datetime, timedelta
 
-from ..config import config
-from ..services.database import Node
+from beanie import PydanticObjectId
+
+from ..config import config as Config
+from ..services.database import Application, Node
 from .enums import NodeState, PayloadType
-from .exceptions import ObjectNotFoundException
+from .exceptions import NotFoundException
 
 
 def update_state_total_reading(current_state: NodeState, dato: int) -> NodeState:
     if current_state == NodeState.ERROR:
         current_state = NodeState.READY
 
-    if dato >= config["ALERT_TRESHOLD"] and current_state == NodeState.READY:
+    if dato >= Config.app.ALERT_TRESHOLD and current_state == NodeState.READY:
         return NodeState.ALERT_READY
 
     return current_state
@@ -77,19 +79,22 @@ def update_state(
         current_state = FUNCTIONS[typ](current_state, dato)
 
     if (datetime.now() - lastSeenAt) > timedelta(
-        seconds=config["NODE_TIMEOUT_INTERVAL"]
+        seconds=Config.app.NODE_TIMEOUT_INTERVAL
     ):
         current_state = NodeState.ERROR
 
     return current_state
 
 
-def get_nodes(applicationID: str):
-    nodes = Node.objects(application=applicationID)
+async def get_nodes(applicationID: str):
+    application: Application | None = await Application.get(
+        PydanticObjectId(applicationID)
+    )
+    if application is None:
+        raise NotFoundException("Application")
 
-    if len(nodes) == 0:
-        raise ObjectNotFoundException(Node)
+    nodes: list[Node] = await Node.find(Node.application == application.id).to_list()
 
-    nodes = [x.to_dashboard() for x in nodes]
+    # nodes = [x.to_dashboard() for x in nodes]
 
     return nodes

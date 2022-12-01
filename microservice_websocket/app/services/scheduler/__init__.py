@@ -1,22 +1,49 @@
-from flask import Flask
-from flask_apscheduler import APScheduler
-import requests
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+from ...config import config as Config
+from ...services.database import Node
+from ...utils.node import update_state
 from ...utils.sync_cache import sync_cached
-from ...config import config
 
 
-def init_scheduler(app: Flask):
-    scheduler = APScheduler()
-    scheduler.init_app(app)
+def init_scheduler():
+    scheduler = AsyncIOScheduler()
 
-    @scheduler.task(
-        "interval", id="update_state", seconds=config["NODE_TIMEOUT_CHECK_INTERVAL"]
+    async def periodically_check_nodes():
+        from ... import socketManager
+
+        nodes: list[Node] = await Node.find_all().to_list()
+
+        update_frontend = False
+
+        for node in nodes:
+            new_state = update_state(node.state, node.lastSeenAt)
+
+            if node.state != new_state:
+                update_frontend = True
+                node.state = new_state
+                await node.save()
+
+        if update_frontend:
+            print("Detected node-state change(s), emitting 'change'")
+            await socketManager.emit("change-reading")
+            await socketManager.emit("change")
+
+    scheduler.add_job(
+        periodically_check_nodes,
+        "interval",
+        id="update_state",
+        seconds=Config.app.NODE_TIMEOUT_CHECK_INTERVAL,
     )
-    def periodically_get_route():
-        requests.get("http://localhost:5000/api/check")
 
-    @scheduler.task("interval", id="sync_cache", seconds=config["CHECK_SYNC_READY"])
-    def periodically_sync_cache():
-        sync_cached()
+    async def periodically_sync_cache():
+        await sync_cached()
+
+    scheduler.add_job(
+        periodically_sync_cache,
+        "interval",
+        id="sync_cache",
+        seconds=Config.app.CHECK_SYNC_READY,
+    )
 
     scheduler.start()

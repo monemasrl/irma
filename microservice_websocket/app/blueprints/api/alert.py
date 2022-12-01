@@ -1,43 +1,29 @@
-import json
+from fastapi import APIRouter, Depends
 
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import get_jwt_identity, jwt_required
+from ...services.database import Alert, User
+from ...services.jwt import get_user_from_jwt
+from ...utils.alert import get_alert, handle_alert
+from .models import HandlePayload
 
-from ... import socketio
-from ...utils.alert import alert_info, handle_alert
-from ...utils.exceptions import ObjectNotFoundException
-
-alert_bp = Blueprint("alert", __name__, url_prefix="/alert")
+alert_router = APIRouter(prefix="/alert")
 
 
-@alert_bp.route("/handle", methods=["POST"])
-@jwt_required()
-def _handle_alert_route():
-    received: dict = json.loads(request.data)
+@alert_router.post("/{alertID}")
+async def handle_alert_route(
+    alertID: str, payload: HandlePayload, user: User = Depends(get_user_from_jwt)
+):
+    from ... import socketManager
 
-    user_id = get_jwt_identity()["id"]
+    await handle_alert(alertID, payload, user)
 
-    try:
-        handle_alert(received, user_id)
-    except ObjectNotFoundException:
-        return {"message": "not found"}, 404
+    await socketManager.emit("change")
+    await socketManager.emit("change-reading")
 
-    socketio.emit("change")
-    socketio.emit("change-reading")
-    return received
+    return {"message": "Handled"}
 
 
-@alert_bp.route("/info", methods=["GET"])
-@jwt_required()
-def alert_info_route():
-    alertID = request.args.get("id", None)
+@alert_router.get("/{alertID}", response_model=Alert.Serialized)
+async def get_alert_route(alertID: str):
+    response: Alert = await get_alert(alertID)
 
-    if alertID is None:
-        return {"message": "Bad Request"}, 400
-
-    try:
-        response: dict = alert_info(alertID)
-    except ObjectNotFoundException:
-        return {"message": "not found"}, 404
-
-    return jsonify(response)
+    return await response.serialize()

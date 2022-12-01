@@ -1,37 +1,34 @@
-import json
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required
-
-from ...utils.exceptions import ObjectNotFoundException
+from ...services.database import Organization
+from ...services.jwt import jwt_required
 from ...utils.organization import create_organization, get_organizations
 
-organization_bp = Blueprint("organization", __name__, url_prefix="/organizations")
+organization_router = APIRouter()
 
 
-@organization_bp.route("/", methods=["GET"])
-@jwt_required()
-def _get_organizations_route():
-    try:
-        organizations = get_organizations()
-    except ObjectNotFoundException:
-        return {"message": "Not Found"}, 404
-
-    return jsonify(organizations=organizations)
+class GetOrgsResponse(BaseModel):
+    organizations: list[Organization.Serialized]
 
 
-@organization_bp.route("/", methods=["POST"])
-@jwt_required()
-def _create_organization_route():
-    record: dict = json.loads(request.data)
-    name = record.get("name", None)
+class CreateOrgPayload(BaseModel):
+    name: str
 
-    if name is None:
-        return {"message": "Bad Request"}, 400
 
-    try:
-        organization = create_organization(name)
-    except ObjectNotFoundException:
-        return {"message": f"""name '{record["name"]}' is already in use"""}, 400
+@organization_router.get(
+    "/organizations",
+    dependencies=[Depends(jwt_required)],
+    response_model=GetOrgsResponse,
+)
+async def get_organizations_route():
+    organizations = await get_organizations()
 
-    return organization.to_json()
+    return {"organizations": [x.serialize() for x in organizations]}
+
+
+@organization_router.post("/organization", dependencies=[Depends(jwt_required)])
+async def create_organization_route(payload: CreateOrgPayload):
+    await create_organization(payload.name)
+
+    return {"message": "Created"}

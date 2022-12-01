@@ -4,7 +4,7 @@ from microservice_websocket.app.config import config
 from microservice_websocket.app.utils.enums import NodeState, PayloadType
 from microservice_websocket.app.utils.node import update_state
 
-ALERT_TRESHOLD = config["ALERT_TRESHOLD"]
+ALERT_TRESHOLD = config.app.ALERT_TRESHOLD
 
 
 def _test_update_state_case(

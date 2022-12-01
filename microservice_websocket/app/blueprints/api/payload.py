@@ -1,45 +1,23 @@
-import json
+from fastapi import APIRouter, Header
 
-from flask import Blueprint, request
-from flask_jwt_extended import jwt_required
+from ...utils.api_token import verify_api_token
+from ...utils.payload import publish
+from .models import PublishPayload
 
-from ... import socketio
-from ...utils.api_token import api_token_required
-from ...utils.exceptions import ObjectNotFoundException
-from ...utils.payload import publish, send_mqtt_command
-
-payload_bp = Blueprint("payload", __name__, url_prefix="/payload")
+payload_routr = APIRouter(prefix="/payload")
 
 
-@payload_bp.route("/publish", methods=["POST"])
-@api_token_required
-def _publish_route():
-    data = request.data.decode()
+@payload_routr.post("/")
+async def publish_route(
+    payload: PublishPayload, authorization: str | None = Header(default=None)
+):
+    verify_api_token(authorization)
 
-    record: dict = json.loads(data)
+    await publish(payload)
 
-    try:
-        publish(record)
-    except ObjectNotFoundException:
-        return {"message": "Not Found"}, 404
+    from ... import socketManager
 
-    socketio.emit("change")
-    socketio.emit("change-reading")
-    return record
+    await socketManager.emit("change")
+    await socketManager.emit("change-reading")
 
-
-@payload_bp.route("/command", methods=["POST"])
-@jwt_required()
-def _send_mqtt_command_route():
-    received: dict = json.loads(request.data)
-
-    applicationID = received.get("applicationID", None)
-    nodeID = received.get("nodeID", None)
-
-    if applicationID is None or nodeID is None:
-        return {"message": "Bad Request"}, 400
-
-    send_mqtt_command(applicationID, nodeID, received["command"])
-
-    print(received)
-    return received
+    return {"message": "Published"}

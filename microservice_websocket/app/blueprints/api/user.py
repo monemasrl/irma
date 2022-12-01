@@ -1,8 +1,9 @@
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import get_jwt_identity, jwt_required
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 
-from ...utils.admin import admin_required
-from ...utils.exceptions import ObjectNotFoundException
+from ...services.database import User
+from ...services.jwt import get_user_from_jwt
+from ...utils.admin import verify_admin
 from ...utils.user import (
     create_user,
     delete_user,
@@ -10,101 +11,75 @@ from ...utils.user import (
     get_user_list,
     update_user,
 )
+from .models import CreateUserPayload, UpdateUserPayload
 
-user_bp = Blueprint("blueprint", __name__, url_prefix="/user")
-
-
-@user_bp.route("/list", methods=["GET"])
-@jwt_required()
-@admin_required
-def get_user_list_route():
-    users = get_user_list()
-
-    return jsonify(users=users)
+user_router = APIRouter()
 
 
-@user_bp.route("/<user_id>", methods=["GET"])
-@jwt_required()
-@admin_required
-def get_user_info_route(user_id: str):
-    user = get_user_info(user_id)
-
-    if user is None:
-        return {"msg": "Not Found"}, 404
-
-    return jsonify(user.serialize())
+class UserListResponse(BaseModel):
+    users: list[User.Serialized]
 
 
-@user_bp.route("/create", methods=["POST"])
-@jwt_required()
-@admin_required
-def create_user_route():
-    payload = request.json
+@user_router.get("/users", response_model=UserListResponse)
+async def get_user_list_route(user: User = Depends(get_user_from_jwt)):
+    verify_admin(user)
 
-    if payload is None:
-        return {"msg": "Bad Request"}, 400
+    users: list[User] = await get_user_list()
 
-    for field in ["email", "password", "role"]:
-        if field not in payload:
-            return {"msg": f"Bad Request: missing field {field}"}, 400
-
-    if not create_user(payload):
-        return {"msg": "Already Existing User"}, 400
-
-    return {"msg": "Created"}, 200
+    return {"users": [x.serialize() for x in users]}
 
 
-@user_bp.route("/<user_id>", methods=["PUT"])
-@jwt_required()
-def update_user_route(user_id: str):
-    current_user = get_jwt_identity()
+@user_router.get("/user/{user_id}", response_model=User.Serialized)
+async def get_user_info_route(user_id: str, user: User = Depends(get_user_from_jwt)):
+    verify_admin(user)
 
-    if current_user["role"] != "admin" and current_user["id"] != user_id:
-        return {"msg": "Unauthorized"}, 401
+    user_info = await get_user_info(user_id)
 
-    payload = request.json
-
-    if payload is None:
-        return {"msg": "Bad Request"}, 400
-
-    for field in ["email", "newPassword", "oldPassword", "role"]:
-        if field not in payload:
-            return {"msg": f"Bad Request: missing field {field}"}, 400
-
-    try:
-        if not update_user(user_id, payload):
-            return {"msg": "Old Password Doesn't Match"}, 401
-    except ObjectNotFoundException:
-        return {"msg": "Not Found"}, 404
-
-    return {"msg": "Updated"}, 200
+    return user_info.serialize()
 
 
-@user_bp.route("/<user_id>", methods=["DELETE"])
-@jwt_required()
-@admin_required
-def delete_user_route(user_id: str):
-    current_user = get_jwt_identity()
-
-    if current_user["id"] == user_id:
-        return {"msg": "Cannot Delete Current Active User"}, 400
-
-    try:
-        delete_user(user_id)
-    except ObjectNotFoundException:
-        return {"msg": "Not Found"}, 404
-
-    return {"msg": "Deleted"}, 200
+@user_router.get("/user", response_model=User.Serialized)
+async def get_own_user_info_route(user: User = Depends(get_user_from_jwt)):
+    return user.serialize()
 
 
-@user_bp.route("/info", methods=["GET"])
-@jwt_required()
-def get_self_user_info_route():
-    user_id = get_jwt_identity()["id"]
+@user_router.post("/user")
+async def create_user_route(
+    payload: CreateUserPayload, user: User = Depends(get_user_from_jwt)
+):
+    verify_admin(user)
 
-    user = get_user_info(user_id)
+    if not await create_user(payload):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User Already Existing"
+        )
 
-    if user is None:
-        return {"msg": "Not Found"}, 404
+    return {"message": "Created"}
 
-    return jsonify(user.serialize())
+
+@user_router.put("/user/{user_id}")
+async def update_user_route(
+    payload: UpdateUserPayload, user_id: str, user: User = Depends(get_user_from_jwt)
+):
+    if str(user.id) != user_id:
+        verify_admin(user)
+
+    if not await update_user(user_id, payload):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Old Password Doesn't Match",
+        )
+
+    return {"message": "Updated"}
+
+
+@user_router.delete("/user/{user_id}")
+async def delete_user_route(user_id: str, user: User = Depends(get_user_from_jwt)):
+    if str(user.id) == user_id:
+        return {"message": "Cannot Delete Current Active User"}, 400
+
+    verify_admin(user)
+
+    await delete_user(user_id)
+
+    return {"message": "Deleted"}
