@@ -2,6 +2,7 @@ import threading
 from enum import IntEnum, auto
 from os import environ
 from time import sleep
+from typing import Optional
 
 import paho.mqtt.client as mqtt
 import requests
@@ -25,6 +26,8 @@ class PayloadType(IntEnum):
 class CommandType(IntEnum):
     START_REC = 0
     END_REC = auto()
+    SET_DEMO_1 = auto()
+    SET_DEMO_2 = auto()
 
 
 class Node:
@@ -110,7 +113,7 @@ class Node:
     def send_data(
         self,
         payload_type: PayloadType,
-        data: DecodedMessage | None = None,
+        data: Optional[DecodedMessage] = None,
     ):
 
         if data is None:

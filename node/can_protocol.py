@@ -1,5 +1,5 @@
 from enum import IntEnum, auto
-from typing import TypedDict
+from typing import Optional, TypedDict
 
 from can.message import Message
 
@@ -48,7 +48,6 @@ class MessageType(IntEnum):
     DEMO1 = auto()
     DEMO2 = auto()
     RETURN_PING = auto()
-
 
 
 class Detector(IntEnum):
@@ -220,7 +219,9 @@ def demo2() -> Message:
     )
 
 
-def decode(message: Message, sessionID: int, readingID: int) -> DecodedMessage | None:
+def decode(
+    message: Message, sessionID: int, readingID: int
+) -> Optional[DecodedMessage]:
     data = message.data
 
     n_detector = data[7]

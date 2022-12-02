@@ -16,8 +16,8 @@ class IrmaBus:
         channel,
         bitrate,
         interval_minutes=1,
-        filter_id: int | None = None,
-        filter_mask: int | None = None,
+        filter_id: Optional[int] = None,
+        filter_mask: Optional[int] = None,
     ):
         self._bus = Bus(bustype=bustype, channel=channel, bitrate=bitrate)
         if filter_id and filter_mask:
@@ -55,7 +55,7 @@ class IrmaBus:
         self.send(can_protocol.get_window(can_protocol.Window.W3, can_protocol.Sipm.S2))
         sleep(0.5)
 
-    def listen(self, timeout=0.5) -> can_protocol.DecodedMessage | None:
+    def listen(self, timeout=0.5) -> Optional[can_protocol.DecodedMessage]:
         message = self._bus.recv(timeout)
 
         if self._sessionID is None:

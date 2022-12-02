@@ -2,6 +2,7 @@ import time
 from queue import Empty, Queue
 from random import randint
 from threading import Lock
+from typing import Optional
 
 import can_protocol
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -130,7 +131,7 @@ class MockBus:
         self._msgqueue.put(gen_window_count(Detector.D4, Window.W3, Sipm.S1))
         self._msgqueue.put(gen_window_count(Detector.D4, Window.W3, Sipm.S2))
 
-    def listen(self, timeout=0.5) -> can_protocol.DecodedMessage | None:
+    def listen(self, timeout=0.5) -> Optional[can_protocol.DecodedMessage]:
         try:
             message = self._msgqueue.get(timeout=timeout)
         except Empty:
