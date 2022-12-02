@@ -25,8 +25,6 @@ class PayloadType(IntEnum):
 class CommandType(IntEnum):
     START_REC = 0
     END_REC = auto()
-    SET_DEMO_1 = auto()
-    SET_DEMO_2 = auto()
 
 
 class Node:
@@ -81,13 +79,13 @@ class Node:
             command = int.from_bytes(msg.payload, "big")
 
             if command == CommandType.START_REC:
-                self.start_rec()
+                self.start_rec(0)
             elif command == CommandType.END_REC:
                 self.end_rec()
             elif command == CommandType.SET_DEMO_1:
-                self.bus.set_demo(1)
+                self.start_rec(1)
             elif command == CommandType.SET_DEMO_2:
-                self.bus.set_demo(2)
+                self.start_rec(2)
 
         self.client.on_connect = on_connect
         self.client.on_message = on_message
@@ -160,11 +158,11 @@ class Node:
             sleep(seconds)
             self.send_data(PayloadType.KEEP_ALIVE)
 
-    def start_rec(self):
+    def start_rec(self, mode: int):
         print("Received MQTT message, sending rec start...")
 
         self.send_data(PayloadType.START_REC)
-        self.bus.start_session()
+        self.bus.start_session(mode)
 
     def end_rec(self):
         print("Received MQTT message, sending rec end...")

@@ -73,11 +73,11 @@ class DecodedMessage(TypedDict):
     readingID: int
 
 
-def start_count() -> Message:
+def start_count(mode: int) -> Message:
     return Message(
         arbitration_id=Detector.BROADCAST,
         is_extended_id=False,
-        data=[0, 0, 0, 0, 0, 0, MessageType.START_COUNT, 0],
+        data=[mode, 0, 0, 0, 0, 0, MessageType.START_COUNT, 0],
     )
 
 
