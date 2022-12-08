@@ -23,13 +23,6 @@ class PayloadType(IntEnum):
     HANDLE_ALERT = auto()
 
 
-class CommandType(IntEnum):
-    START_REC = 0
-    END_REC = auto()
-    SET_DEMO_1 = auto()
-    SET_DEMO_2 = auto()
-
-
 class Node:
     def __init__(self):
         with open("config.yaml", "r") as file:
@@ -74,26 +67,82 @@ class Node:
 
             applicationID = self.config["node_info"]["applicationID"]
             nodeID = self.config["node_info"]["nodeID"]
-            client.subscribe(f"{applicationID}/{nodeID}/command")
+            client.subscribe(f"{applicationID}/{nodeID}/#")
 
         def on_message(client, userdata, msg: mqtt.MQTTMessage):
-            print(msg.topic + " -> " + str(msg.payload))
+            print(f"Someone published '{str(msg.payload)}' on '{msg.topic}'")
 
-            command = int.from_bytes(msg.payload, "big")
+            topic_sliced = msg.topic.split("/")[2:]
+            value = msg.payload.decode()
 
-            if command == CommandType.START_REC:
-                self.start_rec(0)
-            elif command == CommandType.END_REC:
-                self.end_rec()
-            elif command == CommandType.SET_DEMO_1:
-                self.start_rec(1)
-            elif command == CommandType.SET_DEMO_2:
-                self.start_rec(2)
+            try:
+                if topic_sliced[0] == "rec":
+                    self.handle_rec_message(value)
+                elif topic_sliced[0] == "demo":
+                    self.handle_demo_message(value)
+                elif (
+                    len(topic_sliced) > 2
+                    and topic_sliced[0] in ["1", "2", "3", "4"]
+                    and topic_sliced[1] in ["1", "2"]
+                    and value.isnumeric()
+                ):
+                    self.handle_sipm_message(
+                        int(topic_sliced[0]),
+                        int(topic_sliced[1]),
+                        topic_sliced[2:],
+                        int(value),
+                    )
+
+                print(f"Invalid command on topic '{msg.topic}', value '{value}'")
+
+            except ValueError as error:
+                print(f"Caught exception on topic '{msg.topic}': {error}")
 
         self.client.on_connect = on_connect
         self.client.on_message = on_message
 
         self.client.connect(self.config["mqtt"]["url"], self.config["mqtt"]["port"], 60)
+
+    def handle_rec_message(self, value: str):
+        if value == "start":
+            return self.start_rec(0)
+        elif value == "stop":
+            return self.stop_rec()
+        raise ValueError(f"Invalid value '{value}'")
+
+    def handle_demo_message(self, value: str):
+        if value == "1":
+            return self.start_rec(1)
+        elif value == "2":
+            return self.start_rec(2)
+        raise ValueError(f"Invalid value '{value}'")
+
+    def handle_sipm_message(
+        self, detector: int, sipm: int, sub_command: list[str], value: int
+    ):
+        if sub_command[0] == "hv":
+            return self.bus.set_hv(
+                detector,
+                sipm,
+                value,
+            )
+
+        elif sub_command[0] in ["1", "2", "3"] and len(sub_command) > 1:
+            if sub_command[1] == "low":
+                return self.bus.set_window_low(
+                    detector,
+                    sipm,
+                    int(sub_command[0]),
+                    value,
+                )
+
+            elif sub_command[1] == "high":
+                return self.bus.set_window_high(
+                    detector,
+                    sipm,
+                    int(sub_command[0]),
+                    value,
+                )
 
     def loop_forever(self):
         while True:
@@ -167,7 +216,7 @@ class Node:
         self.send_data(PayloadType.START_REC)
         self.bus.start_session(mode)
 
-    def end_rec(self):
+    def stop_rec(self):
         print("Received MQTT message, sending rec end...")
 
         self.send_data(PayloadType.END_REC)

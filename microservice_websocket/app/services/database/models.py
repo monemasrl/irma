@@ -9,6 +9,7 @@ from beanie.operators import And, Eq
 from pydantic import BaseModel, Field
 
 from ...utils.enums import NodeState
+from ..models.node_settings import DetectorSettings
 
 
 class CustomDocument(Document):
@@ -73,21 +74,6 @@ class User(CustomDocument):
             last_name=self.last_name,
             role=self.role,
         )
-
-
-class SensorSettings(BaseModel):
-    w1_low: int
-    w1_high: int
-    w2_low: int
-    w2_high: int
-    w3_low: int
-    w3_high: int
-
-
-class DetectorSettings(BaseModel):
-    hv: int
-    s1: SensorSettings
-    s2: SensorSettings
 
 
 class NodeSettings(CustomDocument):

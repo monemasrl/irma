@@ -35,6 +35,6 @@ class PayloadType(IntEnum):
 
 class CommandType(IntEnum):
     START_REC = 0
-    END_REC = auto()
+    STOP_REC = auto()
     SET_DEMO_1 = auto()
     SET_DEMO_2 = auto()

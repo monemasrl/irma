@@ -74,6 +74,35 @@ class IrmaBus:
     def send(self, message: Message, timeout: Optional[float] = None):
         self._bus.send(message, timeout)
 
+    def set_hv(self, detector: int, sipm: int, value: int):
+        self.send(
+            can_protocol.set_hv(
+                can_protocol.Detector.parse_int(detector),
+                can_protocol.Sipm.parse_int(sipm),
+                value,
+            )
+        )
+
+    def set_window_low(self, detector: int, sipm: int, window_number: int, value: int):
+        self.send(
+            can_protocol.set_window_low(
+                can_protocol.Detector.parse_int(detector),
+                can_protocol.Sipm.parse_int(sipm),
+                can_protocol.Window.parse_int(window_number),
+                value,
+            )
+        )
+
+    def set_window_high(self, detector: int, sipm: int, window_number: int, value: int):
+        self.send(
+            can_protocol.set_window_high(
+                can_protocol.Detector.parse_int(detector),
+                can_protocol.Sipm.parse_int(sipm),
+                can_protocol.Window.parse_int(window_number),
+                value,
+            )
+        )
+
     def start_session(self, mode: int):
         self._sessionID = int(time.time())
         self.send(can_protocol.start_count(mode))

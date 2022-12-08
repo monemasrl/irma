@@ -145,7 +145,24 @@ class MockBus:
 
         return can_protocol.decode(message, self._sessionID, readingID)
 
-    def start_session(self):
+    def set_hv(self, detector: int, sipm: int, value: int):
+        print(
+            f"Sending SET_HV to detector '{detector}', sipm '{sipm}' with value '{value}'"
+        )
+
+    def set_window_low(self, detector: int, sipm: int, window_number: int, value: int):
+        print(
+            f"Sending SET_WINDOW_LOW to detector '{detector}', sipm '{sipm}',\
+              window '{window_number}' with value '{value}'"
+        )
+
+    def set_window_high(self, detector: int, sipm: int, window_number: int, value: int):
+        print(
+            f"Sending SET_WINDOW_LOW to detector '{detector}', sipm '{sipm}',\
+              window '{window_number}' with value '{value}'"
+        )
+
+    def start_session(self, mode: int):
         self._sessionID = int(time.time())
         init_cache()
         # TODO: tweak

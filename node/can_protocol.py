@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import IntEnum, auto
 from typing import Optional, TypedDict
 
@@ -12,6 +14,15 @@ class Sipm(IntEnum):
         CONVERSION = {Sipm.S1: 1, Sipm.S2: 2}
         return CONVERSION[self]
 
+    @staticmethod
+    def parse_int(n: int) -> Sipm:
+        if n == 1:
+            return Sipm.S1
+        elif n == 2:
+            return Sipm.S2
+        else:
+            raise ValueError(f"Cannot parse invalid number '{n}'")
+
 
 class Window(IntEnum):
     W1 = 0b00000000
@@ -25,6 +36,17 @@ class Window(IntEnum):
             Window.W3: 3,
         }
         return CONVERSION[self]
+
+    @staticmethod
+    def parse_int(n: int) -> Window:
+        if n == 1:
+            return Window.W1
+        elif n == 2:
+            return Window.W2
+        elif n == 3:
+            return Window.W3
+        else:
+            raise ValueError(f"Cannot parse invalid number '{n}'")
 
 
 WINDOW_LOW = 0b00000000
@@ -60,6 +82,19 @@ class Detector(IntEnum):
     def __int__(self) -> int:
         CONVERSION = {Detector.D1: 1, Detector.D2: 2, Detector.D3: 3, Detector.D4: 4}
         return CONVERSION[self]
+
+    @staticmethod
+    def parse_int(n: int) -> Detector:
+        if n == 1:
+            return Detector.D1
+        elif n == 2:
+            return Detector.D2
+        elif n == 3:
+            return Detector.D3
+        elif n == 4:
+            return Detector.D4
+        else:
+            raise ValueError(f"Cannot parse invalid number '{n}'")
 
 
 class DecodedMessage(TypedDict):

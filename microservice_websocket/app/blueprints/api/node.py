@@ -3,7 +3,8 @@ from pydantic import BaseModel
 
 from ...services.database import Node, NodeSettings
 from ...services.jwt import jwt_required
-from ...utils.node import get_node_settings, get_nodes, update_node_settings
+from ...utils.node import get_nodes
+from ...utils.node_settings import get_node_settings, update_node_settings
 
 node_router = APIRouter()
 
