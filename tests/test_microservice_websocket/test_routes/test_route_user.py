@@ -9,8 +9,8 @@ class TestGetUserList:
 
     @pytest.mark.asyncio
     async def test_get_user_list(self, app_client: TestClient, auth_header):
-        await user_manager.create_user("foo", "bar")
-        await user_manager.create_user("baz", "qux")
+        await user_manager.create_user("foo", "bar", "John", "Doe")
+        await user_manager.create_user("baz", "qux", "Janie", "Doe")
 
         response = app_client.get(self.endpoint, headers=auth_header)
 
@@ -31,7 +31,7 @@ class TestGetUserInfo:
 
     @pytest.mark.asyncio
     async def test_get_user_info(self, app_client: TestClient, auth_header):
-        await user_manager.create_user("bar", "baz")
+        await user_manager.create_user("bar", "baz", "John", "Doe")
         user = await user_manager.get_user_from_mail("bar")
         assert user
 
@@ -62,11 +62,17 @@ class TestCreateUser:
     async def test_create_user_already_existing(
         self, app_client: TestClient, auth_header
     ):
-        await user_manager.create_user("foo", "qux")
+        await user_manager.create_user("foo", "qux", "John", "Doe")
 
         response = app_client.post(
             self.endpoint,
-            json={"email": "foo", "password": "bar", "role": "standard"},
+            json={
+                "email": "foo",
+                "password": "bar",
+                "role": "standard",
+                "first_name": "John",
+                "last_name": "Doe",
+            },
             headers=auth_header,
         )
 
@@ -78,7 +84,13 @@ class TestCreateUser:
     async def test_create_user(self, app_client: TestClient, auth_header):
         response = app_client.post(
             self.endpoint,
-            json={"email": "pippo", "password": "pluto", "role": "standard"},
+            json={
+                "email": "pippo",
+                "password": "pluto",
+                "role": "standard",
+                "first_name": "John",
+                "last_name": "Doe",
+            },
             headers=auth_header,
         )
 
@@ -114,7 +126,9 @@ class TestUpdateUser:
 
     @pytest.mark.asyncio
     async def test_update_user(self, app_client: TestClient, auth_header):
-        await user_manager.create_user("foo", "baz", role="standard")
+        await user_manager.create_user(
+            "foo", "baz", role="standard", first_name="John", last_name="Doe"
+        )
         user = await user_manager.get_user_from_mail("foo")
         assert user
 
@@ -158,7 +172,7 @@ class TestDeleteUser:
 
     @pytest.mark.asyncio
     async def test_delete_user(self, app_client: TestClient, auth_header):
-        await user_manager.create_user("foo", "bar")
+        await user_manager.create_user("foo", "bar", first_name="John", last_name="Doe")
         user = await user_manager.get_user_from_mail("foo")
         assert user
 

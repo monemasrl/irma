@@ -20,7 +20,11 @@ async def get_user_info(user_id: str) -> User:
 
 async def create_user(payload: CreateUserPayload) -> User | None:
     return await user_manager.create_user(
-        email=payload.email, password=payload.password, role=payload.role
+        email=payload.email,
+        password=payload.password,
+        role=payload.role,
+        first_name=payload.first_name,
+        last_name=payload.last_name,
     )
 
 
