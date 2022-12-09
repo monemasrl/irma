@@ -31,6 +31,7 @@ class PayloadType(IntEnum):
     END_REC = auto()
     KEEP_ALIVE = auto()
     HANDLE_ALERT = auto()
+    ON_LAUNCH = auto()
 
 
 class CommandType(IntEnum):

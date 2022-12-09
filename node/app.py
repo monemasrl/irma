@@ -21,6 +21,7 @@ class PayloadType(IntEnum):
     END_REC = auto()
     KEEP_ALIVE = auto()
     HANDLE_ALERT = auto()
+    ON_LAUNCH = auto()
 
 
 class Node:
@@ -205,6 +206,7 @@ class Node:
 
     def periodically_send_keep_alive(self):
         seconds = self.config["microservice"]["keep_alive_seconds"]
+        self.send_http_payload(PayloadType.ON_LAUNCH)
         self.send_http_payload(PayloadType.END_REC)
         while True:
             sleep(seconds)

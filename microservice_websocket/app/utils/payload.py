@@ -5,10 +5,11 @@ from beanie.operators import And, Eq
 
 from ..blueprints.api.models import PublishPayload
 from ..config import config as Config
-from ..services.database import Alert, Application, Node, Reading
+from ..services.database import Alert, Application, Node, NodeSettings, Reading
 from .enums import NodeState, PayloadType
 from .exceptions import NotFoundException
 from .node import update_state
+from .node_settings import send_update_settings
 from .sync_cache import add_to_cache
 
 
@@ -38,6 +39,9 @@ async def publish(payload: PublishPayload):
 
     elif payload.payloadType == PayloadType.WINDOW_READING:
         await handle_window_reading(node, payload)
+
+    elif payload.payloadType == PayloadType.ON_LAUNCH:
+        await handle_on_launch(node)
 
     data = payload.data
     value = data.value if data else 0
@@ -133,3 +137,11 @@ async def handle_window_reading(node: Node, payload: PublishPayload):
 
     await reading.save()
     add_to_cache(str(reading.id))
+
+
+async def handle_on_launch(node: Node):
+    settings = await NodeSettings.find_one(NodeSettings.node == node.id)
+    if settings is None:
+        raise NotFoundException("NodeSettins")
+
+    await send_update_settings(str(node.application), node.nodeID, settings)
