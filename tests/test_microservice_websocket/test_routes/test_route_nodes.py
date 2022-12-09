@@ -3,11 +3,11 @@ from datetime import datetime
 import pytest
 from fastapi.testclient import TestClient
 
-from microservice_websocket.app.services import database as db
-from microservice_websocket.app.services.models.node_settings import (
+from microservice_websocket.app.models.node_settings import (
     DetectorSettings,
     SensorSettings,
 )
+from microservice_websocket.app.services import database as db
 from microservice_websocket.app.utils.enums import NodeState
 
 

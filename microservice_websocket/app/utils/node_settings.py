@@ -1,11 +1,5 @@
+from ..models.node_settings import DetectorSettings, SensorSettings
 from ..services.database import Node, NodeSettings
-from ..services.models.node_settings import (
-    DeltaDetectorSettings,
-    DeltaNodeSettings,
-    DeltaSensorSettings,
-    DetectorSettings,
-    SensorSettings,
-)
 from .command import send_set_hv_command, send_set_window_high, send_set_window_low
 from .exceptions import NotFoundException
 
@@ -25,7 +19,7 @@ async def get_node_settings(nodeID: int) -> NodeSettings:
 async def send_update_settings_sensor(
     applicationID: str,
     nodeID: int,
-    sensor_settings: SensorSettings | DeltaSensorSettings,
+    sensor_settings: SensorSettings,
     detector: int,
     sipm: int,
 ):
@@ -62,7 +56,7 @@ async def send_update_settings_sensor(
 async def send_update_settings_detector(
     applicationID: str,
     nodeID: int,
-    detector_settings: DetectorSettings | DeltaDetectorSettings,
+    detector_settings: DetectorSettings,
     detector: int,
 ):
     if detector_settings.s1 is not None:
@@ -76,7 +70,9 @@ async def send_update_settings_detector(
 
 
 async def send_update_settings(
-    applicationID: str, nodeID: int, node_settings: NodeSettings | DeltaNodeSettings
+    applicationID: str,
+    nodeID: int,
+    node_settings: NodeSettings | NodeSettings.Serialized,
 ):
     if node_settings.d1 is not None:
         await send_update_settings_detector(applicationID, nodeID, node_settings.d1, 1)
@@ -123,7 +119,7 @@ async def update_node_settings(nodeID: int, payload: NodeSettings.Serialized):
 
     old_settings_dict = settings.serialize().dict()
     new_settings_dict = payload.dict()
-    delta_settings: DeltaNodeSettings = DeltaNodeSettings.parse_obj(
+    delta_settings: NodeSettings.Serialized = NodeSettings.Serialized.parse_obj(
         delta_dict_recursive(new_settings_dict, old_settings_dict)
     )
 

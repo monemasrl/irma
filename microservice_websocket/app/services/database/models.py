@@ -8,8 +8,8 @@ from beanie.exceptions import DocumentWasNotSaved
 from beanie.operators import And, Eq
 from pydantic import BaseModel, Field
 
+from ...models.node_settings import DetectorSettings
 from ...utils.enums import NodeState
-from ..models.node_settings import DetectorSettings
 
 
 class CustomDocument(Document):
@@ -78,16 +78,16 @@ class User(CustomDocument):
 
 class NodeSettings(CustomDocument):
     node: PydanticObjectId
-    d1: DetectorSettings
-    d2: DetectorSettings
-    d3: DetectorSettings
-    d4: DetectorSettings
+    d1: DetectorSettings | None = None
+    d2: DetectorSettings | None = None
+    d3: DetectorSettings | None = None
+    d4: DetectorSettings | None = None
 
     class Serialized(BaseModel):
-        d1: DetectorSettings
-        d2: DetectorSettings
-        d3: DetectorSettings
-        d4: DetectorSettings
+        d1: DetectorSettings | None
+        d2: DetectorSettings | None
+        d3: DetectorSettings | None
+        d4: DetectorSettings | None
 
     def serialize(self) -> NodeSettings.Serialized:
         return NodeSettings.Serialized(
