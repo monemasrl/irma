@@ -142,6 +142,7 @@ async def handle_window_reading(node: Node, payload: PublishPayload):
 async def handle_on_launch(node: Node):
     settings = await NodeSettings.find_one(NodeSettings.node == node.id)
     if settings is None:
-        raise NotFoundException("NodeSettins")
+        print(f"No settings found for node: {node}")
+        return
 
     await send_update_settings(str(node.application), node.nodeID, settings)
