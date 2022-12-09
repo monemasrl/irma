@@ -153,13 +153,13 @@ class Node:
 
     def send_message(self, message: DecodedMessage):
         if message["message_type"] == MessageType.RETURN_COUNT_TOTAL:
-            self.send_data(PayloadType.TOTAL_READING, message)
+            self.send_http_payload(PayloadType.TOTAL_READING, message)
         elif message["message_type"] == MessageType.RETURN_COUNT_WINDOW:
-            self.send_data(PayloadType.WINDOW_READING, message)
+            self.send_http_payload(PayloadType.WINDOW_READING, message)
         else:
             raise ValueError(f"""Unexpected MessageType '{message["message_type"]}'""")
 
-    def send_data(
+    def send_http_payload(
         self,
         payload_type: PayloadType,
         data: Optional[DecodedMessage] = None,
@@ -205,21 +205,21 @@ class Node:
 
     def periodically_send_keep_alive(self):
         seconds = self.config["microservice"]["keep_alive_seconds"]
-        self.send_data(PayloadType.END_REC)
+        self.send_http_payload(PayloadType.END_REC)
         while True:
             sleep(seconds)
-            self.send_data(PayloadType.KEEP_ALIVE)
+            self.send_http_payload(PayloadType.KEEP_ALIVE)
 
     def start_rec(self, mode: int):
         print("Received MQTT message, sending rec start...")
 
-        self.send_data(PayloadType.START_REC)
+        self.send_http_payload(PayloadType.START_REC)
         self.bus.start_session(mode)
 
     def stop_rec(self):
         print("Received MQTT message, sending rec end...")
 
-        self.send_data(PayloadType.END_REC)
+        self.send_http_payload(PayloadType.END_REC)
         self.bus.stop_session()
 
 
