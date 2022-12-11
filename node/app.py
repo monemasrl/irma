@@ -93,8 +93,8 @@ class Node:
                         topic_sliced[2:],
                         int(value),
                     )
-
-                print(f"Invalid command on topic '{msg.topic}', value '{value}'")
+                else:
+                    print(f"Invalid command on topic '{msg.topic}', value '{value}'")
 
             except ValueError as error:
                 print(f"Caught exception on topic '{msg.topic}': {error}")
