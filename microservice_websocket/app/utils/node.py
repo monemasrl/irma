@@ -72,6 +72,7 @@ def update_state(
         PayloadType.START_REC: update_state_start_rec,
         PayloadType.END_REC: update_state_end_rec,
         PayloadType.KEEP_ALIVE: update_state_keep_alive,
+        PayloadType.ON_LAUNCH: update_state_keep_alive,
         PayloadType.HANDLE_ALERT: update_state_handle_alert,
     }
 
