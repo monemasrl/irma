@@ -10,7 +10,7 @@ def publish(topic: str, data: bytes):
     from .. import mqtt
 
     if mqtt:
-        publish(topic, data)
+        mqtt.publish(topic, data)
 
 
 async def handle_command(command: CommandType, applicationID: str, nodeID: int):
