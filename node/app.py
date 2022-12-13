@@ -1,5 +1,6 @@
+import json
 import threading
-from enum import IntEnum, auto
+from enum import IntEnum
 from os import environ
 from time import sleep
 from typing import Optional
@@ -16,12 +17,9 @@ BYPASS_CAN = bool(environ.get("BYPASS_CAN", 0))
 
 class PayloadType(IntEnum):
     TOTAL_READING = 0
-    WINDOW_READING = auto()
-    START_REC = auto()
-    END_REC = auto()
-    KEEP_ALIVE = auto()
-    HANDLE_ALERT = auto()
-    ON_LAUNCH = auto()
+    WINDOW_READING = 1
+    KEEP_ALIVE = 4
+    ON_LAUNCH = 6
 
 
 class Node:
@@ -56,6 +54,10 @@ class Node:
     def init_mqtt_client(self):
         self.client = mqtt.Client()
 
+        applicationID = self.config["node_info"]["applicationID"]
+        nodeID = self.config["node_info"]["nodeID"]
+        self.topic = f"{applicationID}/{nodeID}"
+
         if self.config["mqtt"]["tls"]:
             self.client.tls_set()
 
@@ -66,9 +68,8 @@ class Node:
         def on_connect(client, userdata, flags, rc):
             print("Connected with result code " + str(rc))
 
-            applicationID = self.config["node_info"]["applicationID"]
-            nodeID = self.config["node_info"]["nodeID"]
-            client.subscribe(f"{applicationID}/{nodeID}/#")
+            client.subscribe(self.topic + "/command")
+            client.subscribe(self.topic + "/set")
 
         def on_message(client, userdata, msg: mqtt.MQTTMessage):
             print(f"Someone published '{str(msg.payload)}' on '{msg.topic}'")
@@ -77,22 +78,10 @@ class Node:
             value = msg.payload.decode()
 
             try:
-                if topic_sliced[0] == "rec":
-                    self.handle_rec_message(value)
-                elif topic_sliced[0] == "demo":
-                    self.handle_demo_message(value)
-                elif (
-                    len(topic_sliced) > 2
-                    and topic_sliced[0] in ["1", "2", "3", "4"]
-                    and topic_sliced[1] in ["1", "2"]
-                    and value.isnumeric()
-                ):
-                    self.handle_sipm_message(
-                        int(topic_sliced[0]),
-                        int(topic_sliced[1]),
-                        topic_sliced[2:],
-                        int(value),
-                    )
+                if topic_sliced[0] == "command":
+                    self.handle_command(value)
+                elif topic_sliced[0] == "set":
+                    self.handle_set(value)
                 else:
                     print(f"Invalid command on topic '{msg.topic}', value '{value}'")
 
@@ -104,46 +93,53 @@ class Node:
 
         self.client.connect(self.config["mqtt"]["url"], self.config["mqtt"]["port"], 60)
 
-    def handle_rec_message(self, value: str):
-        if value == "start":
-            return self.start_rec(0)
-        elif value == "stop":
-            return self.stop_rec()
+    def handle_command(self, value: str):
+        if value == "stop":
+            self.stop_rec()
+            return
+
+        command, n = value.split(":")
+        if command == "start" and n in ["0", "1", "2"]:
+            self.start_rec(int(n))
+            return
+
         raise ValueError(f"Invalid value '{value}'")
 
-    def handle_demo_message(self, value: str):
-        if value == "1":
-            return self.start_rec(1)
-        elif value == "2":
-            return self.start_rec(2)
-        raise ValueError(f"Invalid value '{value}'")
+    def handle_set(self, value: str):
+        payload = json.loads(value)
 
-    def handle_sipm_message(
-        self, detector: int, sipm: int, sub_command: list[str], value: int
-    ):
-        if sub_command[0] == "hv":
-            return self.bus.set_hv(
-                detector,
-                sipm,
-                value,
-            )
+        try:
+            detector = payload["detector"]
+            if not isinstance(detector, int):
+                raise ValueError(f"Invalid type for value 'detector': {type(detector)}")
 
-        elif sub_command[0] in ["1", "2", "3"] and len(sub_command) > 1:
-            if sub_command[1] == "low":
-                return self.bus.set_window_low(
-                    detector,
-                    sipm,
-                    int(sub_command[0]),
-                    value,
-                )
+            sipm = payload["sipm"]
+            if not isinstance(sipm, int):
+                raise ValueError(f"Invalid type for value 'sipm': {type(sipm)}")
 
-            elif sub_command[1] == "high":
-                return self.bus.set_window_high(
-                    detector,
-                    sipm,
-                    int(sub_command[0]),
-                    value,
-                )
+            value = payload["value"]
+            if not isinstance(value, int):
+                raise ValueError(f"Invalid type for value 'value': {type(value)}")
+
+            if payload["type"] == "hv":
+                self.bus.set_hv(detector, sipm, value)
+                return
+
+            n = payload["n"]
+            if not isinstance(n, int):
+                raise ValueError(f"Invalid type for value 'n': {type(n)}")
+
+            if payload["type"] == "window_low":
+                self.bus.set_window_low(detector, sipm, n, value)
+                return
+
+            if payload["type"] == "window_high":
+                self.bus.set_window_high(detector, sipm, n, value)
+                return
+
+            raise ValueError(f"Invalid type '{payload['type']}'")
+        except KeyError as error:
+            print(f"Error processing set payload: {error}")
 
     def loop_forever(self):
         while True:
@@ -207,7 +203,7 @@ class Node:
     def periodically_send_keep_alive(self):
         seconds = self.config["microservice"]["keep_alive_seconds"]
         self.send_http_payload(PayloadType.ON_LAUNCH)
-        self.send_http_payload(PayloadType.END_REC)
+        self.client.publish(self.topic + "/status", "stop")
         while True:
             sleep(seconds)
             self.send_http_payload(PayloadType.KEEP_ALIVE)
@@ -215,13 +211,13 @@ class Node:
     def start_rec(self, mode: int):
         print("Received MQTT message, sending rec start...")
 
-        self.send_http_payload(PayloadType.START_REC)
+        self.client.publish(self.topic + "/status", "start")
         self.bus.start_session(mode)
 
     def stop_rec(self):
         print("Received MQTT message, sending rec end...")
 
-        self.send_http_payload(PayloadType.END_REC)
+        self.client.publish(self.topic + "/status", "stop")
         self.bus.stop_session()
 
 
