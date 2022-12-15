@@ -26,12 +26,9 @@ class NodeState(IntEnum):
 
 class PayloadType(IntEnum):
     TOTAL_READING = 0
-    WINDOW_READING = auto()
-    START_REC = auto()
-    END_REC = auto()
-    KEEP_ALIVE = auto()
-    HANDLE_ALERT = auto()
-    ON_LAUNCH = auto()
+    WINDOW_READING = 1
+    KEEP_ALIVE = 4
+    ON_LAUNCH = 6
 
 
 class CommandType(IntEnum):
@@ -39,3 +36,12 @@ class CommandType(IntEnum):
     STOP_REC = auto()
     SET_DEMO_1 = auto()
     SET_DEMO_2 = auto()
+
+
+class EventType(IntEnum):
+    START_REC = 0
+    STOP_REC = auto()
+    RAISE_ALERT = auto()
+    HANDLE_ALERT = auto()
+    KEEP_ALIVE = auto()
+    ON_LAUNCH = auto()

@@ -6,7 +6,7 @@ from beanie.operators import And, Eq
 from ..blueprints.api.models import PublishPayload
 from ..config import config as Config
 from ..services.database import Alert, Application, Node, NodeSettings, Reading
-from .enums import NodeState, PayloadType
+from .enums import EventType, NodeState, PayloadType
 from .exceptions import NotFoundException
 from .node import update_state
 from .node_settings import send_update_settings
@@ -34,11 +34,14 @@ async def publish(payload: PublishPayload):
         )
         await node.save()
 
+    node.lastSeenAt = datetime.now()
+
     if payload.payloadType == PayloadType.TOTAL_READING:
         await handle_total_reading(node, payload)
 
     elif payload.payloadType == PayloadType.WINDOW_READING:
         await handle_window_reading(node, payload)
+        node.state = update_state(node.state, node.lastSeenAt, EventType.START_REC)
 
     elif payload.payloadType == PayloadType.ON_LAUNCH:
         await handle_on_launch(node)
@@ -46,13 +49,17 @@ async def publish(payload: PublishPayload):
     data = payload.data
     value = data.value if data else 0
 
-    node.lastSeenAt = datetime.now()
-    node.state = update_state(
-        node.state,
-        node.lastSeenAt,
-        payload.payloadType,
-        value,
-    )
+    if (
+        payload.payloadType == PayloadType.TOTAL_READING
+        and value >= Config.app.ALERT_TRESHOLD
+    ):
+        node.state = update_state(node.state, node.lastSeenAt, EventType.RAISE_ALERT)
+    else:
+        node.state = update_state(
+            node.state,
+            node.lastSeenAt,
+            EventType.KEEP_ALIVE,
+        )
     await node.save()
 
 

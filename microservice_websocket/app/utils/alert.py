@@ -5,9 +5,9 @@ from beanie.operators import And, Eq
 
 from ..blueprints.api.models import HandlePayload
 from ..services.database import Alert, Node, User
+from .enums import EventType
 from .exceptions import NotFoundException
 from .node import update_state
-from .payload import PayloadType
 
 
 async def handle_alert(alertID: str, payload: HandlePayload, user: User):
@@ -29,7 +29,7 @@ async def handle_alert(alertID: str, payload: HandlePayload, user: User):
     if (
         await Alert.find_one(And(Eq(Alert.node, node.id), Eq(Alert.isHandled, False)))
     ) is None:
-        node.state = update_state(node.state, node.lastSeenAt, PayloadType.HANDLE_ALERT)
+        node.state = update_state(node.state, node.lastSeenAt, EventType.HANDLE_ALERT)
         await node.save()
 
     return alert

@@ -1,6 +1,6 @@
 import json
 import threading
-from enum import IntEnum
+from enum import IntEnum, auto
 from os import environ
 from time import sleep
 from typing import Optional
@@ -20,6 +20,15 @@ class PayloadType(IntEnum):
     WINDOW_READING = 1
     KEEP_ALIVE = 4
     ON_LAUNCH = 6
+
+
+class EventType(IntEnum):
+    START_REC = 0
+    STOP_REC = auto()
+    RAISE_ALERT = auto()
+    HANDLE_ALERT = auto()
+    KEEP_ALIVE = auto()
+    ON_LAUNCH = auto()
 
 
 class Node:
@@ -203,7 +212,6 @@ class Node:
     def periodically_send_keep_alive(self):
         seconds = self.config["microservice"]["keep_alive_seconds"]
         self.send_http_payload(PayloadType.ON_LAUNCH)
-        self.client.publish(self.topic + "/status", "stop")
         while True:
             sleep(seconds)
             self.send_http_payload(PayloadType.KEEP_ALIVE)

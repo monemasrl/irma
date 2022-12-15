@@ -4,57 +4,13 @@ from beanie import PydanticObjectId
 
 from ..config import config as Config
 from ..services.database import Application, Node
-from .enums import NodeState, PayloadType
+from .enums import EventType, NodeState
 from .exceptions import NotFoundException
 
 
-def update_state_total_reading(current_state: NodeState, dato: int) -> NodeState:
-    if current_state == NodeState.ERROR:
-        current_state = NodeState.READY
-
-    if dato >= Config.app.ALERT_TRESHOLD and current_state == NodeState.READY:
-        return NodeState.ALERT_READY
-
-    return current_state
-
-
-def update_state_window_reading(current_state: NodeState, *args) -> NodeState:
-    if current_state == NodeState.READY or current_state == NodeState.ERROR:
-        current_state = NodeState.RUNNING
-    elif current_state == NodeState.ALERT_READY:
-        current_state = NodeState.ALERT_RUNNING
-
-    return current_state
-
-
-def update_state_start_rec(current_state: NodeState, *args) -> NodeState:
-    if current_state == NodeState.READY or current_state == NodeState.ERROR:
-        return NodeState.RUNNING
-
-    return current_state
-
-
-def update_state_end_rec(current_state: NodeState, *args) -> NodeState:
-    if current_state == NodeState.RUNNING or current_state == NodeState.ERROR:
-        return NodeState.READY
-    elif current_state == NodeState.ALERT_RUNNING:
-        return NodeState.ALERT_READY
-
-    return current_state
-
-
-def update_state_keep_alive(current_state: NodeState, *args) -> NodeState:
+def on_keep_alive(current_state: NodeState) -> NodeState:
     if current_state == NodeState.ERROR:
         return NodeState.READY
-
-    return current_state
-
-
-def update_state_handle_alert(current_state: NodeState, *args) -> NodeState:
-    if current_state == NodeState.ALERT_READY or current_state == NodeState.ERROR:
-        return NodeState.READY
-    elif current_state == NodeState.ALERT_RUNNING:
-        return NodeState.RUNNING
 
     return current_state
 
@@ -62,27 +18,29 @@ def update_state_handle_alert(current_state: NodeState, *args) -> NodeState:
 def update_state(
     current_state: NodeState,
     lastSeenAt: datetime,
-    typ: PayloadType | None = None,
-    dato: int = 0,
+    event: EventType | None = None,
 ) -> NodeState:
-
-    FUNCTIONS = {
-        PayloadType.TOTAL_READING: update_state_total_reading,
-        PayloadType.WINDOW_READING: update_state_window_reading,
-        PayloadType.START_REC: update_state_start_rec,
-        PayloadType.END_REC: update_state_end_rec,
-        PayloadType.KEEP_ALIVE: update_state_keep_alive,
-        PayloadType.ON_LAUNCH: update_state_keep_alive,
-        PayloadType.HANDLE_ALERT: update_state_handle_alert,
-    }
-
-    if typ is not None:
-        current_state = FUNCTIONS[typ](current_state, dato)
 
     if (datetime.now() - lastSeenAt) > timedelta(
         seconds=Config.app.NODE_TIMEOUT_INTERVAL
     ):
-        current_state = NodeState.ERROR
+        return NodeState.ERROR
+
+    if event is not None:
+        if event == EventType.START_REC:
+            current_state = NodeState.RUNNING
+        elif event == EventType.STOP_REC:
+            current_state = NodeState.READY
+        elif event == EventType.RAISE_ALERT:
+            current_state = NodeState.ALERT_READY
+        elif event == EventType.HANDLE_ALERT:
+            current_state = NodeState.READY
+        elif event == EventType.KEEP_ALIVE:
+            current_state = on_keep_alive(current_state)
+        elif event == EventType.ON_LAUNCH:
+            current_state = NodeState.READY
+        else:
+            raise NotImplementedError(f"EventType '{event}' not implemented yet")
 
     return current_state
 
@@ -95,7 +53,5 @@ async def get_nodes(applicationID: str):
         raise NotFoundException("Application")
 
     nodes: list[Node] = await Node.find(Node.application == application.id).to_list()
-
-    # nodes = [x.to_dashboard() for x in nodes]
 
     return nodes

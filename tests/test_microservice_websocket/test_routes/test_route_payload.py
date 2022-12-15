@@ -498,7 +498,7 @@ class TestPublishPayload:
                     response.status_code == 500
                 ), "Invalid response code when publishing window with wrong value"
 
-    # Publish leftover payload types
+    # Publish KEEP_ALIVE payload
     @pytest.mark.asyncio
     async def test_publish_remaining_payloads(self, app_client: TestClient):
         org = db.Organization(organizationName="foo")
@@ -512,24 +512,19 @@ class TestPublishPayload:
             patch("socketio.Client.emit", return_value=None),
         ):
 
-            for typ in [
-                PayloadType.KEEP_ALIVE,
-                PayloadType.START_REC,
-                PayloadType.END_REC,
-            ]:
-                response = app_client.post(
-                    self.endpoint,
-                    json={
-                        "nodeID": 123,
-                        "nodeName": "nodeName",
-                        "applicationID": str(app.id),
-                        "organizationID": str(org.id),
-                        "payloadType": typ,
-                        "data": None,
-                    },
-                    headers={"Authorization": "Bearer 1234"},
-                )
+            response = app_client.post(
+                self.endpoint,
+                json={
+                    "nodeID": 123,
+                    "nodeName": "nodeName",
+                    "applicationID": str(app.id),
+                    "organizationID": str(org.id),
+                    "payloadType": PayloadType.KEEP_ALIVE,
+                    "data": None,
+                },
+                headers={"Authorization": "Bearer 1234"},
+            )
 
-                assert (
-                    response.status_code == 200
-                ), "Invalid response code when publishing valid payload"
+            assert (
+                response.status_code == 200
+            ), "Invalid response code when publishing valid payload"
