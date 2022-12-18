@@ -18,7 +18,6 @@ BYPASS_CAN = bool(environ.get("BYPASS_CAN", 0))
 class PayloadType(IntEnum):
     TOTAL_READING = 0
     WINDOW_READING = 1
-    KEEP_ALIVE = 4
     ON_LAUNCH = 6
 
 
@@ -214,7 +213,7 @@ class Node:
         self.send_http_payload(PayloadType.ON_LAUNCH)
         while True:
             sleep(seconds)
-            self.send_http_payload(PayloadType.KEEP_ALIVE)
+            self.client.publish(self.topic + "/status", "keepalive")
 
     def start_rec(self, mode: int):
         print("Received MQTT message, sending rec start...")

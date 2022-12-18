@@ -3,7 +3,6 @@ from datetime import datetime
 from beanie import PydanticObjectId
 from beanie.operators import And, Eq
 from fastapi_mqtt import FastMQTT, MQTTConfig
-from paho.mqtt.client import MQTTMessage
 
 from ...config import MQTTConfig as MQTTConfigInternal
 from ...utils.enums import EventType
@@ -74,6 +73,14 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                 elif value == "stop":
                     new_state = update_state(
                         node.state, node.lastSeenAt, EventType.STOP_REC
+                    )
+                    changed = node.state != new_state
+                    node.state = new_state
+                    await node.save()
+
+                elif value == "keepalive":
+                    new_state = update_state(
+                        node.state, node.lastSeenAt, EventType.KEEP_ALIVE
                     )
                     changed = node.state != new_state
                     node.state = new_state

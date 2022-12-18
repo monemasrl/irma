@@ -27,7 +27,6 @@ class NodeState(IntEnum):
 class PayloadType(IntEnum):
     TOTAL_READING = 0
     WINDOW_READING = 1
-    KEEP_ALIVE = 4
     ON_LAUNCH = 6
 
 
