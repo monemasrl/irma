@@ -1,6 +1,6 @@
 import json
 import threading
-from enum import IntEnum, auto
+from enum import IntEnum
 from os import environ
 from time import sleep
 from typing import Optional
@@ -18,16 +18,6 @@ BYPASS_CAN = bool(environ.get("BYPASS_CAN", 0))
 class PayloadType(IntEnum):
     TOTAL_READING = 0
     WINDOW_READING = 1
-    ON_LAUNCH = 6
-
-
-class EventType(IntEnum):
-    START_REC = 0
-    STOP_REC = auto()
-    RAISE_ALERT = auto()
-    HANDLE_ALERT = auto()
-    KEEP_ALIVE = auto()
-    ON_LAUNCH = auto()
 
 
 class Node:
@@ -56,8 +46,8 @@ class Node:
             self.bus = MockBus()
             print("Started MockBus")
 
-        self.launch_keep_alive_daemon()
         self.init_mqtt_client()
+        self.launch_keep_alive_daemon()
 
     def init_mqtt_client(self):
         self.client = mqtt.Client()
@@ -210,7 +200,7 @@ class Node:
 
     def periodically_send_keep_alive(self):
         seconds = self.config["microservice"]["keep_alive_seconds"]
-        self.send_http_payload(PayloadType.ON_LAUNCH)
+        self.client.publish(self.topic + "/status", "launch")
         while True:
             sleep(seconds)
             self.client.publish(self.topic + "/status", "keepalive")

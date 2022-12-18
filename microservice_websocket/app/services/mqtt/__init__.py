@@ -6,7 +6,7 @@ from fastapi_mqtt import FastMQTT, MQTTConfig
 
 from ...config import MQTTConfig as MQTTConfigInternal
 from ...utils.enums import EventType
-from ...utils.node import update_state
+from ...utils.node import on_launch, update_state
 from ..database.models import Node
 
 STATUS_TOPIC = "+/+/status"
@@ -85,6 +85,15 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                     changed = node.state != new_state
                     node.state = new_state
                     await node.save()
+
+                elif value == "launch":
+                    new_state = update_state(
+                        node.state, node.lastSeenAt, EventType.ON_LAUNCH
+                    )
+                    changed = node.state != new_state
+                    node.state = new_state
+                    await node.save()
+                    await on_launch(node)
 
                 else:
                     print(f"Invalid value '{value}' for sub-topic '{topic}'")

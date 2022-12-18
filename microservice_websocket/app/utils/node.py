@@ -3,9 +3,10 @@ from datetime import datetime, timedelta
 from beanie import PydanticObjectId
 
 from ..config import config as Config
-from ..services.database import Application, Node
+from ..services.database import Application, Node, NodeSettings
 from .enums import EventType, NodeState
 from .exceptions import NotFoundException
+from .node_settings import send_update_settings
 
 
 def on_keep_alive(current_state: NodeState) -> NodeState:
@@ -55,3 +56,12 @@ async def get_nodes(applicationID: str):
     nodes: list[Node] = await Node.find(Node.application == application.id).to_list()
 
     return nodes
+
+
+async def on_launch(node: Node):
+    settings = await NodeSettings.find_one(NodeSettings.node == node.id)
+    if settings is None:
+        print(f"No settings found for node: {node}")
+        return
+
+    await send_update_settings(str(node.application), node.nodeID, settings)
