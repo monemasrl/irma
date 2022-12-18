@@ -31,22 +31,26 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
         print(f"[MQTT] Subscribed to '{STATUS_TOPIC}'")
 
     @mqtt.on_message()
-    async def on_message(client, userdata, msg: MQTTMessage):
+    async def on_message(client, topic: str, payload: bytes, qos, properties):
         from ... import socketManager
 
-        print(f"Someone published '{str(msg.payload)}' on '{msg.topic}'")
+        print(f"[MQTT] Someone published '{str(payload)}' on '{topic}'")
 
-        topic_sliced = msg.topic.split("/")
+        topic_sliced = topic.split("/")
 
         try:
             applicationID = topic_sliced[0]
             nodeID = topic_sliced[1]
             topic = topic_sliced[2]
-            value = msg.payload.decode()
+            value = payload.decode()
+
+            if not nodeID.isnumeric():
+                print("[MQTT] nodeID is not parsable")
+                return
 
             node = await Node.find_one(
                 And(
-                    Eq(Node.nodeID, nodeID),
+                    Eq(Node.nodeID, int(nodeID)),
                     Eq(Node.application, PydanticObjectId(applicationID)),
                 )
             )
@@ -84,6 +88,6 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                 await socketManager.emit("change")
 
         except IndexError as error:
-            print(f"Invalid topic '{msg.topic}': {error}")
+            print(f"Invalid topic '{topic}': {error}")
 
     return mqtt

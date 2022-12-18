@@ -36,6 +36,7 @@ async def app_init():
 
     if not TESTING:
         mqtt = init_mqtt(Config.mqtt)
+        mqtt.init_app(app)
         redis_client = Redis(
             host=Config.redis.host, port=Config.redis.port, db=Config.redis.db
         )
