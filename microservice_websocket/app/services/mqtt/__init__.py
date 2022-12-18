@@ -2,23 +2,35 @@ from datetime import datetime
 
 from beanie import PydanticObjectId
 from beanie.operators import And, Eq
-from paho.mqtt.client import Client as MQTTClient, MQTTMessage
+from fastapi_mqtt import FastMQTT, MQTTConfig
+from paho.mqtt.client import MQTTMessage
 
-from ...config import MQTTConfig
+from ...config import MQTTConfig as MQTTConfigInternal
 from ...utils.enums import EventType
 from ...utils.node import update_state
 from ..database.models import Node
 
+STATUS_TOPIC = "+/+/status"
 
-def init_mqtt(mqtt_config: MQTTConfig) -> MQTTClient:
-    mqtt = MQTTClient()
-    if mqtt_config.tls_enabled:
-        mqtt.tls_set()
 
-    mqtt.username_pw_set(mqtt_config.username, mqtt_config.password)
-    mqtt.connect(host=mqtt_config.host, port=mqtt_config.port)
-    mqtt.subscribe("+/+/status")
+def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
+    mqtt_config = MQTTConfig(
+        host=conf.host,
+        port=conf.port,
+        ssl=conf.tls_enabled,
+        username=conf.username,
+        password=conf.password,
+    )
 
+    mqtt = FastMQTT(config=mqtt_config)
+
+    @mqtt.on_connect()
+    def connect(client, flags, rc, properties):
+        print("[MQTT] Connected")
+        mqtt.client.subscribe(STATUS_TOPIC)
+        print(f"[MQTT] Subscribed to '{STATUS_TOPIC}'")
+
+    @mqtt.on_message()
     async def on_message(client, userdata, msg: MQTTMessage):
         from ... import socketManager
 
@@ -44,28 +56,34 @@ def init_mqtt(mqtt_config: MQTTConfig) -> MQTTClient:
 
             node.lastSeenAt = datetime.now()
 
+            changed: bool = False
+
             if topic == "status":
                 if value == "start":
-                    node.state = update_state(
+                    new_state = update_state(
                         node.state, node.lastSeenAt, EventType.START_REC
                     )
+                    changed = node.state != new_state
+                    node.state = new_state
                     await node.save()
-                    await socketManager.emit("change")
+
                 elif value == "stop":
-                    node.state = update_state(
+                    new_state = update_state(
                         node.state, node.lastSeenAt, EventType.STOP_REC
                     )
+                    changed = node.state != new_state
+                    node.state = new_state
                     await node.save()
-                    await socketManager.emit("change")
+
                 else:
                     print(f"Invalid value '{value}' for sub-topic '{topic}'")
             else:
                 print(f"Invalid sub-topic '{topic}'")
+
+            if changed:
+                await socketManager.emit("change")
+
         except IndexError as error:
             print(f"Invalid topic '{msg.topic}': {error}")
-
-    mqtt.on_message = on_message
-
-    mqtt.loop_start()
 
     return mqtt

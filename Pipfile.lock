@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "73b830965f438a6ee940d997a21cdb45724e424f2ad05d448e9685df0ebca4c7"
+            "sha256": "a677d5309b32b7224b7056a15672a302e4d7cd63c11b9cebfeb84dd3fea7b198"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -285,6 +285,14 @@
             "index": "pypi",
             "version": "==0.86.0"
         },
+        "fastapi-mqtt": {
+            "hashes": [
+                "sha256:452efa17b3b00690be4384bd20d3ebd08157a3d60371670bdff637abc66c2f21",
+                "sha256:c739c94d4936165fd8b00ce43f8313184fd3c7e0fa1070afe73569754487eaca"
+            ],
+            "index": "pypi",
+            "version": "==0.4.0"
+        },
         "fastapi-socketio": {
             "hashes": [
                 "sha256:30b86938f2216630a49f7706060870254126b027668b2434b42cfaf53c05223b",
@@ -362,6 +370,14 @@
             ],
             "index": "pypi",
             "version": "==1.0.1"
+        },
+        "gmqtt": {
+            "hashes": [
+                "sha256:0be6d57841538abc3ae0a41131c6d53314e0705b74876a6f94bc903df1209fb6",
+                "sha256:de728635f9fb15288e1b2da1591a091653e1ce4bc8be031f4ef4ef4da57af955"
+            ],
+            "markers": "python_version >= '3.5'",
+            "version": "==0.6.11"
         },
         "h11": {
             "hashes": [

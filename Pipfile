@@ -97,6 +97,7 @@ werkzeug = "==2.2.2"
 wrapt = "==1.14.1"
 wtforms = "==3.0.1"
 yarl = "==1.8.1"
+fastapi-mqtt = "*"
 
 [dev-packages]
 
