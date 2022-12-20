@@ -8,8 +8,6 @@ from .services.database import init_db, user_manager
 from .services.mqtt import init_mqtt
 from .services.scheduler import init_scheduler
 
-# from .services.socketio import init_socketio
-
 mqtt = None
 
 app = FastAPI()
@@ -22,7 +20,6 @@ app.add_middleware(
 )
 
 socketManager = SocketManager(app=app, cors_allowed_origins=[])
-# init_socketio()
 
 
 @app.on_event("startup")

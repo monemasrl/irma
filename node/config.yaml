@@ -4,17 +4,13 @@ settings:
     applicationID: ""
     nodeID: 1
     nodeName: "Nodo1"
-  microservice:
-    url: "https://irma.monema.dev"
-    port: 443
-    api_key: "verysecret"
-    keep_alive_seconds: 30
   mqtt:
     url: "irma.monema.dev"
     port: 1884
     tls: false
     user: "admin"
     password: "admin"
+    keep_alive_seconds: 30
   can:
     bustype: "socketcan"
     channel: "can0"

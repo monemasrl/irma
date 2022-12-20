@@ -13,6 +13,8 @@ def publish(topic: str, data: bytes | str):
 
     from .. import mqtt
 
+    print(f"[MQTT] Publishing '{data}' to '{topic}'")
+
     if mqtt:
         mqtt.publish(topic, data)
 

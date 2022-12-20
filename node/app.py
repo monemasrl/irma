@@ -1,12 +1,9 @@
 import json
 import threading
-from enum import IntEnum
 from os import environ
 from time import sleep
-from typing import Optional
 
 import paho.mqtt.client as mqtt
-import requests
 import yaml
 from can_protocol import DecodedMessage, MessageType
 from irma_bus import IrmaBus
@@ -14,10 +11,10 @@ from mock_bus import MockBus
 
 BYPASS_CAN = bool(environ.get("BYPASS_CAN", 0))
 
-
-class PayloadType(IntEnum):
-    TOTAL_READING = 0
-    WINDOW_READING = 1
+STATUS_SUBTOPIC = "/status"
+SETTINGS_SUBTOPIC = "/set"
+PAYLOAD_SUBTOPIC = "/payload"
+COMMAND_SUBTOPIC = "/command"
 
 
 class Node:
@@ -47,7 +44,6 @@ class Node:
             print("Started MockBus")
 
         self.init_mqtt_client()
-        self.launch_keep_alive_daemon()
 
     def init_mqtt_client(self):
         self.client = mqtt.Client()
@@ -66,8 +62,10 @@ class Node:
         def on_connect(client, userdata, flags, rc):
             print("Connected with result code " + str(rc))
 
-            client.subscribe(self.topic + "/command")
-            client.subscribe(self.topic + "/set")
+            client.subscribe(self.topic + COMMAND_SUBTOPIC)
+            client.subscribe(self.topic + SETTINGS_SUBTOPIC)
+
+            self.launch_keep_alive_daemon()
 
         def on_message(client, userdata, msg: mqtt.MQTTMessage):
             print(f"Someone published '{str(msg.payload)}' on '{msg.topic}'")
@@ -144,77 +142,62 @@ class Node:
             self.client.loop(0.1)
             message = self.bus.listen()
             if message is not None:
-                self.send_message(message)
+                self.publish_message(message)
 
-    def send_message(self, message: DecodedMessage):
-        if message["message_type"] == MessageType.RETURN_COUNT_TOTAL:
-            self.send_http_payload(PayloadType.TOTAL_READING, message)
-        elif message["message_type"] == MessageType.RETURN_COUNT_WINDOW:
-            self.send_http_payload(PayloadType.WINDOW_READING, message)
+    def publish_message(self, message: DecodedMessage):
+        if message["message_type"] in [
+            MessageType.RETURN_COUNT_TOTAL,
+            MessageType.RETURN_COUNT_WINDOW,
+        ]:
+            self.publish_reading(message)
         else:
-            raise ValueError(f"""Unexpected MessageType '{message["message_type"]}'""")
+            raise ValueError(f"Unexpected MessageType '{message['message_type']}'")
 
-    def send_http_payload(
+    def publish_reading(
         self,
-        payload_type: PayloadType,
-        data: Optional[DecodedMessage] = None,
+        message: DecodedMessage,
     ):
-
-        if data is None:
-            data_entry = None
-        else:
-            data_entry = {
-                "canID": data["n_detector"],
-                "sensorNumber": data["sipm"],
-                "value": data["value"],
-                "count": data["count"],
-                "sessionID": data["sessionID"],
-                "readingID": data["readingID"],
+        data: str = json.dumps(
+            {
+                "applicationID": self.config["node_info"]["applicationID"],
+                "nodeID": self.config["node_info"]["nodeID"],
+                "nodeName": self.config["node_info"]["nodeName"],
+                "payloadType": "total"
+                if message["message_type"] == MessageType.RETURN_COUNT_TOTAL
+                else "window",
+                "data": {
+                    "canID": message["n_detector"],
+                    "sensorNumber": message["sipm"],
+                    "value": message["value"],
+                    "count": message["count"],
+                    "sessionID": message["sessionID"],
+                    "readingID": message["readingID"],
+                },
             }
-
-        payload: dict = {
-            "nodeID": self.config["node_info"]["nodeID"],
-            "nodeName": self.config["node_info"]["nodeName"],
-            "applicationID": self.config["node_info"]["applicationID"],
-            "organizationID": self.config["node_info"]["organizationID"],
-            "payloadType": payload_type,
-            "data": data_entry,
-        }
-
-        host = self.config["microservice"]["url"]
-        port = self.config["microservice"]["port"]
-        api_key = self.config["microservice"]["api_key"]
-
-        requests.post(
-            url=f"{host}:{port}/api/payload/",
-            json=payload,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
         )
+        self.client.publish(self.topic + PAYLOAD_SUBTOPIC, data.encode())
 
     def launch_keep_alive_daemon(self):
         thread = threading.Thread(target=self.periodically_send_keep_alive, daemon=True)
         thread.start()
 
     def periodically_send_keep_alive(self):
-        seconds = self.config["microservice"]["keep_alive_seconds"]
-        self.client.publish(self.topic + "/status", "launch")
+        seconds = self.config["mqtt"]["keep_alive_seconds"]
+        self.client.publish(self.topic + STATUS_SUBTOPIC, "launch")
         while True:
             sleep(seconds)
-            self.client.publish(self.topic + "/status", "keepalive")
+            self.client.publish(self.topic + STATUS_SUBTOPIC, "keepalive")
 
     def start_rec(self, mode: int):
         print("Received MQTT message, sending rec start...")
 
-        self.client.publish(self.topic + "/status", "start")
+        self.client.publish(self.topic + STATUS_SUBTOPIC, "start")
         self.bus.start_session(mode)
 
     def stop_rec(self):
         print("Received MQTT message, sending rec end...")
 
-        self.client.publish(self.topic + "/status", "stop")
+        self.client.publish(self.topic + STATUS_SUBTOPIC, "stop")
         self.bus.stop_session()
 
 

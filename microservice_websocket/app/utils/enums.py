@@ -24,11 +24,6 @@ class NodeState(IntEnum):
             raise ValueError
 
 
-class PayloadType(IntEnum):
-    TOTAL_READING = 0
-    WINDOW_READING = 1
-
-
 class CommandType(IntEnum):
     START_REC = 0
     STOP_REC = auto()

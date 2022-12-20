@@ -1,23 +1,26 @@
 from datetime import datetime
 
 from beanie import PydanticObjectId
-from beanie.operators import And, Eq
+from beanie.operators import And, Eq, Set
+from pymongo.results import UpdateResult
 
-from ..blueprints.api.models import PublishPayload
+from ..models.payload import ReadingPayload
 from ..config import config as Config
 from ..services.database import Alert, Application, Node, Reading
-from .enums import EventType, NodeState, PayloadType
-from .exceptions import NotFoundException
+from .enums import EventType, NodeState
 from .node import update_state
 from .sync_cache import add_to_cache
 
 
-async def publish(payload: PublishPayload):
+async def handle_payload(payload: ReadingPayload):
+    from .. import socketManager
+
     application: Application | None = await Application.get(
         PydanticObjectId(payload.applicationID)
     )
     if application is None:
-        raise NotFoundException("Application")
+        print(f"Application '{payload.applicationID}' not found")
+        return
 
     node: Node | None = await Node.find_one(
         And(Eq(Node.application, application.id), Eq(Node.nodeID, payload.nodeID))
@@ -34,37 +37,61 @@ async def publish(payload: PublishPayload):
         await node.save()
 
     node.lastSeenAt = datetime.now()
+    new_state = node.state
+    changed = False
 
-    if payload.payloadType == PayloadType.TOTAL_READING:
+    if payload.payloadType == "total":
         await handle_total_reading(node, payload)
 
-    elif payload.payloadType == PayloadType.WINDOW_READING:
+    elif payload.payloadType == "window":
         await handle_window_reading(node, payload)
-        node.state = update_state(node.state, node.lastSeenAt, EventType.START_REC)
+        new_state = update_state(new_state, node.lastSeenAt, EventType.START_REC)
 
     data = payload.data
     value = data.value if data else 0
 
-    if (
-        payload.payloadType == PayloadType.TOTAL_READING
-        and value >= Config.app.ALERT_TRESHOLD
-    ):
-        node.state = update_state(node.state, node.lastSeenAt, EventType.RAISE_ALERT)
+    if payload.payloadType == "total" and value >= Config.app.ALERT_TRESHOLD:
+        new_state = update_state(new_state, node.lastSeenAt, EventType.RAISE_ALERT)
     else:
-        node.state = update_state(
-            node.state,
+        new_state = update_state(
+            new_state,
             node.lastSeenAt,
             EventType.KEEP_ALIVE,
         )
+
+    changed = new_state != node.state
+    node.state = new_state
+
     await node.save()
 
+    if changed:
+        await socketManager.emit("changed")
 
-async def handle_total_reading(node: Node, record: PublishPayload):
-    data = record.data
-    # TODO: fix
-    assert data
 
-    reading: Reading | None = await Reading.find_one(
+async def handle_total_reading(node: Node, payload: ReadingPayload):
+    data = payload.data
+
+    await Reading.find_one(
+        And(
+            Eq(Reading.node, node.id),
+            Eq(Reading.readingID, data.readingID),
+            Eq(Reading.canID, data.canID),
+            Eq(Reading.sensorNumber, data.sensorNumber),
+        )
+    ).upsert(
+        Set({Reading.dangerLevel: data.value}),
+        on_insert=Reading(
+            node=node.id,
+            canID=data.canID,
+            sensorNumber=data.sensorNumber,
+            readingID=data.readingID,
+            sessionID=data.sessionID,
+            publishedAt=datetime.now(),
+            dangerLevel=data.value,
+        ),
+    )
+
+    reading = await Reading.find_one(
         And(
             Eq(Reading.node, node.id),
             Eq(Reading.readingID, data.readingID),
@@ -73,23 +100,9 @@ async def handle_total_reading(node: Node, record: PublishPayload):
         )
     )
 
-    if reading is None:
-        reading = Reading(
-            node=node.id,
-            canID=data.canID,
-            sensorNumber=data.sensorNumber,
-            readingID=data.readingID,
-            sessionID=data.sessionID,
-            publishedAt=datetime.now(),
-        )
-
-    reading.dangerLevel = data.value
-    await reading.save()
-    add_to_cache(str(reading.id))
-
-    if reading.dangerLevel >= Config.app.ALERT_TRESHOLD:
+    if data.value >= Config.app.ALERT_TRESHOLD:
         alert: Alert | None = await Alert.find_one(
-            And(Eq(Alert.sessionID, reading.sessionID), Eq(Alert.isHandled, False))
+            And(Eq(Alert.sessionID, data.sessionID), Eq(Alert.isHandled, False))
         )
 
         if alert is None:
@@ -103,10 +116,8 @@ async def handle_total_reading(node: Node, record: PublishPayload):
             await alert.save()
 
 
-async def handle_window_reading(node: Node, payload: PublishPayload):
+async def handle_window_reading(node: Node, payload: ReadingPayload):
     data = payload.data
-    # TODO: FIX
-    assert data
 
     reading: Reading | None = await Reading.find_one(
         And(
