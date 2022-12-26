@@ -4,28 +4,53 @@ from ..services.database import Node, Reading
 from .exceptions import NotFoundException
 
 
-async def get_session(nodeID: int, sessionID: int | None) -> list[Reading]:
+async def get_session(nodeID: int, sessionID: int | None) -> list[Reading.Aggregated]:
     node: Node | None = await Node.find_one(Node.nodeID == nodeID)
     if node is None:
         raise NotFoundException("Node")
 
     if sessionID is None:
-        latest_reading: Reading | None = await (
-            Reading.find(Reading.node == node.id).sort("-sessionID").first_or_none()
-        )
-        if latest_reading is None:
+        sessions_id = await get_sessions_id(nodeID)
+        if len(sessions_id) == 0:
             return []
 
-        sessionID = latest_reading.sessionID
+        sessionID = max(sessions_id)
 
-    readings: list[Reading] = await Reading.find(
-        And(
-            Eq(Reading.node, node.id),
-            Eq(Reading.sessionID, sessionID),
+    readings = (
+        await Reading.find(
+            And(Eq(Reading.node, node.id), Eq(Reading.sessionID, sessionID))
         )
-    ).to_list()
+        .aggregate(
+            [
+                {
+                    "$group": {
+                        "_id": {
+                            "readingID": "$readingID",
+                            "canID": "$canID",
+                            "sensorNumber": "$sensor_number",
+                        },
+                        "merged": {
+                            "$push": {
+                                "canID": "$canID",
+                                "sensorNumber": "$sensor_number",
+                                "readingID": "$readingID",
+                                "window1": "$window1",
+                                "window2": "$window2",
+                                "window3": "$window3",
+                                "dangerLevel": "$danger_level",
+                            }
+                        },
+                    }
+                },
+                {"$replaceRoot": {"newRoot": {"$mergeObjects": "$merged"}}},
+                {"$addFields": {"nodeID": node.nodeID, "sessionID": sessionID}},
+            ],
+            projection_model=Reading.Aggregated,
+        )
+        .to_list()
+    )
 
-    return [x for x in readings]
+    return readings
 
 
 async def get_sessions_id(nodeID: int) -> list[int]:
@@ -33,11 +58,6 @@ async def get_sessions_id(nodeID: int) -> list[int]:
     if node is None:
         raise NotFoundException("Node")
 
-    sessions: list[Reading] = await Reading.find(Reading.node == node.id).to_list()
-
-    sessions_id = [x.sessionID for x in sessions]
-
-    # Remove duplicates
-    sessions_id = list(set(sessions_id))
+    sessions_id: list[int] = await Reading.distinct("sessionID", {"node": node.id})
 
     return sessions_id

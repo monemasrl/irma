@@ -1,15 +1,13 @@
 from datetime import datetime
 
 from beanie import PydanticObjectId
-from beanie.operators import And, Eq, Set
-from pymongo.results import UpdateResult
+from beanie.operators import And, Eq
 
-from ..models.payload import ReadingPayload
 from ..config import config as Config
+from ..models.payload import ReadingPayload
 from ..services.database import Alert, Application, Node, Reading
 from .enums import EventType, NodeState
 from .node import update_state
-from .sync_cache import add_to_cache
 
 
 async def handle_payload(payload: ReadingPayload):
@@ -65,40 +63,22 @@ async def handle_payload(payload: ReadingPayload):
     await node.save()
 
     if changed:
-        await socketManager.emit("changed")
+        socketManager.emit("changed")
 
 
 async def handle_total_reading(node: Node, payload: ReadingPayload):
     data = payload.data
 
-    await Reading.find_one(
-        And(
-            Eq(Reading.node, node.id),
-            Eq(Reading.readingID, data.readingID),
-            Eq(Reading.canID, data.canID),
-            Eq(Reading.sensorNumber, data.sensorNumber),
-        )
-    ).upsert(
-        Set({Reading.dangerLevel: data.value}),
-        on_insert=Reading(
-            node=node.id,
-            canID=data.canID,
-            sensorNumber=data.sensorNumber,
-            readingID=data.readingID,
-            sessionID=data.sessionID,
-            publishedAt=datetime.now(),
-            dangerLevel=data.value,
-        ),
+    reading = Reading(
+        node=node.id,
+        canID=data.canID,
+        sensor_number=data.sensorNumber,
+        readingID=data.readingID,
+        sessionID=data.sessionID,
+        published_at=datetime.now(),
+        danger_level=data.value,
     )
-
-    reading = await Reading.find_one(
-        And(
-            Eq(Reading.node, node.id),
-            Eq(Reading.readingID, data.readingID),
-            Eq(Reading.canID, data.canID),
-            Eq(Reading.sensorNumber, data.sensorNumber),
-        )
-    )
+    await reading.save()
 
     if data.value >= Config.app.ALERT_TRESHOLD:
         alert: Alert | None = await Alert.find_one(
@@ -119,24 +99,14 @@ async def handle_total_reading(node: Node, payload: ReadingPayload):
 async def handle_window_reading(node: Node, payload: ReadingPayload):
     data = payload.data
 
-    reading: Reading | None = await Reading.find_one(
-        And(
-            Eq(Reading.node, node.id),
-            Eq(Reading.readingID, data.readingID),
-            Eq(Reading.canID, data.canID),
-            Eq(Reading.sensorNumber, data.sensorNumber),
-        )
+    reading = Reading(
+        node=node.id,
+        canID=data.canID,
+        sensor_number=data.sensorNumber,
+        readingID=data.readingID,
+        sessionID=data.sessionID,
+        published_at=datetime.now(),
     )
-
-    if reading is None:
-        reading = Reading(
-            node=node.id,
-            canID=data.canID,
-            sensorNumber=data.sensorNumber,
-            sessionID=data.sessionID,
-            readingID=data.readingID,
-            publishedAt=datetime.now(),
-        )
 
     window_number = data.value
 
@@ -150,4 +120,3 @@ async def handle_window_reading(node: Node, payload: ReadingPayload):
         raise ValueError(f"Unexpected window_number: {window_number}")
 
     await reading.save()
-    add_to_cache(str(reading.id))

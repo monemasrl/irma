@@ -9,7 +9,7 @@ session_router = APIRouter()
 
 
 class GetSessionResponse(BaseModel):
-    readings: list[Reading.Serialized]
+    readings: list[Reading.Aggregated]
 
 
 class GetSessionIDsResponse(BaseModel):
@@ -24,7 +24,7 @@ class GetSessionIDsResponse(BaseModel):
 async def get_reading_session(nodeID: int, sessionID: int):
     readings = await get_session(nodeID, sessionID)
 
-    return {"readings": [await x.serialize() for x in readings]}
+    return {"readings": readings}
 
 
 @session_router.get(
@@ -35,7 +35,7 @@ async def get_reading_session(nodeID: int, sessionID: int):
 async def get_reading_session_no_sessionID(nodeID: int):
     readings = await get_session(nodeID, None)
 
-    return {"readings": [await x.serialize() for x in readings]}
+    return {"readings": readings}
 
 
 @session_router.get(

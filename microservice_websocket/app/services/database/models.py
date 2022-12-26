@@ -132,44 +132,44 @@ class Node(CustomDocument):
 class Reading(CustomDocument):
     node: PydanticObjectId
     canID: int = Field(default=..., lt=5, gt=0)
-    sensorNumber: int = Field(default=..., lt=3, gt=0)
+    sensor_number: int = Field(default=..., lt=3, gt=0)
     readingID: int
     sessionID: int
-    dangerLevel: int = 0
-    window1: int = 0
-    window2: int = 0
-    window3: int = 0
-    publishedAt: datetime
+    danger_level: int | None = None
+    window1: int | None = None
+    window2: int | None = None
+    window3: int | None = None
+    published_at: datetime
 
-    class Serialized(BaseModel):
+    class Aggregated(BaseModel):
         nodeID: int
         canID: int
         sensorNumber: int
-        readingID: int
         sessionID: int
-        dangerLevel: int
-        window1: int
-        window2: int
-        window3: int
-        publishedAt: int
+        readingID: int
+        window1: int = 0
+        window2: int = 0
+        window3: int = 0
+        dangerLevel: int = 0
 
-    async def serialize(self) -> Reading.Serialized:
-        node = await Node.get(self.node)
-        if node is None:
-            raise NotFoundException("Node")
-
-        return Reading.Serialized(
-            nodeID=node.nodeID,
-            canID=self.canID,
-            sensorNumber=self.sensorNumber,
-            readingID=self.readingID,
-            sessionID=self.sessionID,
-            dangerLevel=self.dangerLevel,
-            window1=self.window1,
-            window2=self.window2,
-            window3=self.window3,
-            publishedAt=int(self.publishedAt.timestamp()),
-        )
+    #
+    # async def serialize(self) -> Reading.Serialized:
+    #     node = await Node.get(self.node)
+    #     if node is None:
+    #         raise NotFoundException("Node")
+    #
+    #     return Reading.Serialized(
+    #         nodeID=node.nodeID,
+    #         canID=self.canID,
+    #         sensorNumber=self.sensorNumber,
+    #         readingID=self.readingID,
+    #         sessionID=self.sessionID,
+    #         dangerLevel=self.dangerLevel,
+    #         window1=self.window1,
+    #         window2=self.window2,
+    #         window3=self.window3,
+    #         publishedAt=int(self.publishedAt.timestamp()),
+    #     )
 
 
 class Alert(CustomDocument):

@@ -29,10 +29,10 @@ class TestAlertHandle:
         reading = db.Reading(
             node=node.id,
             canID=1,
-            sensorNumber=2,
+            sensor_number=2,
             readingID=32704,
             sessionID=12892,
-            publishedAt=datetime.now(),
+            published_at=datetime.now(),
         )
         await reading.save()
         # Done setup
@@ -67,10 +67,10 @@ class TestAlertHandle:
         reading = db.Reading(
             node=node.id,
             canID=1,
-            sensorNumber=2,
+            sensor_number=2,
             readingID=32704,
             sessionID=12892,
-            publishedAt=datetime.now(),
+            published_at=datetime.now(),
         )
         await reading.save()
         # Done setup
@@ -175,10 +175,10 @@ class TestAlertInfo:
         reading = db.Reading(
             node=node.id,
             canID=1,
-            sensorNumber=2,
+            sensor_number=2,
             readingID=32704,
             sessionID=12892,
-            publishedAt=datetime.now(),
+            published_at=datetime.now(),
         )
         await reading.save()
         # Done setup

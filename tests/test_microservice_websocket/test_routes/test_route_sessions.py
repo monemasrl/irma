@@ -69,28 +69,28 @@ class TestGetSessions:
         r1 = db.Reading(
             node=node.id,
             canID=1,
-            sensorNumber=1,
+            sensor_number=1,
             readingID=1,
             sessionID=1,
-            publishedAt=datetime.now(),
+            published_at=datetime.now(),
         )
         await r1.save()
         r2 = db.Reading(
             node=node.id,
             canID=2,
-            sensorNumber=1,
+            sensor_number=1,
             readingID=1,
             sessionID=2,
-            publishedAt=datetime.now(),
+            published_at=datetime.now(),
         )
         await r2.save()
         r3 = db.Reading(
             node=node.id,
             canID=3,
-            sensorNumber=1,
+            sensor_number=1,
             readingID=1,
             sessionID=3,
-            publishedAt=datetime.now(),
+            published_at=datetime.now(),
         )
         await r3.save()
         # Done setup
@@ -125,28 +125,28 @@ class TestGetSessions:
         r1 = db.Reading(
             node=node.id,
             canID=1,
-            sensorNumber=1,
+            sensor_number=1,
             readingID=1,
             sessionID=1,
-            publishedAt=datetime.now(),
+            published_at=datetime.now(),
         )
         await r1.save()
         r2 = db.Reading(
             node=node.id,
             canID=2,
-            sensorNumber=1,
+            sensor_number=1,
             readingID=1,
             sessionID=2,
-            publishedAt=datetime.now(),
+            published_at=datetime.now(),
         )
         await r2.save()
         r3 = db.Reading(
             node=node.id,
             canID=3,
-            sensorNumber=1,
+            sensor_number=1,
             readingID=1,
             sessionID=3,
-            publishedAt=datetime.now(),
+            published_at=datetime.now(),
         )
         await r3.save()
         # Done setup
@@ -232,19 +232,19 @@ class TestGetSessionID:
         r1 = db.Reading(
             node=node.id,
             canID=1,
-            sensorNumber=1,
+            sensor_number=1,
             readingID=1,
             sessionID=1,
-            publishedAt=datetime.now(),
+            published_at=datetime.now(),
         )
         await r1.save()
         r2 = db.Reading(
             node=node.id,
             canID=2,
-            sensorNumber=1,
+            sensor_number=1,
             readingID=1,
             sessionID=2,
-            publishedAt=datetime.now(),
+            published_at=datetime.now(),
         )
         await r2.save()
         # Done setup
