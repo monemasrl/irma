@@ -1,10 +1,10 @@
 from fakeredis import FakeStrictRedis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi_socketio import SocketManager
 from redis import Redis
 
 from .services.database import init_db, user_manager
+from .services.discrete_socketio import DiscreteSocketManager
 from .services.mqtt import init_mqtt
 from .services.scheduler import init_scheduler
 
@@ -19,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-socketManager = SocketManager(app=app, cors_allowed_origins=[])
+socketManager = DiscreteSocketManager(app)
 
 
 @app.on_event("startup")

@@ -16,8 +16,8 @@ async def handle_alert_route(
 
     await handle_alert(alertID, payload, user)
 
-    await socketManager.emit("change")
-    await socketManager.emit("change-reading")
+    socketManager.emit("change")
+    socketManager.emit("change-reading")
 
     return {"message": "Handled"}
 

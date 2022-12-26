@@ -8,8 +8,7 @@ TESTING = os.environ.get("TESTING", False)
 
 
 class AppConfig(BaseModel):
-    READING_SYNC_WAIT: int
-    CHECK_SYNC_READY: int
+    SOCKETIO_MIN_FIRE_INTERVAL: int
     NODE_TIMEOUT_CHECK_INTERVAL: int
     NODE_TIMEOUT_INTERVAL: int
     ALERT_TRESHOLD: int

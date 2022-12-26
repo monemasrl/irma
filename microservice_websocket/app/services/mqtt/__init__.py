@@ -101,7 +101,7 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                 print(f"Invalid sub-topic '{topic}'")
 
             if changed:
-                await socketManager.emit("change")
+                socketManager.emit("change")
 
         except IndexError as error:
             print(f"Invalid topic '{topic}': {error}")
