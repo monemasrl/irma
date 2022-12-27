@@ -1,7 +1,5 @@
-from fakeredis import FakeStrictRedis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from redis import Redis
 
 from .services.database import init_db, user_manager
 from .services.discrete_socketio import DiscreteSocketManager
@@ -34,12 +32,8 @@ async def app_init():
     if not TESTING:
         mqtt = init_mqtt(Config.mqtt)
         mqtt.init_app(app)
-        redis_client = Redis(
-            host=Config.redis.host, port=Config.redis.port, db=Config.redis.db
-        )
         await init_db(Config.mongo.uri, Config.mongo.db)
     else:
-        redis_client = FakeStrictRedis()
         await init_db("mongomock://localhost:27017/test", "test")
 
     await user_manager.create_user("foo@bar.com", "baz", "John", "Doe", role="admin")

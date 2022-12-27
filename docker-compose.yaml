@@ -9,12 +9,6 @@ services:
     ports:
       - 1884:1884
 
-  cache:
-    build: ./cache
-    restart: unless-stopped
-    volumes:
-      - ./cache/data:/data
-
   mongo:
     image: mongo
     restart: unless-stopped
