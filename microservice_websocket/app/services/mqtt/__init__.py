@@ -1,8 +1,13 @@
+import json
 from datetime import datetime
 
 from beanie import PydanticObjectId
 from beanie.operators import And, Eq
 from fastapi_mqtt import FastMQTT, MQTTConfig
+
+from app.utils.payload import handle_payload
+
+from ...models.payload import ReadingPayload
 
 from ...config import MQTTConfig as MQTTConfigInternal
 from ...utils.enums import EventType
@@ -10,6 +15,7 @@ from ...utils.node import on_launch, update_state
 from ..database.models import Node
 
 STATUS_TOPIC = "+/+/status"
+PAYLOAD_TOPIC = "+/+/payload"
 
 
 def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
@@ -26,8 +32,9 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
     @mqtt.on_connect()
     def connect(client, flags, rc, properties):
         print("[MQTT] Connected")
-        mqtt.client.subscribe(STATUS_TOPIC)
-        print(f"[MQTT] Subscribed to '{STATUS_TOPIC}'")
+        for topic in [STATUS_TOPIC, PAYLOAD_TOPIC]:
+            mqtt.client.subscribe(topic)
+            print(f"[MQTT] Subscribed to '{topic}'")
 
     @mqtt.on_message()
     async def on_message(client, topic: str, payload: bytes, qos, properties):
@@ -97,6 +104,12 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
 
                 else:
                     print(f"Invalid value '{value}' for sub-topic '{topic}'")
+            elif topic == "payload":
+                data_dict = json.loads(value)
+                reading_payload: ReadingPayload = ReadingPayload.parse_obj(data_dict)
+
+                await handle_payload(reading_payload)
+
             else:
                 print(f"Invalid sub-topic '{topic}'")
 
