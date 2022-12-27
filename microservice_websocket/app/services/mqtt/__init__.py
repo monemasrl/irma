@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+import re
 
 from beanie import PydanticObjectId
 from beanie.operators import And, Eq
@@ -10,9 +11,9 @@ from app.utils.payload import handle_payload
 from ...models.payload import ReadingPayload
 
 from ...config import MQTTConfig as MQTTConfigInternal
-from ...utils.enums import EventType
+from ...utils.enums import EventType, NodeState
 from ...utils.node import on_launch, update_state
-from ..database.models import Node
+from ..database.models import Node, Application
 
 STATUS_TOPIC = "+/+/status"
 PAYLOAD_TOPIC = "+/+/payload"
@@ -54,17 +55,45 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                 print("[MQTT] nodeID is not parsable")
                 return
 
+            application = await Application.get(PydanticObjectId(applicationID))
+            if application is None:
+                print(f"Couldn't find applicationID '{applicationID}'")
+                return
+
             node = await Node.find_one(
                 And(
                     Eq(Node.nodeID, int(nodeID)),
                     Eq(Node.application, PydanticObjectId(applicationID)),
                 )
             )
-            if node is None:
-                print(f"Couldn't find node '{nodeID}', applicationID '{applicationID}'")
+
+            if node is not None:
+                node.lastSeenAt = datetime.now()
+
+            if topic == "status" and re.match("^launch:.+", value):
+                if node is None:
+                    node = Node(
+                        nodeID=int(nodeID),
+                        application=application.id,
+                        nodeName=value.split(":")[1],
+                        state=NodeState.READY,
+                        lastSeenAt=datetime.now(),
+                    )
+
+                new_state = update_state(
+                    node.state, node.lastSeenAt, EventType.ON_LAUNCH
+                )
+                await node.save()
+
+                await on_launch(node)
+                socketManager.emit("change")
                 return
 
-            node.lastSeenAt = datetime.now()
+            if node is None:
+                print(
+                    f"Detected unregistered Node '{nodeID}', applicationID '{applicationID}'. Restart it to get it registered"
+                )
+                return
 
             changed: bool = False
 
@@ -92,15 +121,6 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                     changed = node.state != new_state
                     node.state = new_state
                     await node.save()
-
-                elif value == "launch":
-                    new_state = update_state(
-                        node.state, node.lastSeenAt, EventType.ON_LAUNCH
-                    )
-                    changed = node.state != new_state
-                    node.state = new_state
-                    await node.save()
-                    await on_launch(node)
 
                 else:
                     print(f"Invalid value '{value}' for sub-topic '{topic}'")
