@@ -76,7 +76,8 @@ async def handle_total_reading(node: Node, payload: ReadingPayload):
         readingID=data.readingID,
         sessionID=data.sessionID,
         published_at=datetime.now(),
-        danger_level=data.value,
+        name="t",
+        value=data.value,
     )
     await reading.save()
 
@@ -99,6 +100,16 @@ async def handle_total_reading(node: Node, payload: ReadingPayload):
 async def handle_window_reading(node: Node, payload: ReadingPayload):
     data = payload.data
 
+    window_number = data.value
+    if window_number == 0:
+        name = "w1"
+    elif window_number == 1:
+        name = "w2"
+    elif window_number == 2:
+        name = "w3"
+    else:
+        raise ValueError(f"Unexpected window_number: {window_number}")
+
     reading = Reading(
         node=node.id,
         canID=data.canID,
@@ -106,17 +117,8 @@ async def handle_window_reading(node: Node, payload: ReadingPayload):
         readingID=data.readingID,
         sessionID=data.sessionID,
         published_at=datetime.now(),
+        name=name,
+        value=data.count,
     )
-
-    window_number = data.value
-
-    if window_number == 0:
-        reading.window1 = data.count
-    elif window_number == 1:
-        reading.window2 = data.count
-    elif window_number == 2:
-        reading.window3 = data.count
-    else:
-        raise ValueError(f"Unexpected window_number: {window_number}")
 
     await reading.save()

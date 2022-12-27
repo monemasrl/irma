@@ -4,7 +4,7 @@ from ..services.database import Node, Reading
 from .exceptions import NotFoundException
 
 
-async def get_session(nodeID: int, sessionID: int | None) -> list[Reading.Aggregated]:
+async def get_session(nodeID: int, sessionID: int | None) -> list[Reading]:
     node: Node | None = await Node.find_one(Node.nodeID == nodeID)
     if node is None:
         raise NotFoundException("Node")
@@ -27,28 +27,31 @@ async def get_session(nodeID: int, sessionID: int | None) -> list[Reading.Aggreg
                         "_id": {
                             "readingID": "$readingID",
                             "canID": "$canID",
-                            "sensorNumber": "$sensor_number",
+                            "sensor_number": "$sensor_number",
                         },
                         "merged": {
                             "$push": {
                                 "canID": "$canID",
-                                "sensorNumber": "$sensor_number",
+                                "sensor_number": "$sensor_number",
                                 "readingID": "$readingID",
                                 "window1": "$window1",
                                 "window2": "$window2",
                                 "window3": "$window3",
-                                "dangerLevel": "$danger_level",
+                                "danger_level": "$danger_level",
+                                "published_at": {"$max": "$published_at"},
                             }
                         },
                     }
                 },
                 {"$replaceRoot": {"newRoot": {"$mergeObjects": "$merged"}}},
-                {"$addFields": {"nodeID": node.nodeID, "sessionID": sessionID}},
+                {"$addFields": {"node": node.id, "sessionID": sessionID}},
             ],
-            projection_model=Reading.Aggregated,
+            projection_model=Reading,
         )
         .to_list()
     )
+
+    print(readings)
 
     return readings
 

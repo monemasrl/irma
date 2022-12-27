@@ -183,7 +183,10 @@ class Node:
 
     def periodically_send_keep_alive(self):
         seconds = self.config["mqtt"]["keep_alive_seconds"]
-        self.client.publish(self.topic + STATUS_SUBTOPIC, "launch")
+        self.client.publish(
+            self.topic + STATUS_SUBTOPIC,
+            f"launch:{self.config['node_info']['nodeName']}",
+        )
         while True:
             sleep(seconds)
             self.client.publish(self.topic + STATUS_SUBTOPIC, "keepalive")

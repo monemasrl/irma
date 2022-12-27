@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from app.utils.exceptions import NotFoundException
 from beanie import Document, PydanticObjectId
@@ -135,10 +136,9 @@ class Reading(CustomDocument):
     sensor_number: int = Field(default=..., lt=3, gt=0)
     readingID: int
     sessionID: int
-    danger_level: int | None = None
-    window1: int | None = None
-    window2: int | None = None
-    window3: int | None = None
+
+    name: Literal["w1", "w2", "w3", "t"]
+    value: int = 0
     published_at: datetime
 
     class Aggregated(BaseModel):
@@ -147,29 +147,11 @@ class Reading(CustomDocument):
         sensorNumber: int
         sessionID: int
         readingID: int
-        window1: int = 0
-        window2: int = 0
-        window3: int = 0
-        dangerLevel: int = 0
-
-    #
-    # async def serialize(self) -> Reading.Serialized:
-    #     node = await Node.get(self.node)
-    #     if node is None:
-    #         raise NotFoundException("Node")
-    #
-    #     return Reading.Serialized(
-    #         nodeID=node.nodeID,
-    #         canID=self.canID,
-    #         sensorNumber=self.sensorNumber,
-    #         readingID=self.readingID,
-    #         sessionID=self.sessionID,
-    #         dangerLevel=self.dangerLevel,
-    #         window1=self.window1,
-    #         window2=self.window2,
-    #         window3=self.window3,
-    #         publishedAt=int(self.publishedAt.timestamp()),
-    #     )
+        window1: int
+        window2: int
+        window3: int
+        dangerLevel: int
+        publishedAt: int
 
 
 class Alert(CustomDocument):
