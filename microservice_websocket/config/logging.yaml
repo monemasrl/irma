@@ -1,0 +1,7 @@
+version: 1
+incremental: True
+loggers:
+  app:
+    level: "INFO"
+  app.services.discrete_socketio:
+    level: "INFO"
