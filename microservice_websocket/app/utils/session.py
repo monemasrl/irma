@@ -4,7 +4,7 @@ from ..services.database import Node, Reading
 from .exceptions import NotFoundException
 
 
-async def get_session(nodeID: int, sessionID: int | None) -> list[Reading]:
+async def get_session(nodeID: int, sessionID: int | None) -> list[Reading.Aggregated]:
     node: Node | None = await Node.find_one(Node.nodeID == nodeID)
     if node is None:
         raise NotFoundException("Node")
@@ -29,29 +29,40 @@ async def get_session(nodeID: int, sessionID: int | None) -> list[Reading]:
                             "canID": "$canID",
                             "sensor_number": "$sensor_number",
                         },
-                        "merged": {
-                            "$push": {
-                                "canID": "$canID",
-                                "sensor_number": "$sensor_number",
-                                "readingID": "$readingID",
-                                "window1": "$window1",
-                                "window2": "$window2",
-                                "window3": "$window3",
-                                "danger_level": "$danger_level",
-                                "published_at": {"$max": "$published_at"},
-                            }
-                        },
+                        "data": {"$addToSet": {"name": "$name", "value": "$value"}},
+                        "published_at": {"$max": "$published_at"},
                     }
                 },
-                {"$replaceRoot": {"newRoot": {"$mergeObjects": "$merged"}}},
-                {"$addFields": {"node": node.id, "sessionID": sessionID}},
+                {
+                    "$project": {
+                        "data": {
+                            "$arrayToObject": {
+                                "$zip": {"inputs": ["$data.name", "$data.value"]}
+                            }
+                        },
+                        "published_at": 1,
+                    }
+                },
+                {
+                    "$replaceRoot": {
+                        "newRoot": {
+                            "readingID": "$_id.readingID",
+                            "canID": "$_id.canID",
+                            "sensorNumber": "$_id.sensor_number",
+                            "window1": "$data.w1",
+                            "window2": "$data.w2",
+                            "window3": "$data.w3",
+                            "dangerLevel": "$data.t",
+                            "publishedAt": {"$toLong": "$published_at"},
+                        }
+                    }
+                },
+                {"$addFields": {"nodeID": node.nodeID, "sessionID": sessionID}},
             ],
-            projection_model=Reading,
+            projection_model=Reading.Aggregated,
         )
         .to_list()
     )
-
-    print(readings)
 
     return readings
 

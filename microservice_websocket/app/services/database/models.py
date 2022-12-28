@@ -147,10 +147,10 @@ class Reading(CustomDocument):
         sensorNumber: int
         sessionID: int
         readingID: int
-        window1: int
-        window2: int
-        window3: int
-        dangerLevel: int
+        window1: int = 0
+        window2: int = 0
+        window3: int = 0
+        dangerLevel: int = 0
         publishedAt: int
 
 
