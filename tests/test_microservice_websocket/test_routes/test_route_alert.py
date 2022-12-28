@@ -33,6 +33,7 @@ class TestAlertHandle:
             readingID=32704,
             sessionID=12892,
             published_at=datetime.now(),
+            name="t",
         )
         await reading.save()
         # Done setup
@@ -71,6 +72,7 @@ class TestAlertHandle:
             readingID=32704,
             sessionID=12892,
             published_at=datetime.now(),
+            name="t",
         )
         await reading.save()
         # Done setup
@@ -179,6 +181,7 @@ class TestAlertInfo:
             readingID=32704,
             sessionID=12892,
             published_at=datetime.now(),
+            name="t",
         )
         await reading.save()
         # Done setup

@@ -73,6 +73,7 @@ class TestGetSessions:
             readingID=1,
             sessionID=1,
             published_at=datetime.now(),
+            name="t",
         )
         await r1.save()
         r2 = db.Reading(
@@ -82,6 +83,7 @@ class TestGetSessions:
             readingID=1,
             sessionID=2,
             published_at=datetime.now(),
+            name="t",
         )
         await r2.save()
         r3 = db.Reading(
@@ -91,6 +93,7 @@ class TestGetSessions:
             readingID=1,
             sessionID=3,
             published_at=datetime.now(),
+            name="t",
         )
         await r3.save()
         # Done setup
@@ -129,6 +132,7 @@ class TestGetSessions:
             readingID=1,
             sessionID=1,
             published_at=datetime.now(),
+            name="t",
         )
         await r1.save()
         r2 = db.Reading(
@@ -138,6 +142,7 @@ class TestGetSessions:
             readingID=1,
             sessionID=2,
             published_at=datetime.now(),
+            name="t",
         )
         await r2.save()
         r3 = db.Reading(
@@ -147,6 +152,7 @@ class TestGetSessions:
             readingID=1,
             sessionID=3,
             published_at=datetime.now(),
+            name="t",
         )
         await r3.save()
         # Done setup
@@ -236,6 +242,7 @@ class TestGetSessionID:
             readingID=1,
             sessionID=1,
             published_at=datetime.now(),
+            name="t",
         )
         await r1.save()
         r2 = db.Reading(
@@ -245,6 +252,7 @@ class TestGetSessionID:
             readingID=1,
             sessionID=2,
             published_at=datetime.now(),
+            name="t",
         )
         await r2.save()
         # Done setup
