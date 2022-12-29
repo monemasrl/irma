@@ -1,19 +1,46 @@
 version: 1
-incremental: True
+disable_existing_loggers: False
+
+formatters:
+  standard:
+    format: "%(levelname)s:     %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: standard
+    stream: ext://sys.stdout
+
 loggers:
   app:
     level: "INFO"
+    handlers: [console]
+    propagate: false
   app.services.discrete_socketio:
     level: "INFO"
+    handlers: [console]
+    propagate: false
   app.services.mqtt:
     level: "INFO"
+    handlers: [console]
+    propagate: false
   app.services.scheduler.jobs:
     level: "INFO"
+    handlers: [console]
+    propagate: false
   app.utils.command:
     level: "INFO"
+    handlers: [console]
+    propagate: false
   app.utils.node:
     level: "INFO"
+    handlers: [console]
+    propagate: false
   app.utils.payload:
     level: "INFO"
+    handlers: [console]
+    propagate: false
   app.config:
     level: "INFO"
+    handlers: [console]
+    propagate: false
