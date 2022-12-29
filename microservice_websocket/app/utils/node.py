@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 
 from beanie import PydanticObjectId
@@ -7,6 +8,8 @@ from ..services.database import Application, Node, NodeSettings
 from .enums import EventType, NodeState
 from .exceptions import NotFoundException
 from .node_settings import send_update_settings
+
+logger = logging.getLogger(__name__)
 
 
 def on_keep_alive(current_state: NodeState) -> NodeState:
@@ -34,14 +37,14 @@ def update_state(
             current_state = NodeState.READY
         elif event == EventType.RAISE_ALERT:
             current_state = NodeState.ALERT_READY
-        elif event == EventType.HANDLE_ALERT:
+        elif event == EventType.HANDLED_ALL:
             current_state = NodeState.READY
         elif event == EventType.KEEP_ALIVE:
             current_state = on_keep_alive(current_state)
         elif event == EventType.ON_LAUNCH:
             current_state = NodeState.READY
         else:
-            raise NotImplementedError(f"EventType '{event}' not implemented yet")
+            logger.error(f"EventType '{event}' not implemented yet")
 
     return current_state
 
@@ -61,7 +64,7 @@ async def get_nodes(applicationID: str):
 async def on_launch(node: Node):
     settings = await NodeSettings.find_one(NodeSettings.node == node.id)
     if settings is None:
-        print(f"No settings found for node: {node}")
+        logger.info("No settings found for node: %s", node)
         return
 
     await send_update_settings(str(node.application), node.nodeID, settings)

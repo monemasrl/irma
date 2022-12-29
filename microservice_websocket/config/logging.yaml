@@ -5,3 +5,15 @@ loggers:
     level: "INFO"
   app.services.discrete_socketio:
     level: "INFO"
+  app.services.mqtt:
+    level: "INFO"
+  app.services.scheduler.jobs:
+    level: "INFO"
+  app.utils.command:
+    level: "INFO"
+  app.utils.node:
+    level: "INFO"
+  app.utils.payload:
+    level: "INFO"
+  app.config:
+    level: "INFO"

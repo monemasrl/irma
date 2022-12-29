@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+import logging
 import re
 
 from beanie import PydanticObjectId
@@ -14,6 +15,8 @@ from ...config import MQTTConfig as MQTTConfigInternal
 from ...utils.enums import EventType, NodeState
 from ...utils.node import on_launch, update_state
 from ..database.models import Node, Application
+
+logger = logging.getLogger(__name__)
 
 STATUS_TOPIC = "+/+/status"
 PAYLOAD_TOPIC = "+/+/payload"
@@ -32,16 +35,17 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
 
     @mqtt.on_connect()
     def connect(client, flags, rc, properties):
-        print("[MQTT] Connected")
+        logger.info("Connected to MQTT broker")
+
         for topic in [STATUS_TOPIC, PAYLOAD_TOPIC]:
             mqtt.client.subscribe(topic)
-            print(f"[MQTT] Subscribed to '{topic}'")
+            logger.info(f"Subscribed to '{topic}'")
 
     @mqtt.on_message()
     async def on_message(client, topic: str, payload: bytes, qos, properties):
         from ... import socketManager
 
-        print(f"[MQTT] Someone published '{str(payload)}' on '{topic}'")
+        logger.debug(f"Someone published '{payload.decode()}' on '{topic}'")
 
         topic_sliced = topic.split("/")
 
@@ -52,12 +56,12 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
             value = payload.decode()
 
             if not nodeID.isnumeric():
-                print("[MQTT] nodeID is not parsable")
+                logger.error("nodeID '%s' is not parsable", nodeID)
                 return
 
             application = await Application.get(PydanticObjectId(applicationID))
             if application is None:
-                print(f"Couldn't find applicationID '{applicationID}'")
+                logger.error(f"Couldn't find applicationID '{applicationID}'")
                 return
 
             node = await Node.find_one(
@@ -90,8 +94,11 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                 return
 
             if node is None:
-                print(
-                    f"Detected unregistered Node '{nodeID}', applicationID '{applicationID}'. Restart it to get it registered"
+                logger.info(
+                    "Detected unregistered Node '{%s}', applicationID '{%s}'. \
+                     Restart it to get it registered",
+                    nodeID,
+                    applicationID,
                 )
                 return
 
@@ -123,7 +130,9 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                     await node.save()
 
                 else:
-                    print(f"Invalid value '{value}' for sub-topic '{topic}'")
+                    logger.error(
+                        "Invalid value '{%s}' for sub-topic '{%s}'", value, topic
+                    )
             elif topic == "payload":
                 data_dict = json.loads(value)
                 reading_payload: ReadingPayload = ReadingPayload.parse_obj(data_dict)
@@ -131,12 +140,12 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                 await handle_payload(reading_payload)
 
             else:
-                print(f"Invalid sub-topic '{topic}'")
+                logger.error("Invalid sub-topic '{%s}'", topic)
 
             if changed:
                 socketManager.emit("change")
 
         except IndexError as error:
-            print(f"Invalid topic '{topic}': {error}")
+            logger.error("Invalid topic '{%s}': {%s}", topic, error)
 
     return mqtt

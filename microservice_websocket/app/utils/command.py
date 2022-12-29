@@ -1,10 +1,14 @@
 import json
+import logging
+
 from beanie import PydanticObjectId
 from beanie.operators import And, Eq
 
 from ..services.database.models import Application, Node
 from .enums import CommandType
 from .exceptions import NotFoundException
+
+logger = logging.getLogger(__name__)
 
 
 def publish(topic: str, data: bytes | str):
@@ -13,7 +17,7 @@ def publish(topic: str, data: bytes | str):
 
     from .. import mqtt
 
-    print(f"[MQTT] Publishing '{data}' to '{topic}'")
+    logger.info("Publishing '%s' to '%s'", data, topic)
 
     if mqtt:
         mqtt.publish(topic, data)
@@ -31,9 +35,7 @@ async def handle_command(command: CommandType, applicationID: str, nodeID: int):
     elif command == CommandType.SET_DEMO_2:
         publish(f"{applicationID}/{nodeID}/command", "start:2")
     else:
-        raise Exception(
-            f"CommandType '{command}' for ui operations not implemented yet"
-        )
+        logger.error("CommandType '%s' for ui operations not implemented yet", command)
 
 
 async def check_existence(applicationID: str, nodeID: int):

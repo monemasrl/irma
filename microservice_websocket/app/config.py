@@ -1,10 +1,14 @@
+import logging
 import os
 
 import yaml
 from pydantic import BaseModel
 from yaml.loader import Loader
 
+logger = logging.getLogger(__name__)
+
 TESTING = os.environ.get("TESTING", False)
+logger.debug("TESTING %s", TESTING)
 
 
 class AppConfig(BaseModel):
@@ -55,3 +59,5 @@ path = "/".join(path_list[:-2]) + relpath
 
 with open(path) as f:
     config: Config = Config.parse_obj(yaml.load(f, Loader=Loader)["config"])
+
+logger.debug("Loaded config: %s", config)

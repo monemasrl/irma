@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from beanie import PydanticObjectId
@@ -9,6 +10,8 @@ from ..services.database import Alert, Application, Node, Reading
 from .enums import EventType, NodeState
 from .node import update_state
 
+logger = logging.getLogger(__name__)
+
 
 async def handle_payload(payload: ReadingPayload):
     from .. import socketManager
@@ -17,7 +20,7 @@ async def handle_payload(payload: ReadingPayload):
         PydanticObjectId(payload.applicationID)
     )
     if application is None:
-        print(f"Application '{payload.applicationID}' not found")
+        logger.error("Application '%s' not found", payload.applicationID)
         return
 
     node: Node | None = await Node.find_one(
@@ -108,7 +111,8 @@ async def handle_window_reading(node: Node, payload: ReadingPayload):
     elif window_number == 2:
         name = "w3"
     else:
-        raise ValueError(f"Unexpected window_number: {window_number}")
+        logger.error("Unexpected window_number: %s", window_number)
+        return
 
     reading = Reading(
         node=node.id,
