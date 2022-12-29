@@ -1,32 +1,31 @@
 import os
 
-from flask import Flask, request
+from mqtt import register_callbacks
+from paho.mqtt.client import Client
 
-from utils import insert
+from config import Config, get_config
 
 TESTING = os.environ.get("TESTING", False)
 
 
-def create_app():
-    app = Flask(__name__)
+class Adapter:
+    def __init__(self):
+        self.config: Config = get_config()
 
-    @app.route("/", methods=["POST"])
-    def receive_payload():
-        payload = request.json
+        # Init mqtt client
+        self._client = Client()
+        self._client.username_pw_set(self.config.mqtt.user, self.config.mqtt.password)
 
-        if TESTING:
-            insert(payload)
-        else:
-            try:
-                insert(payload)
-            except KeyError:
-                return {"message": "bad request"}, 400
+        if self.config.mqtt.tls:
+            self._client.tls_set()
 
-        return {"message": "forwarded"}, 200
+        register_callbacks(self._client)
 
-    return app
+        self._client.connect(host=self.config.mqtt.url, port=self.config.mqtt.port)
+
+    def loop_forever(self):
+        self._client.loop_forever()
 
 
 if __name__ == "__main__":
-    app = create_app()
-    app.run(host="0.0.0.0", port=5000)
+    Adapter().loop_forever()

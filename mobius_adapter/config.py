@@ -1,46 +1,53 @@
-import json
+from __future__ import annotations
+
 import os
-from typing import TypedDict
+
+import yaml
+from pydantic import BaseModel
+
+_config: Config | None = None
 
 
-class ConversionEntry(TypedDict):
+class ConversionEntry(BaseModel):
     sensorId: str
     sensorPath: str
 
 
-class MobiusConfig:
-    config = {}
+class MobiusConfig(BaseModel):
     host: str
     port: int
-    # Converts nodeID to sensorId and sensorPath
-    conversion: dict[str, ConversionEntry]
+    originator: str
+    conversion: dict[int, ConversionEntry]
 
-    def __init__(self):
+
+class MqttConfig(BaseModel):
+    url: str
+    port: int
+    tls: bool
+    user: str
+    password: str
+
+
+class Config(BaseModel):
+    mobius: MobiusConfig
+    mqtt: MqttConfig
+
+    @staticmethod
+    def _load() -> Config:
         script_path = os.path.abspath(__file__)
         path_list = script_path.split(os.sep)
-        relpath = "/config.json"
+        relpath = "/config.yaml"
 
         path = "/".join(path_list[:-1]) + relpath
         with open(path) as f:
-            self.config = json.load(f)
-
-    @property
-    def host(self) -> str:
-        return self.config["host"]
-
-    @property
-    def port(self) -> int:
-        return self.config["port"]
-
-    @property
-    def originator(self) -> str:
-        return self.config["originator"]
-
-    def nodeID_to_sensorId(self, nodeID: int) -> str:
-        return self.config["conversion"][str(nodeID)]["sensorId"]
-
-    def nodeID_to_sensorPath(self, nodeID: int) -> str:
-        return self.config["conversion"][str(nodeID)]["sensorPath"]
+            return Config.parse_obj(yaml.load(f, Loader=yaml.Loader))
 
 
-config = MobiusConfig()
+def get_config() -> Config:
+    global _config
+
+    if _config is None:
+        _config = Config._load()
+        return _config
+
+    return _config

@@ -1,0 +1,14 @@
+mobius:
+  host: http://mobius
+  port: 5000
+  originator: originator
+  conversion:
+    1:
+      sensorId: node1SensorId
+      sensorPath: node1SensorPath
+mqtt:
+  url: "mqtt"
+  port: 1884
+  tls: false
+  user: "admin"
+  password: "admin"
