@@ -37,7 +37,7 @@ def update_state(
             current_state = NodeState.READY
         elif event == EventType.RAISE_ALERT:
             current_state = NodeState.ALERT_READY
-        elif event == EventType.HANDLED_ALL:
+        elif event == EventType.HANDLE_ALERT:
             current_state = NodeState.READY
         elif event == EventType.KEEP_ALIVE:
             current_state = on_keep_alive(current_state)
