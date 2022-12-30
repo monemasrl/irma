@@ -36,3 +36,5 @@ services:
     env_file: .env_websocket
     links:
       - mqtt
+    ports:
+      - 8000:8000
