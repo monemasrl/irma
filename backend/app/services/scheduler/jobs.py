@@ -1,6 +1,7 @@
 import logging
 
 from ...entities.node import Node
+from ...utils.enums import NodeState
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ async def check_node_states():
     update_frontend = False
 
     for node in nodes:
-        if node.is_timed_out():
+        if node.state != NodeState.ERROR and node.is_timed_out():
             await node.on_timeout()
             update_frontend = True
 
