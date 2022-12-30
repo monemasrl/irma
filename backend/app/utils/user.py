@@ -1,6 +1,6 @@
 from beanie import PydanticObjectId
 
-from ..blueprints.api.models import CreateUserPayload, UpdateUserPayload
+from ..routes.models import CreateUserPayload, UpdateUserPayload
 from ..services.database import User, user_manager
 from .exceptions import NotFoundException
 

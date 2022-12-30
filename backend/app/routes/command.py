@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from ...services.jwt import jwt_required
-from ...utils.command import handle_command
-from ...utils.enums import CommandType
+from ..services.jwt import jwt_required
+from ..utils.command import handle_command
+from ..utils.enums import CommandType
 
 command_router = APIRouter(prefix="/command")
 

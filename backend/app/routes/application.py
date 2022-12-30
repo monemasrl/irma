@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from ...services.database import Application
-from ...services.jwt import jwt_required
-from ...utils.application import create_application, get_applications
+from ..services.database import Application
+from ..services.jwt import jwt_required
+from ..utils.application import create_application, get_applications
 
 application_router = APIRouter()
 

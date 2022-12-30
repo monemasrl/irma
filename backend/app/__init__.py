@@ -68,6 +68,6 @@ async def app_init():
     await user_manager.create_user("foo@bar.com", "baz", "John", "Doe", role="admin")
 
 
-from .blueprints.api import main_router
+from .routes import main_router
 
 app.include_router(main_router)

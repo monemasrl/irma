@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
-from ...services.database import User
-from ...services.jwt import get_user_from_jwt
+from ..services.database import User
+from ..services.jwt import get_user_from_jwt
 
 test_router = APIRouter(prefix="/test")
 

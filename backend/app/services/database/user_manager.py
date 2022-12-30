@@ -3,7 +3,7 @@ from typing import Optional
 from beanie import PydanticObjectId
 from passlib.context import CryptContext
 
-from ...blueprints.api.models import UpdateUserPayload
+from ...routes.models import UpdateUserPayload
 from ...utils.exceptions import NotFoundException
 from ..database import User
 

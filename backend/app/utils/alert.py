@@ -3,7 +3,7 @@ from datetime import datetime
 from beanie import PydanticObjectId
 from beanie.operators import And, Eq
 
-from ..blueprints.api.models import HandlePayload
+from ..routes.models import HandlePayload
 from ..services.database import Alert, Node, User
 from .enums import EventType
 from .exceptions import NotFoundException

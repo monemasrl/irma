@@ -5,8 +5,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import ExpiredSignatureError, JWTError, jwt
 
-from ...config import config as Config
-from ..database import User
+from ..config import config as Config
+from .database import User
 
 SECRET_KEY = Config.jwt.secret_key
 ALGORITHM = "HS256"
@@ -40,16 +40,16 @@ async def get_user_from_jwt(token: str = Depends(oauth2_scheme)) -> User:
         email = payload.get("sub")
         if email is None:
             raise credentials_exception
-    except ExpiredSignatureError:
+    except ExpiredSignatureError as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="JWT Expired",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from error
     except JWTError:
         raise credentials_exception
 
-    from ..database.user_manager import get_user_from_mail
+    from .database.user_manager import get_user_from_mail
 
     user = await get_user_from_mail(email)
     if user is None:

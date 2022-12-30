@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 
-from ...services.database import Alert, User
-from ...services.jwt import get_user_from_jwt
-from ...utils.alert import get_alert, handle_alert
+from ..services.database import Alert, User
+from ..services.jwt import get_user_from_jwt
+from ..utils.alert import get_alert, handle_alert
 from .models import HandlePayload
 
 alert_router = APIRouter(prefix="/alert")
@@ -12,7 +12,7 @@ alert_router = APIRouter(prefix="/alert")
 async def handle_alert_route(
     alertID: str, payload: HandlePayload, user: User = Depends(get_user_from_jwt)
 ):
-    from ... import socketManager
+    from .. import socketManager
 
     await handle_alert(alertID, payload, user)
 

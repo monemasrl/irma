@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from ...services.database import User
-from ...services.jwt import get_user_from_jwt
-from ...utils.admin import verify_admin
-from ...utils.user import (
+from ..services.database import User
+from ..services.jwt import get_user_from_jwt
+from ..utils.admin import verify_admin
+from ..utils.user import (
     create_user,
     delete_user,
     get_user_info,

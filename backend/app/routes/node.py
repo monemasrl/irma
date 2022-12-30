@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from ...services.database import Node, NodeSettings
-from ...services.jwt import jwt_required
-from ...utils.node import get_nodes
-from ...utils.node_settings import get_node_settings, update_node_settings
+from ..services.database import Node, NodeSettings
+from ..services.jwt import jwt_required
+from ..utils.node import get_nodes
+from ..utils.node_settings import get_node_settings, update_node_settings
 
 node_router = APIRouter()
 
@@ -35,7 +35,7 @@ async def get_node_settings_route(nodeID: int):
 
 @node_router.put("/node/{nodeID}/settings", dependencies=[Depends(jwt_required)])
 async def update_node_settings_route(payload: NodeSettings.Serialized, nodeID: int):
-    from ... import socketManager
+    from .. import socketManager
 
     await update_node_settings(nodeID, payload)
 

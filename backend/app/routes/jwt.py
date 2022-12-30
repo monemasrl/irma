@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from ...services.jwt import create_access_token, credentials_exception
+from ..services.jwt import create_access_token, credentials_exception
 
 jwt_router = APIRouter(prefix="/jwt")
 
@@ -13,7 +13,7 @@ class AuthPayload(BaseModel):
 
 @jwt_router.post("/")
 async def authenticate_route(payload: AuthPayload):
-    from ...services.database.user_manager import auth_user
+    from ..services.database.user_manager import auth_user
 
     if not await auth_user(payload.email, payload.password):
         raise credentials_exception

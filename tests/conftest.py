@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from mock import patch
 
-from backend.app.blueprints.api.test import test_router
+from backend.app.routes.test import test_router
 
 
 @pytest.fixture

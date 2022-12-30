@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from ...services.database import Organization
-from ...services.jwt import jwt_required
-from ...utils.organization import create_organization, get_organizations
+from ..services.database import Organization
+from ..services.jwt import jwt_required
+from ..utils.organization import create_organization, get_organizations
 
 organization_router = APIRouter()
 
