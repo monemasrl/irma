@@ -13,8 +13,5 @@ class ReadingPayloadData(BaseModel):
 
 
 class ReadingPayload(BaseModel):
-    applicationID: str
-    nodeID: int
-    nodeName: str
     payloadType: Literal["total", "window"]
     data: ReadingPayloadData

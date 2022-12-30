@@ -159,9 +159,6 @@ class Node:
     ):
         data: str = json.dumps(
             {
-                "applicationID": self.config["node_info"]["applicationID"],
-                "nodeID": self.config["node_info"]["nodeID"],
-                "nodeName": self.config["node_info"]["nodeName"],
                 "payloadType": "total"
                 if message["message_type"] == MessageType.RETURN_COUNT_TOTAL
                 else "window",
@@ -183,10 +180,14 @@ class Node:
 
     def periodically_send_keep_alive(self):
         seconds = self.config["mqtt"]["keep_alive_seconds"]
+
+        # First send 'launch'
         self.client.publish(
             self.topic + STATUS_SUBTOPIC,
             f"launch:{self.config['node_info']['nodeName']}",
         )
+
+        # Send keepalive
         while True:
             sleep(seconds)
             self.client.publish(self.topic + STATUS_SUBTOPIC, "keepalive")
