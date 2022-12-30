@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from app.utils.exceptions import NotFoundException
 from beanie import Document, PydanticObjectId
 from beanie.exceptions import DocumentWasNotSaved
 from beanie.operators import And, Eq
@@ -11,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from ...models.node_settings import DetectorSettings
 from ...utils.enums import NodeState
+from ...utils.exceptions import NotFoundException
 
 
 class CustomDocument(Document):

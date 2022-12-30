@@ -25,18 +25,18 @@ services:
     build: ./mobius_adapter/
     restart: unless-stopped
     links:
+      - mqtt
       - mobius
     environment:
       - DEBUG=1
 
-  microservice_websocket:
-    build: ./microservice_websocket/
+  backend:
+    build: ./backend/
     restart: unless-stopped
     env_file: .env_websocket
     links:
       - mobius_adapter
       - mqtt
-      - cache
     environment:
       - DEBUG=1
 

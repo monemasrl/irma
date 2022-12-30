@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from microservice_websocket.app.services import database as db
+from backend.app.services import database as db
 
 
 class TestPostOrganizations:

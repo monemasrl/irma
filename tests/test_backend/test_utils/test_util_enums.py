@@ -1,6 +1,6 @@
 import pytest
 
-from microservice_websocket.app.utils.enums import NodeState
+from backend.app.utils.enums import NodeState
 
 
 def test_to_irma_ui_state():

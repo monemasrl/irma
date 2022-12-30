@@ -3,12 +3,9 @@ from datetime import datetime
 import pytest
 from fastapi.testclient import TestClient
 
-from microservice_websocket.app.models.node_settings import (
-    DetectorSettings,
-    SensorSettings,
-)
-from microservice_websocket.app.services import database as db
-from microservice_websocket.app.utils.enums import NodeState
+from backend.app.models.node_settings import DetectorSettings, SensorSettings
+from backend.app.services import database as db
+from backend.app.utils.enums import NodeState
 
 
 class TestGetNodes:
@@ -561,7 +558,7 @@ class TestUpdateSettings:
 
         from mock import patch
 
-        with patch("microservice_websocket.app.config.TESTING", True):
+        with patch("backend.app.config.TESTING", True):
             response = app_client.put(
                 self.endpoint(n.nodeID), json=payload, headers=auth_header
             )

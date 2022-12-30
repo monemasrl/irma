@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from microservice_websocket.app.config import config
-from microservice_websocket.app.utils.enums import EventType, NodeState
-from microservice_websocket.app.utils.node import update_state
+from backend.app.config import config
+from backend.app.utils.enums import EventType, NodeState
+from backend.app.utils.node import update_state
 
 ALERT_TRESHOLD = config.app.ALERT_TRESHOLD
 

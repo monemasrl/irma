@@ -7,7 +7,7 @@ from beanie import PydanticObjectId
 from beanie.operators import And, Eq
 from fastapi_mqtt import FastMQTT, MQTTConfig
 
-from app.utils.payload import handle_payload
+from ...utils.payload import handle_payload
 
 from ...models.payload import ReadingPayload
 

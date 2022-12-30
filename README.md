@@ -135,7 +135,7 @@ I due servizi principali che si occupano di memorizzazione ed elaborazione dei d
 
 In particolare, mentre `mock_mobius` si occupa soltanto di immagazzinare dati, `microservice_websocket` si occupa anche di **elaborarli** ed inviarli alla [ui](https://github.com/monemasrl/irma-ui.git) e di **inviare i comandi** ai nodi.
 
-Per maggiori informazioni su **microservice_websocket** consultare la sua [documentazione](./microservice_websocket/microservice_websocket.md).
+Per maggiori informazioni su **microservice_websocket** consultare la sua [documentazione](./backend/backend.md).
 
 ## TESTING IN LOCALE
 

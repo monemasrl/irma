@@ -6,7 +6,7 @@ from flask import Flask
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
 
-from mobius_adapter.utils import Reading, to_mobius_payload
+from mobius_adapter.utils import mobius_payload
 from mock_mobius import app as mobius_app
 
 
@@ -22,11 +22,11 @@ class TestFlaskApp:
     def app_client(self, app: Flask) -> FlaskClient:
         return app.test_client()
 
-    def test_publish_data(self, app_client, reading: Reading):
+    def test_publish_data(self, app_client, sensor_data: dict):
         sensorId = "sensorId1_foo"
         sensorPath = "sensorPath1_foo"
 
-        payload: dict = to_mobius_payload(reading, sensorId)
+        payload: dict = mobius_payload(sensorId, datetime.now(), sensor_data)
         print(payload)
         response: TestResponse = app_client.post(f"/{sensorPath}", json=payload)
 
@@ -40,7 +40,7 @@ class TestFlaskApp:
             response.status_code == 404
         ), "Invalid response code from server when submitting on invalid route"
 
-    def test_db_consistency(self, app_client, reading: Reading):
+    def test_db_consistency(self, app_client, sensor_data: dict):
         """
         This test is meant to check if data stored
         as Reading in database is consistent
@@ -48,7 +48,7 @@ class TestFlaskApp:
 
         sensorId = "sensorId1_foo"
         sensorPath = "sensorPath1_foo"
-        payload: dict = to_mobius_payload(reading, sensorId)
+        payload: dict = mobius_payload(sensorId, datetime.now(), sensor_data)
 
         response: TestResponse = app_client.post(f"/{sensorPath}", json=payload)
 
@@ -68,19 +68,16 @@ class TestFlaskApp:
             len(data_dict["m2m:rsp"]["m2m:cin"]) > 0
         ), "Reading doesn't get saved on the database"
 
-    def test_db_query_limits(self, app_client, reading: Reading):
+    def test_db_query_limits(self, app_client, sensor_data: dict):
         sensorId = "sensorId1_foo"
         sensorPath = "sensorPath1_foo"
 
         reading_timestamps = [
             datetime(2022, 7, 10, 12, 45, x) for x in [10, 20, 30, 40, 50]
         ]
-        reading_timestamps_iso = [int(x.timestamp()) for x in reading_timestamps]
 
-        for time in reading_timestamps_iso:
-            reading.readingID = time
-            print(reading.publishedAt)
-            payload: dict = to_mobius_payload(reading, sensorId)
+        for time in reading_timestamps:
+            payload: dict = mobius_payload(sensorId, time, sensor_data)
 
             response: TestResponse = app_client.post(f"/{sensorPath}", json=payload)
 

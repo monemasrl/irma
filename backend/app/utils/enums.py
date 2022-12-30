@@ -38,3 +38,4 @@ class EventType(IntEnum):
     HANDLE_ALERT = auto()
     KEEP_ALIVE = auto()
     ON_LAUNCH = auto()
+    TIMEOUT = auto()

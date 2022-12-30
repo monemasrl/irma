@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from microservice_websocket.app.services.database import User, user_manager
+from backend.app.services.database import User, user_manager
 
 
 class TestGetUserList:

@@ -14,9 +14,9 @@ config:
   mqtt:
     username: "admin"
     password: "admin"
-    host: "irma.monema.dev"
+    host: "mqtt"
     port: 1884
-    tls_enabled: true
+    tls_enabled: false
     tls_version: 5
 
   redis:

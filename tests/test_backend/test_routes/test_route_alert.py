@@ -4,8 +4,8 @@ import pytest
 from fastapi.testclient import TestClient
 from mock import patch
 
-from microservice_websocket.app.services import database as db
-from microservice_websocket.app.utils.enums import NodeState
+from backend.app.services import database as db
+from backend.app.utils.enums import NodeState
 
 
 class TestAlertHandle:
