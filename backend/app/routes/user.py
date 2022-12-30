@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from ..services.database import User
-from ..services.jwt import get_user_from_jwt
-from ..utils.admin import verify_admin
-from ..utils.user import (
+from ..controllers.user import (
     create_user,
     delete_user,
     get_user_info,
     get_user_list,
     update_user,
 )
+from ..services.database import User
+from ..services.jwt import get_user_from_jwt
+from ..utils.admin import verify_admin
 from .models import CreateUserPayload, UpdateUserPayload
 
 user_router = APIRouter()

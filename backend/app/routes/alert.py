@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 
+from ..controllers.alert import get_alert, handle_alert
 from ..services.database import Alert, User
 from ..services.jwt import get_user_from_jwt
-from ..utils.alert import get_alert, handle_alert
 from .models import HandlePayload
 
 alert_router = APIRouter(prefix="/alert")

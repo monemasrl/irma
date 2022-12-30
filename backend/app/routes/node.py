@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from ..services.database import Node, NodeSettings
+from ..controllers.node import get_nodes
+from ..entities.node import Node
+from ..services.database import NodeSettings
 from ..services.jwt import jwt_required
-from ..utils.node import get_nodes
 from ..utils.node_settings import get_node_settings, update_node_settings
 
 node_router = APIRouter()

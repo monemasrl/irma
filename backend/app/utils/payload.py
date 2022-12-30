@@ -1,44 +1,18 @@
 import logging
 from datetime import datetime
 
-from beanie import PydanticObjectId
 from beanie.operators import And, Eq
 
 from ..config import config as Config
 from ..models.payload import ReadingPayload
-from ..services.database import Alert, Application, Node, Reading
-from .enums import EventType, NodeState
-from .node import update_state
+from ..services.database import Alert, Node, Reading
 
 logger = logging.getLogger(__name__)
 
 
-async def handle_payload(payload: ReadingPayload):
+async def handle_payload(node: Node, payload: ReadingPayload):
     from .. import socketManager
 
-    application: Application | None = await Application.get(
-        PydanticObjectId(payload.applicationID)
-    )
-    if application is None:
-        logger.error("Application '%s' not found", payload.applicationID)
-        return
-
-    node: Node | None = await Node.find_one(
-        And(Eq(Node.application, application.id), Eq(Node.nodeID, payload.nodeID))
-    )
-
-    if node is None:
-        node = Node(
-            nodeID=payload.nodeID,
-            application=application.id,
-            nodeName=payload.nodeName,
-            state=NodeState.READY,
-            lastSeenAt=datetime.now(),
-        )
-        await node.save()
-
-    node.lastSeenAt = datetime.now()
-    new_state = node.state
     changed = False
 
     if payload.payloadType == "total":
@@ -46,24 +20,15 @@ async def handle_payload(payload: ReadingPayload):
 
     elif payload.payloadType == "window":
         await handle_window_reading(node, payload)
-        new_state = update_state(new_state, node.lastSeenAt, EventType.START_REC)
+        await node.on_start_rec()
+        changed = True
 
     data = payload.data
     value = data.value if data else 0
 
     if payload.payloadType == "total" and value >= Config.app.ALERT_TRESHOLD:
-        new_state = update_state(new_state, node.lastSeenAt, EventType.RAISE_ALERT)
-    else:
-        new_state = update_state(
-            new_state,
-            node.lastSeenAt,
-            EventType.KEEP_ALIVE,
-        )
-
-    changed = new_state != node.state
-    node.state = new_state
-
-    await node.save()
+        await node.on_alert()
+        changed = True
 
     if changed:
         socketManager.emit("changed")

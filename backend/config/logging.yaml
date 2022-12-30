@@ -44,3 +44,7 @@ loggers:
     level: "INFO"
     handlers: [console]
     propagate: false
+  app.entities.node:
+    level: "INFO"
+    handlers: [console]
+    propagate: false

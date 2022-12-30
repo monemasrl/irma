@@ -1,8 +1,8 @@
 from beanie import PydanticObjectId
 from beanie.operators import And, Eq
 
+from ..exceptions import DuplicateException, NotFoundException
 from ..services.database import Application, Organization
-from .exceptions import DuplicateException, NotFoundException
 
 
 async def get_applications(organizationID: str) -> list[Application]:

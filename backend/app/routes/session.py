@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
+from ..controllers.session import get_session, get_sessions_id
 from ..services.database import Reading
 from ..services.jwt import jwt_required
-from ..utils.session import get_session, get_sessions_id
 
 session_router = APIRouter()
 

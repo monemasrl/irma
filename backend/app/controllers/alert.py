@@ -1,13 +1,10 @@
 from datetime import datetime
 
 from beanie import PydanticObjectId
-from beanie.operators import And, Eq
 
+from ..exceptions import NotFoundException
 from ..routes.models import HandlePayload
 from ..services.database import Alert, Node, User
-from .enums import EventType
-from .exceptions import NotFoundException
-from .node import update_state
 
 
 async def handle_alert(alertID: str, payload: HandlePayload, user: User):
@@ -26,13 +23,7 @@ async def handle_alert(alertID: str, payload: HandlePayload, user: User):
     alert.handleNote = payload.handleNote
     await alert.save()
 
-    if (
-        await Alert.find_one(And(Eq(Alert.node, node.id), Eq(Alert.isHandled, False)))
-    ) is None:
-        node.state = update_state(node.state, node.lastSeenAt, EventType.HANDLE_ALERT)
-        await node.save()
-
-    return alert
+    await node.on_handle()
 
 
 async def get_alert(alert_id: str) -> Alert:

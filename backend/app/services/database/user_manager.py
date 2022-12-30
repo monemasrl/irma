@@ -3,8 +3,8 @@ from typing import Optional
 from beanie import PydanticObjectId
 from passlib.context import CryptContext
 
+from ...exceptions import NotFoundException
 from ...routes.models import UpdateUserPayload
-from ...utils.exceptions import NotFoundException
 from ..database import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

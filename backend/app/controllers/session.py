@@ -1,7 +1,7 @@
 from beanie.operators import And, Eq
 
+from ..exceptions import NotFoundException
 from ..services.database import Node, Reading
-from .exceptions import NotFoundException
 
 
 async def get_session(nodeID: int, sessionID: int | None) -> list[Reading.Aggregated]:

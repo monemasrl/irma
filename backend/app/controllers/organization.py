@@ -1,5 +1,5 @@
+from ..exceptions import DuplicateException
 from ..services.database import Organization
-from .exceptions import DuplicateException
 
 
 async def get_organizations() -> list[Organization]:

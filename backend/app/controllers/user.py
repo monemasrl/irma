@@ -1,8 +1,8 @@
 from beanie import PydanticObjectId
 
+from ..exceptions import NotFoundException
 from ..routes.models import CreateUserPayload, UpdateUserPayload
 from ..services.database import User, user_manager
-from .exceptions import NotFoundException
 
 
 async def get_user_list() -> list[User]:

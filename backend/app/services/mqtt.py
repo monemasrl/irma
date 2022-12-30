@@ -4,20 +4,30 @@ import re
 from datetime import datetime
 
 from beanie import PydanticObjectId
-from beanie.operators import And, Eq
 from fastapi_mqtt import FastMQTT, MQTTConfig
 
 from ..config import MQTTConfig as MQTTConfigInternal
+from ..entities.node import Node
 from ..models.payload import ReadingPayload
-from ..utils.enums import EventType, NodeState
-from ..utils.node import on_launch, update_state
+from ..utils.enums import NodeState
 from ..utils.payload import handle_payload
-from .database.models import Application, Node
 
 logger = logging.getLogger(__name__)
 
 STATUS_TOPIC = "+/+/status"
 PAYLOAD_TOPIC = "+/+/payload"
+
+
+def publish(topic: str, data: bytes | str):
+    if isinstance(data, str):
+        data = data.encode()
+
+    from .. import mqtt
+
+    logger.info("Publishing '%s' to '%s'", data, topic)
+
+    if mqtt:
+        mqtt.publish(topic, data)
 
 
 def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
@@ -57,37 +67,23 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                 logger.error("nodeID '%s' is not parsable", nodeID)
                 return
 
-            application = await Application.get(PydanticObjectId(applicationID))
-            if application is None:
-                logger.error(f"Couldn't find applicationID '{applicationID}'")
-                return
+            nodeID = int(nodeID)
 
-            node = await Node.find_one(
-                And(
-                    Eq(Node.nodeID, int(nodeID)),
-                    Eq(Node.application, PydanticObjectId(applicationID)),
-                )
-            )
-
-            if node is not None:
-                node.lastSeenAt = datetime.now()
+            node: Node | None = await Node.from_id(nodeID, applicationID)
 
             if topic == "status" and re.match("^launch:.+", value):
                 if node is None:
                     node = Node(
                         nodeID=int(nodeID),
-                        application=application.id,
+                        application=PydanticObjectId(applicationID),
                         nodeName=value.split(":")[1],
                         state=NodeState.READY,
                         lastSeenAt=datetime.now(),
                     )
 
-                new_state = update_state(
-                    node.state, node.lastSeenAt, EventType.ON_LAUNCH
-                )
-                await node.save()
+                await node.just_seen()
+                await node.on_launch()
 
-                await on_launch(node)
                 socketManager.emit("change")
                 return
 
@@ -101,31 +97,18 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                 return
 
             changed: bool = False
+            await node.just_seen()
 
             if topic == "status":
                 if value == "start":
-                    new_state = update_state(
-                        node.state, node.lastSeenAt, EventType.START_REC
-                    )
-                    changed = node.state != new_state
-                    node.state = new_state
-                    await node.save()
+                    await node.on_start_rec()
+                    changed = True
 
                 elif value == "stop":
-                    new_state = update_state(
-                        node.state, node.lastSeenAt, EventType.STOP_REC
-                    )
-                    changed = node.state != new_state
-                    node.state = new_state
-                    await node.save()
+                    await node.on_stop_rec()
 
                 elif value == "keepalive":
-                    new_state = update_state(
-                        node.state, node.lastSeenAt, EventType.KEEP_ALIVE
-                    )
-                    changed = node.state != new_state
-                    node.state = new_state
-                    await node.save()
+                    pass
 
                 else:
                     logger.error(
@@ -135,7 +118,8 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                 data_dict = json.loads(value)
                 reading_payload: ReadingPayload = ReadingPayload.parse_obj(data_dict)
 
-                await handle_payload(reading_payload)
+                await handle_payload(node, reading_payload)
+                socketManager.emit("change-reading")
 
             else:
                 logger.error("Invalid sub-topic '{%s}'", topic)

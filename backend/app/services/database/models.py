@@ -3,24 +3,12 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from beanie import Document, PydanticObjectId
-from beanie.exceptions import DocumentWasNotSaved
-from beanie.operators import And, Eq
+from beanie import PydanticObjectId
 from pydantic import BaseModel, Field
 
+from ...exceptions import NotFoundException
 from ...models.node_settings import DetectorSettings
-from ...utils.enums import NodeState
-from ...utils.exceptions import NotFoundException
-
-
-class CustomDocument(Document):
-    @property
-    def id(self) -> PydanticObjectId:
-        obj_id = super().id
-        if obj_id is None:
-            raise DocumentWasNotSaved
-
-        return obj_id
+from .custom_document import CustomDocument
 
 
 class Organization(CustomDocument):
@@ -99,37 +87,6 @@ class NodeSettings(CustomDocument):
         )
 
 
-class Node(CustomDocument):
-    nodeID: int
-    nodeName: str
-    application: PydanticObjectId
-    state: NodeState
-    lastSeenAt: datetime
-
-    class Serialized(BaseModel):
-        nodeID: int
-        nodeName: str
-        application: str
-        state: str
-        lastSeenAt: int
-        unhandledAlertIDs: list[str]
-
-    async def serialize(self) -> Node.Serialized:
-        unhandledAlerts = await Alert.find(
-            And(Eq(Alert.node, self.id), Eq(Alert.isHandled, False))
-        ).to_list()
-        unhandledAlertIDs = [str(x.id) for x in unhandledAlerts]
-
-        return Node.Serialized(
-            nodeID=self.nodeID,
-            nodeName=self.nodeName,
-            application=str(self.application),
-            state=NodeState.to_irma_ui_state(self.state),
-            lastSeenAt=int(self.lastSeenAt.timestamp()),
-            unhandledAlertIDs=unhandledAlertIDs,
-        )
-
-
 class Reading(CustomDocument):
     node: PydanticObjectId
     canID: int = Field(default=..., lt=5, gt=0)
@@ -174,6 +131,8 @@ class Alert(CustomDocument):
         raisedAt: int
 
     async def serialize(self) -> Alert.Serialized:
+        from . import Node
+
         node = await Node.get(self.node)
         if node is None:
             raise NotFoundException("Node")

@@ -91,14 +91,6 @@ class TestAlertHandle:
             raisedAt=datetime.now(),
         )
         await alert.save()
-        alert2 = db.Alert(
-            reading=reading.id,
-            node=node.id,
-            sessionID=reading.sessionID,
-            isHandled=False,
-            raisedAt=datetime.now(),
-        )
-        await alert2.save()
 
         # Try to handle newly created alert
         with patch("socketio.Client.emit", return_value=None):
@@ -123,26 +115,9 @@ class TestAlertHandle:
             and user.email == "foo@bar.com"
         ), "Invalid response code when trying to handle existing alert"
 
-        node = await db.Node.find_one()
-
-        assert (
-            node and node.state == NodeState.ALERT_READY
-        ), "Invalid state when handling 1/2 alert"
-
-        # Handle leftover alert
-        with patch("socketio.Client.emit", return_value=None):
-            response = app_client.post(
-                self.endpoint + str(alert2.id),
-                json={
-                    "isConfirmed": True,
-                    "handleNote": "foo",
-                },
-                headers=auth_header,
-            )
-
         assert (
             node := await db.Node.find_one()
-        ) and node.state == NodeState.READY, "Invalid state when handling all alert"
+        ) and node.state == NodeState.READY, "Invalid state when handling alert"
 
 
 class TestAlertInfo:
