@@ -7,7 +7,7 @@ settings:
   mqtt:
     url: "irma.monema.dev"
     port: 1884
-    tls: false
+    tls: true
     user: "admin"
     password: "admin"
     keep_alive_seconds: 30

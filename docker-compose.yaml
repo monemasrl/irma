@@ -4,8 +4,8 @@ services:
     image: eclipse-mosquitto
     restart: unless-stopped
     volumes:
-      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf
-      - certs:/etc/letsencrypt/cert:ro
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./config/passwords:/passwords:ro
     ports:
       - 1884:1884
 
@@ -35,16 +35,4 @@ services:
     restart: unless-stopped
     env_file: .env_websocket
     links:
-      - mobius_adapter
       - mqtt
-    environment:
-      - DEBUG=1
-
-networks:
-  default:
-    external:
-      name: nginx-proxy
-
-volumes:
-  certs:
-    external: true
