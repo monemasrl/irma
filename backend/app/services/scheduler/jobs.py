@@ -19,8 +19,7 @@ async def check_node_states():
 
     if update_frontend:
         logger.info("Detected node-state change(s), emitting 'change'")
-        socketManager.emit("change-reading")
-        socketManager.emit("change")
+        socketManager.emit("change-node")
 
 
 async def trigger_socketio():

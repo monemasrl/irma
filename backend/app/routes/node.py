@@ -40,6 +40,6 @@ async def update_node_settings_route(payload: NodeSettings.Serialized, nodeID: i
 
     await update_node_settings(nodeID, payload)
 
-    socketManager.emit("settings-update")
+    socketManager.emit("change-settings")
 
     return {"message": "Updated"}

@@ -1,5 +1,6 @@
 import logging
 from threading import Lock
+from typing import Literal
 
 from fastapi import FastAPI
 from fastapi_socketio import SocketManager
@@ -40,7 +41,7 @@ class DiscreteSocketManager:
         self._event_set: set[str] = set()
         self._lock = Lock()
 
-    def emit(self, event: str):
+    def emit(self, event: Literal["change-node", "change-reading", "change-settings"]):
         logger.debug(f"Queued '{event}'")
         with self._lock:
             self._event_set.add(event)

@@ -84,7 +84,7 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                 await node.just_seen()
                 await node.on_launch()
 
-                socketManager.emit("change")
+                socketManager.emit("change-node")
                 return
 
             if node is None:
@@ -125,7 +125,7 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
                 logger.error("Invalid sub-topic '{%s}'", topic)
 
             if changed:
-                socketManager.emit("change")
+                socketManager.emit("change-node")
 
         except IndexError as error:
             logger.error("Invalid topic '{%s}': {%s}", topic, error)

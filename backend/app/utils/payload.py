@@ -31,7 +31,7 @@ async def handle_payload(node: Node, payload: ReadingPayload):
         changed = True
 
     if changed:
-        socketManager.emit("changed")
+        socketManager.emit("change-node")
 
 
 async def handle_total_reading(node: Node, payload: ReadingPayload):
