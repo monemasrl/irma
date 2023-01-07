@@ -11,7 +11,7 @@ class AuthPayload(BaseModel):
     password: str
 
 
-@jwt_router.post("/")
+@jwt_router.post("/", tags=["auth"])
 async def authenticate_route(payload: AuthPayload):
     from ..services.database.user_manager import auth_user
 

@@ -8,7 +8,7 @@ from .models import HandlePayload
 alert_router = APIRouter(prefix="/alert")
 
 
-@alert_router.post("/{alertID}")
+@alert_router.post("/{alertID}", tags=["alert"])
 async def handle_alert_route(
     alertID: str, payload: HandlePayload, user: User = Depends(get_user_from_jwt)
 ):
@@ -21,7 +21,7 @@ async def handle_alert_route(
     return {"message": "Handled"}
 
 
-@alert_router.get("/{alertID}", response_model=Alert.Serialized)
+@alert_router.get("/{alertID}", response_model=Alert.Serialized, tags=["alert"])
 async def get_alert_route(alertID: str):
     response: Alert = await get_alert(alertID)
 

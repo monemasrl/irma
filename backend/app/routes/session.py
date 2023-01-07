@@ -20,6 +20,7 @@ class GetSessionIDsResponse(BaseModel):
     "/session/{sessionID}",
     dependencies=[Depends(jwt_required)],
     response_model=GetSessionResponse,
+    tags=["session"],
 )
 async def get_reading_session(nodeID: int, sessionID: int):
     readings = await get_session(nodeID, sessionID)
@@ -31,6 +32,7 @@ async def get_reading_session(nodeID: int, sessionID: int):
     "/session",
     dependencies=[Depends(jwt_required)],
     response_model=GetSessionResponse,
+    tags=["session"],
 )
 async def get_reading_session_no_sessionID(nodeID: int):
     readings = await get_session(nodeID, None)
@@ -42,6 +44,7 @@ async def get_reading_session_no_sessionID(nodeID: int):
     "/sessions",
     dependencies=[Depends(jwt_required)],
     response_model=GetSessionIDsResponse,
+    tags=["session"],
 )
 async def get_sessions_id_route(nodeID: int):
     sessions_id = await get_sessions_id(nodeID)

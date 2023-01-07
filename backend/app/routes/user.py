@@ -20,7 +20,7 @@ class UserListResponse(BaseModel):
     users: list[User.Serialized]
 
 
-@user_router.get("/users", response_model=UserListResponse)
+@user_router.get("/users", response_model=UserListResponse, tags=["user"])
 async def get_user_list_route(user: User = Depends(get_user_from_jwt)):
     verify_admin(user)
 
@@ -29,7 +29,7 @@ async def get_user_list_route(user: User = Depends(get_user_from_jwt)):
     return {"users": [x.serialize() for x in users]}
 
 
-@user_router.get("/user/{user_id}", response_model=User.Serialized)
+@user_router.get("/user/{user_id}", response_model=User.Serialized, tags=["user"])
 async def get_user_info_route(user_id: str, user: User = Depends(get_user_from_jwt)):
     verify_admin(user)
 
@@ -38,12 +38,12 @@ async def get_user_info_route(user_id: str, user: User = Depends(get_user_from_j
     return user_info.serialize()
 
 
-@user_router.get("/user", response_model=User.Serialized)
+@user_router.get("/user", response_model=User.Serialized, tags=["user"])
 async def get_own_user_info_route(user: User = Depends(get_user_from_jwt)):
     return user.serialize()
 
 
-@user_router.post("/user")
+@user_router.post("/user", tags=["user"])
 async def create_user_route(
     payload: CreateUserPayload, user: User = Depends(get_user_from_jwt)
 ):
@@ -57,7 +57,7 @@ async def create_user_route(
     return {"message": "Created"}
 
 
-@user_router.put("/user/{user_id}")
+@user_router.put("/user/{user_id}", tags=["user"])
 async def update_user_route(
     payload: UpdateUserPayload, user_id: str, user: User = Depends(get_user_from_jwt)
 ):
@@ -73,7 +73,7 @@ async def update_user_route(
     return {"message": "Updated"}
 
 
-@user_router.delete("/user/{user_id}")
+@user_router.delete("/user/{user_id}", tags=["user"])
 async def delete_user_route(user_id: str, user: User = Depends(get_user_from_jwt)):
     if str(user.id) == user_id:
         return {"message": "Cannot Delete Current Active User"}, 400
