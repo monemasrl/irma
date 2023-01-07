@@ -15,7 +15,10 @@ class GetNodesResponse(BaseModel):
 
 
 @node_router.get(
-    "/nodes/", dependencies=[Depends(jwt_required)], response_model=GetNodesResponse
+    "/nodes/",
+    dependencies=[Depends(jwt_required)],
+    response_model=GetNodesResponse,
+    tags=["node"],
 )
 async def get_nodes_route(applicationID: str):
     nodes: list[Node] = await get_nodes(applicationID)
@@ -27,6 +30,7 @@ async def get_nodes_route(applicationID: str):
     "/node/{nodeID}/settings",
     dependencies=[Depends(jwt_required)],
     response_model=NodeSettings.Serialized,
+    tags=["node"],
 )
 async def get_node_settings_route(nodeID: int):
     settings: NodeSettings = await get_node_settings(nodeID)
@@ -34,7 +38,9 @@ async def get_node_settings_route(nodeID: int):
     return settings.serialize()
 
 
-@node_router.put("/node/{nodeID}/settings", dependencies=[Depends(jwt_required)])
+@node_router.put(
+    "/node/{nodeID}/settings", dependencies=[Depends(jwt_required)], tags=["node"]
+)
 async def update_node_settings_route(payload: NodeSettings.Serialized, nodeID: int):
     from .. import socketManager
 

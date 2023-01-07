@@ -21,6 +21,7 @@ class CreateAppPayload(BaseModel):
     "/applications",
     dependencies=[Depends(jwt_required)],
     response_model=GetOrgsResponse,
+    tags=["application"],
 )
 async def get_applications_route(organizationID: str):
     applications = await get_applications(organizationID)
@@ -28,7 +29,7 @@ async def get_applications_route(organizationID: str):
     return {"applications": [x.serialize() for x in applications]}
 
 
-@application_router.post("/application")
+@application_router.post("/application", tags=["application"])
 async def create_application_route(payload: CreateAppPayload):
     await create_application(payload.organizationID, payload.name)
 

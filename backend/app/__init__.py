@@ -28,7 +28,27 @@ mqtt = None
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
+app = FastAPI(
+    title="REST API for IRMA",
+    version="0.0.1",
+    debug=True,
+    contact={
+        "name": "Andrea Bettarini",
+        "url": "https://monema.it",
+        "email": "info@monema.it",
+    },
+    openapi_tags=[
+        {"name": "auth", "description": "Autenticazione"},
+        {"name": "organization", "description": "Gestione delle Organizzazioni"},
+        {"name": "application", "description": "Gestione delle Applicazioni"},
+        {"name": "user", "description": "Gestione utenti"},
+        {"name": "command", "description": "Invio comandi"},
+        {"name": "node", "description": "Gestione nodi"},
+        {"name": "session", "description": "Gestione delle Sessioni di Lettura"},
+        {"name": "alert", "description": "Gestione degli allarmi"},
+        {"name": "test", "description": "Test"},
+    ],
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

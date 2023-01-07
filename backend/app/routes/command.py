@@ -13,7 +13,9 @@ class MqttCommandPayload(BaseModel):
     applicationID: str
 
 
-@command_router.post("/{command_type}", dependencies=[Depends(jwt_required)])
+@command_router.post(
+    "/{command_type}", dependencies=[Depends(jwt_required)], tags=["command"]
+)
 async def send_mqtt_command_route(
     command_type: CommandType, payload: MqttCommandPayload
 ):
