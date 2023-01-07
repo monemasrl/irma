@@ -5,16 +5,15 @@ subgraph docker
     mobius[mock_mobius]
     ma[mobius_adapter]
     mongo[(MongoDB)]
-    msw[microservice_websocket]
-    redis[Redis]
+    b[backend]
 
-    msw -- TCP 1883 --> mqtt
-    msw -- TCP 6379 --> redis
+    b -- TCP 1884 --> mqtt
+    ma -- TCP 1884 --> mqtt
     mobius <--> mongo
-    msw <--> mongo
-    msw -- HTTP 5000 --> ma
+    b <--> mongo
     ma -- HTTP 5000 --> mobius
 end
+
 out([host network])
-out -- 1883 --> mqtt
-out -- 5000 --> msw
+out -- 1884 --> mqtt
+out -- 5000 --> b

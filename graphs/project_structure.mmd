@@ -1,24 +1,21 @@
 flowchart TD;
 
-msw[microservice_websocket]
+mongo[(MongoDB)]
+b[backend]
 mobius[Mobius]
 ma[mobius_adapter]
 irma-ui[Irma UI]
 mqtt[Broker MQTT]
-redis[Redis]
-mongo[(MongoDB)]
 
 nodo[Nodo]
 rilevatori[Rilevatori]
 
-msw -- POST 5000 --> ma
+b -- MONGO 27017 --> mongo
 ma --> mobius
-msw -- MONGO 27017 --> mongo
-irma-ui -- HTTP 5000 --> msw
-nodo -- HTTP 5000 --> msw
-irma-ui <-- WEBSOCKET 5000 --> msw
+irma-ui -- HTTP 5000 --> b
+b -- WEBSOCKET 5000 --> irma-ui
 rilevatori <-- CAN --> nodo
-msw -- REDIS 6379 --> redis
 
-msw -- PUB --> mqtt
-nodo -- SUB --> mqtt
+b <-- PUB/SUB 1884 --> mqtt
+nodo <-- PUB/SUB 1884 --> mqtt
+mqtt -- SUB 1884 --> ma

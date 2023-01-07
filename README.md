@@ -17,28 +17,25 @@ Rete di comunicazione per **trasmissione e raccolta** dati dei sensori. Il serve
 ```mermaid
 flowchart TD;
 
-msw[microservice_websocket]
+mongo[(MongoDB)]
+b[backend]
 mobius[Mobius]
 ma[mobius_adapter]
 irma-ui[Irma UI]
 mqtt[Broker MQTT]
-redis[Redis]
-mongo[(MongoDB)]
 
 nodo[Nodo]
 rilevatori[Rilevatori]
 
-msw -- POST 5000 --> ma
+b -- MONGO 27017 --> mongo
 ma --> mobius
-msw -- MONGO 27017 --> mongo
-irma-ui -- HTTP 5000 --> msw
-nodo -- HTTP 5000 --> msw
-irma-ui <-- WEBSOCKET 5000 --> msw
+irma-ui -- HTTP 5000 --> b
+b -- WEBSOCKET 5000 --> irma-ui
 rilevatori <-- CAN --> nodo
-msw -- REDIS 6379 --> redis
 
-msw -- PUB --> mqtt
-nodo -- SUB --> mqtt
+b <-- PUB/SUB 1884 --> mqtt
+nodo <-- PUB/SUB 1884 --> mqtt
+mqtt -- SUB 1884 --> ma
 ```
 
 ## DEPLOYMENT
@@ -55,19 +52,18 @@ subgraph docker
     mobius[mock_mobius]
     ma[mobius_adapter]
     mongo[(MongoDB)]
-    msw[microservice_websocket]
-    redis[Redis]
+    b[backend]
 
-    msw -- TCP 1883 --> mqtt
-    msw -- TCP 6379 --> redis
+    b -- TCP 1884 --> mqtt
+    ma -- TCP 1884 --> mqtt
     mobius <--> mongo
-    msw <--> mongo
-    msw -- HTTP 5000 --> ma
+    b <--> mongo
     ma -- HTTP 5000 --> mobius
 end
+
 out([host network])
-out -- 1883 --> mqtt
-out -- 5000 --> msw
+out -- 1884 --> mqtt
+out -- 5000 --> b
 
 ```
 
@@ -75,87 +71,78 @@ out -- 5000 --> msw
 
 Per **ridurre** il **numero di dati** trasmessi, ma al contempo **mantenere la leggebilità**, sono stati creati diversi **IntEnum** per identificare diverse proprietà.
 
-### PayloadType
+### EventType
 
-Identifica i messaggi inviati.
+Rappresenta una serie di **eventi relativi ad i Nodi**.
 
-| Nome           | Valore |
-| -------------- | ------ |
-| TOTAL_READING  | 0      |
-| WINDOW_READING | 1      |
-| START_REC      | 2      |
-| END_REC        | 3      |
-| KEEP_ALIVE     | 4      |
-| HANDLE_ALERT   | 5      |
+| Nome         | Valore |
+| -------------| ------ |
+| START_REC    | 0      |
+| STOP_REC     | 1      |
+| RAISE_ALERT  | 2      |
+| HANDLE_ALERT | 3      |
+| KEEP_ALIVE   | 4      |
+| ON_LAUNCH    | 5      |
+| TIMEOUT      | 6      |
 
 ### CommandType
 
-| Nome      | Valore |
-| --------- | ------ |
-| START_REC | 0      |
-| END_REC   | 1      |
+Identifica i comandi inviati **dalla dashboard**.
 
-### SensorState
+| Nome       | Valore |
+| ---------- | ------ |
+| START_REC  | 0      |
+| END_REC    | 1      |
+| SET_DEMO_1 | 2      |
+| SET_DEMO_2 | 3      |
 
-Rappresenta lo stato che può essere assunto dai vari sensori.
+### NodeState
 
-| Nome          | Valore |
-| ------------- | ------ |
-| ERROR         | 0      |
-| READY         | 1      |
-| RUNNING       | 2      |
-| ALERT_READY   | 3      |
-| ALERT_RUNNING | 4      |
+Rappresenta lo stato che può essere assunto dai vari nodi.
 
-Il **cambiamento di stato** varia secondo il seguente schema:
+| Nome          | Valore | ui            |
+| ------------- | ------ | ------------- |
+| ERROR         | 0      | 'off'         |
+| READY         | 1      | 'ok'          |
+| RUNNING       | 2      | 'rec'         |
+| ALERT_READY   | 3      | 'alert-ready' |
+
+### Eventi e stati
+
+La variazione di stato dei nodi dipende dagli eventi che li coinvolgono.
 
 ```mermaid
 stateDiagram-v2
   [*] --> READY
-  ERROR --> READY: KEEP_ALIVE, TOTAL_READING
-  READY --> ERROR: timeout
-  READY --> RUNNING: START_REC, WINDOW_READING
-  RUNNING --> READY: END_REC
-  READY --> ALERT_READY: dangerLevel >= ALERT_TRESHOLD
+
+  ERROR --> READY: KEEP_ALIVE, ON_LAUNCH, STOP_REC
+  ERROR --> RUNNING: START_REC, window_reading
+
+  READY --> ERROR: TIMEOUT
+  READY --> RUNNING: START_REC, window_reading
+  READY --> ALERT_READY: RAISE_ALERT
+
+  RUNNING --> ERROR: TIMEOUT
+  RUNNING --> READY: STOP_REC, ON_LAUNCH
+
   ALERT_READY --> READY: HANDLE_ALERT
 ```
 
 ## NODO
 
-Sul nodo (nel nostro caso un Rapsberry PI 2) gira uno script che si occupa di **gestire** i rilevatori.
+Sul nodo (nel nostro caso un Rapsberry PI) gira uno script che si occupa di **gestire** i rilevatori.
 
 Per maggiori informazioni consultare la [documentazione](./node/node.md).
 
-## WEB-SERVICE E SALVATAGGIO DEI DATI
+## BACKEND E SALVATAGGIO DEI DATI
 
-I due servizi principali che si occupano di memorizzazione ed elaborazione dei dati sono:
+I servizi principali che si occupano di memorizzazione ed elaborazione dei dati sono:
 
-- `microservice_websocket`.
+- `backend`.
+- `mobius_adapter`.
 - `mock_mobius` (che simula la piattaforma **Mobius**).
 
-In particolare, mentre `mock_mobius` si occupa soltanto di immagazzinare dati, `microservice_websocket` si occupa anche di **elaborarli** ed inviarli alla [ui](https://github.com/monemasrl/irma-ui.git) e di **inviare i comandi** ai nodi.
-
-Per maggiori informazioni su **microservice_websocket** consultare la sua [documentazione](./backend/backend.md).
-
-## TESTING IN LOCALE
-
-Al fine di eseguire dei test in locale, per mancanza di rilevatori da utilizzare, vengono usati rispettivamente:
-
-- [mock_rilevatore.py](./utils/mock_rilevatore.py), che si occupa di **simulare** la presenza di **un rilevatore**.
-- [mock_4rilevatori.py](./utils/mock_rilevatore.py), che si occupa di **simulare** la presenza di **4 rilevatori**.
-
-### Struttura testing locale
-
-```mermaid
-flowchart LR;
-rpi4[Raspberry PI 4 - mock_rilevatore.py]
-rpi2[Raspberry PI 2 - node]
-msw[microservice_websocket]
-
-rpi2 <-- CAN --> rpi4
-rpi2 -- HTTP --> msw
-msw -- MQTT --> rpi2
-```
+In particolare, mentre `mock_mobius` si occupa soltanto di immagazzinare dati, `backend` si occupa anche di **elaborarli** ed inviarli alla [ui](https://github.com/monemasrl/irma-ui.git) e di **inviare i comandi** ai nodi.
 
 ## CONTRIBUTING
 

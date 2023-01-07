@@ -15,6 +15,10 @@ Le istruzioni da eseguire sono:
 
 Per maggiori informazioni consultare la documentazione di [python-can](https://python-can.readthedocs.io/en/stable/interfaces/socketcan.html#pcan).
 
+#### Inizializzazione al boot
+
+Per poter inizializare l'interfaccia al boot del dispositivo, e' stato inserito uno script  all'interno di [pi-configs](./pi-configs/).
+
 ## Lo script
 
 Questo script si occupa di gestire i **rilevatori**.
@@ -32,32 +36,33 @@ c --> d{E' START_REC?}
 d -- SI --> e[Lancio requst task]
 d -- NO --> f{E' END_REC?}
 f -- SI --> h[Fermo request task]
-f -- NO --> g[ERRORE]
+h --> M[Richiesta TOTAL COUNT\nai sensori]
+f -- NO --> g{E' SET_DEMO_1?}
+g -- SI --> N[Lancio request task\ncon demo1]
+g -- NO --> O{E' SET_DEMO_2?}
+O -- SI --> R[Lancio request task\ncon demo2]
+O -- NO --> Q[Error]
 e --> i
-h --> i
+M --> i
+N --> i
+R --> i
 
 b -- NO --> i{E' disponbile un<br />messagio sul CAN BUS?}
 i -- NO --> b
 i -- SI --> j[Decodifico il messagio]
-j --> k[Invio il messaggio<br />a microservice_websocket]
+j --> k[Invio il messaggio al backend]
 k --> b
 
 subgraph KEEP_ALIVE daemon
-  D[Invio END_REC] --> E[Sleep]
+  L[\Inizio/] --> D[Invio ON_LAUNCH]
+  D --> E[Sleep]
   E --> F[Invio KEEP_ALIVE]
   F --> E
 end
 
 subgraph request task
-  G[Inzio] --> H[Richiesta TOTAL COUNT a S1]
-  H --> I[Richiesta TOTAL COUNT a S2]
-  I --> J[Richiesta WINDOW COUNT 1 a S1]
-  J --> K[Richiesta WINDOW COUNT 1 a S2]
-  K --> L[Richiesta WINDOW COUNT 2 a S1]
-  L --> M[Richiesta WINDOW COUNT 2 a S2]
-  M --> N[Richiesta WINDOW COUNT 3 a S1]
-  N --> O[Richiesta WINDOW COUNT 3 a S2]
-  O --> P[Sleep]
+  G[\Inzio/] --> H[Richiesta WINDOW COUNT\nai sensori]
+  H --> P[Sleep]
   P --> H
 end
 ```
