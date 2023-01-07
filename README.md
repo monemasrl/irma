@@ -144,6 +144,80 @@ I servizi principali che si occupano di memorizzazione ed elaborazione dei dati 
 
 In particolare, mentre `mock_mobius` si occupa soltanto di immagazzinare dati, `backend` si occupa anche di **elaborarli** ed inviarli alla [ui](https://github.com/monemasrl/irma-ui.git) e di **inviare i comandi** ai nodi.
 
+## MQTT
+
+La comunicazione tra **Nodo** e **backend** avviene sempre tramite MQTT e anche l'adapter lo sfrutta per poter leggere i payload pubblicati dal nodo.
+
+### Topic utilizzati
+
+Ogni topic ha una struttura del tipo `{applicationID}/{nodeID}` + subtopic, ed e' percio' univoco per ogni nodo.
+
+Di seguito la lista dei subtopic disponibili:
+
+> #### /status
+>
+> Il nodo pubblica tutte le informazioni relative al proprio cambio di stato.
+>
+> I payload disponibili sono:
+> - `launch:{nodeName}`: identifica l'avvio del nodo e contiene il nodeName, necessario alla crezione del corripondente modello nel db, qual'ora non fosse stato gia' registrato.
+> - `start`: indica che il nodo e' entrato in fase di registrazione.
+> - `stop`: indica che il nodo ha terminato la registrazione.
+> - `keepalive`: sono dei messaggi che il nodo e' ancora online.
+
+> #### /set
+>
+> Il backend pubbblica tutte le informazioni relative ai settaggi del nodo.
+>
+> Il payload che viene inviato e' un json come stringa.
+>
+> Struttura del json: 
+> ```jsonc
+> {
+>     "detector": 2, // [1, 2, 3, 4]
+>     "sipm": 1,     // [1, 2]
+>     "value": 123,  // intero
+>     "type": "hv",  // ["hv", "window_low", "window_high"]
+>     "n": 1        // [1, 2, 3] indica la finestra
+>                    // necessario se type = "window_low" o "window_high"
+> }
+> ```
+
+> #### /command
+>
+> Il backend pubblica i comandi da inviare al nodo.
+>
+> I payload disponibili sono:
+> - `start:0`: fa partire la registrazione.
+> - `start:1`: fa partire la registrazione in demo1.
+> - `start:2`: fa partire la registrazione in demo2.
+> - `stop`: ferma la registrazione.
+
+> #### /payload
+> 
+> Il nodo pubblica i payload relativi alle letture.
+>
+> Il payload e' un json come stringa.
+>
+> Struttura del json:
+> ```jsonc
+> {
+>     "payloadType": "total" // ["total", "window"]
+>     "data": {
+>         "canID": 1,              // [1, 2, 3, 4]
+>         "sensorNumber": 2,       // [1, 2]
+>         "value": 3,              // indica n finestra se payloadType = "window",
+>                                  // altrimenti il dangerLevel
+> 
+>         "count": 137,            // il conteggio della finestra se payloadType = "window",
+>                                  //altrimenti il conteggio totale.
+>         "sessionID": 1673109264, // unix-timestamp di inizio sessione
+>         "readingID": 1673104564, // unix-timestamp della lettura
+>     },
+> }
+> ```
+
+
+
 ## CONTRIBUTING
 
 Nella repo sono presenti i file di **configurazione per un pre-commit hook**, che avvia tool di _linting_ e _formattazione_.
