@@ -162,13 +162,14 @@ class MockBus:
               window '{window_number}' with value '{value}'"
         )
 
-    def start_session(self, mode: int):
+    def start_session(self, mode: int) -> int:
         self._sessionID = int(time.time())
         init_cache()
         # TODO: tweak
         time.sleep(0.5)
         self._scheduler.resume()
-        self.loop()
+
+        return self._sessionID
 
     def stop_session(self):
         self._scheduler.pause()

@@ -15,6 +15,7 @@ STATUS_SUBTOPIC = "/status"
 SETTINGS_SUBTOPIC = "/set"
 PAYLOAD_SUBTOPIC = "/payload"
 COMMAND_SUBTOPIC = "/command"
+SESSIONS_SUBTOPIC = "/sessions"
 
 
 class Node:
@@ -196,7 +197,8 @@ class Node:
         print("Received MQTT message, sending rec start...")
 
         self.client.publish(self.topic + STATUS_SUBTOPIC, "start")
-        self.bus.start_session(mode)
+        sessionID = self.bus.start_session(mode)
+        self.client.publish(self.topic + SESSIONS_SUBTOPIC, str(sessionID))
 
     def stop_rec(self):
         print("Received MQTT message, sending rec end...")

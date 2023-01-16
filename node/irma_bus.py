@@ -34,6 +34,8 @@ class IrmaBus:
         self._scheduler.start(paused=True)
 
     def loop(self):
+        sleep(5)
+
         with self._lock:
             self._readingID = int(time.time())
 
@@ -103,13 +105,14 @@ class IrmaBus:
             )
         )
 
-    def start_session(self, mode: int):
+    def start_session(self, mode: int) -> int:
         self._sessionID = int(time.time())
         self.send(can_protocol.start_count(mode))
         # TODO: tweak
         time.sleep(0.5)
         self._scheduler.resume()
-        self.loop()
+
+        return self._sessionID
 
     def stop_session(self):
         self._scheduler.pause()
