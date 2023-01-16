@@ -8,18 +8,6 @@ from pydantic import BaseModel
 _config: Config | None = None
 
 
-class ConversionEntry(BaseModel):
-    sensorId: str
-    sensorPath: str
-
-
-class MobiusConfig(BaseModel):
-    host: str
-    port: int
-    originator: str
-    conversion: dict[int, ConversionEntry]
-
-
 class MqttConfig(BaseModel):
     url: str
     port: int
@@ -29,7 +17,7 @@ class MqttConfig(BaseModel):
 
 
 class Config(BaseModel):
-    mobius: MobiusConfig
+    mobius_uri: str
     mqtt: MqttConfig
 
     @staticmethod

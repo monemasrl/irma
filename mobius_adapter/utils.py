@@ -3,6 +3,10 @@ from datetime import datetime
 import requests
 from pydantic import BaseModel
 
+from config import get_config
+
+config = get_config()
+
 
 class Data(BaseModel):
     payloadType: str
@@ -19,7 +23,7 @@ class Data(BaseModel):
 
 def insert(data: Data):
     requests.post(
-        f"onem2m.labtlclivorno.it/Mobius/RILEVATORI_IRMA/{data.sessionID}",
+        f"{config.mobius_uri}/{data.sessionID}",
         headers={
             "X-M2M-Origin": "MONEMA",
             "Content-Type": "application/json;ty=4",
@@ -43,7 +47,7 @@ def insert(data: Data):
 
 def create_session(sessionID: int):
     requests.post(
-        "onem2m.labtlclivorno.it/Mobius/RILEVATORI_IRMA",
+        config.mobius_uri,
         headers={
             "Content-Type": "application/json;ty=3",
             "X-M2M-RI": str(int(datetime.now().timestamp() * 1000)),

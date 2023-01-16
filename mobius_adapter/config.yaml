@@ -1,11 +1,4 @@
-mobius:
-  host: http://mobius
-  port: 5000
-  originator: originator
-  conversion:
-    1:
-      sensorId: node1SensorId
-      sensorPath: node1SensorPath
+mobius_uri: "http://onem2m.labtlclivorno.it/Mobius/RILEVATORI_IRMA"
 mqtt:
   url: "mqtt"
   port: 1884
