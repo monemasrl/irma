@@ -106,6 +106,7 @@ def init_mqtt(conf: MQTTConfigInternal) -> FastMQTT:
 
                 elif value == "stop":
                     await node.on_stop_rec()
+                    changed = True
 
                 elif value == "keepalive":
                     pass
