@@ -1,48 +1,53 @@
 from datetime import datetime
 
 import requests
-
-from config import get_config
-
-
-# Conversione reading per mobius
-def mobius_payload(sensorId: str, now: datetime, sensor_data: dict) -> dict:
-    return {
-        "m2m:cin": {
-            "con": {
-                "metadata": {
-                    "sensorId": sensorId,
-                    "readingTimestamp": now.isoformat(),
-                    # "latitude": <latitudine del sensore>, // opzionale
-                    # "longitude": <longitudine del sensore>, // opzionale
-                    # "heading": <orientazione del sensore>, // opzionale
-                }
-            },
-            "sensorData": sensor_data,
-        }
-    }
+from pydantic import BaseModel
 
 
-def send(nodeID: int, data: dict):
-    config = get_config()
+class Data(BaseModel):
+    payloadType: str
 
-    mobius_node_info = config.mobius.conversion.get(nodeID)
-    if not mobius_node_info:
-        print(f"[ERROR] Conversion entry for nodeID '{nodeID}' not found")
-        return
+    nodeID: int
+    canID: int
+    sensorNumber: int
 
-    sensorId, sensorPath = mobius_node_info.sensorId, mobius_node_info.sensorPath
+    sessionID: int
+    readingID: int
 
-    originator = config.mobius.originator
+    value: int
 
-    now = datetime.now()
 
+def insert(data: Data):
     requests.post(
-        f"{config.mobius.host}:{config.mobius.port}/{sensorPath}",
+        f"onem2m.labtlclivorno.it/Mobius/RILEVATORI_IRMA/{data.sessionID}",
         headers={
-            "X-M2M-Origin": originator,
-            "Content-Type": "application/vnd.onem2m-res+json;ty=4",
-            "X-M2M-RI": str(int(now.timestamp() * 1000)),
+            "X-M2M-Origin": "MONEMA",
+            "Content-Type": "application/json;ty=4",
+            "X-M2M-RI": str(int(datetime.now().timestamp() * 1000)),
         },
-        json=mobius_payload(sensorId, now, data),
+        json={
+            "m2m:cin": {
+                "con": {
+                    "metadata": {
+                        "sensorId": data.sessionID,
+                        "readingTimestamp": data.readingID,
+                    },
+                    "sensorData": data.json(),
+                    "cnf": "application/json:0",
+                    "rn": "247000034-3",
+                }
+            }
+        },
+    )
+
+
+def create_session(sessionID: int):
+    requests.post(
+        "onem2m.labtlclivorno.it/Mobius/RILEVATORI_IRMA",
+        headers={
+            "Content-Type": "application/json;ty=3",
+            "X-M2M-RI": str(int(datetime.now().timestamp() * 1000)),
+            "X-M2M-Origin": "MONEMA",
+        },
+        json={"m2m:cnt": {"rn": str(sessionID)}},
     )
