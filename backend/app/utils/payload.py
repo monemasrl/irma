@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 from beanie.operators import And, Eq, Set
+from pymongo.errors import DuplicateKeyError
 
 from ..config import config as Config
 from ..models.payload import ReadingPayload
@@ -50,18 +51,22 @@ async def handle_total_reading(node: Node, payload: ReadingPayload):
     await reading.save()
 
     if data.value >= Config.app.ALERT_TRESHOLD:
-        await Alert.find_one(
-            And(Eq(Alert.sessionID, data.sessionID), Eq(Alert.isHandled, False))
-        ).upsert(
-            Set({Alert.sessionID: data.sessionID}),
-            on_insert=Alert(
-                reading=reading.id,
-                node=node.id,
-                sessionID=reading.sessionID,
-                isHandled=False,
-                raisedAt=datetime.now(),
-            ),
-        )
+        try:
+            await Alert.find_one(
+                And(Eq(Alert.sessionID, data.sessionID), Eq(Alert.isHandled, False))
+            ).upsert(
+                Set({Alert.sessionID: data.sessionID}),
+                on_insert=Alert(
+                    reading=reading.id,
+                    node=node.id,
+                    sessionID=reading.sessionID,
+                    isHandled=False,
+                    raisedAt=datetime.now(),
+                ),
+            )
+        # Dupliate Alert per sessions should not exist
+        except DuplicateKeyError:
+            pass
 
 
 async def handle_window_reading(node: Node, payload: ReadingPayload):
