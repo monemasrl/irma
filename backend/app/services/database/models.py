@@ -114,7 +114,7 @@ class Reading(CustomDocument):
 class Alert(CustomDocument):
     reading: PydanticObjectId
     node: PydanticObjectId
-    sessionID: int = Indexed(int, unique=True)
+    sessionID: Indexed(int, unique=True)
     isHandled: bool = False
     raisedAt: datetime
     isConfirmed: bool = False
