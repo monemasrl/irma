@@ -38,7 +38,6 @@ def insert(data: Data):
                     },
                     "sensorData": data.json(),
                     "cnf": "application/json:0",
-                    "rn": "247000034-3",
                 }
             }
         },
