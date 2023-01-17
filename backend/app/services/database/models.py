@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from beanie import PydanticObjectId
+from beanie import Indexed, PydanticObjectId
 from pydantic import BaseModel, Field
 
 from ...exceptions import NotFoundException
@@ -114,7 +114,7 @@ class Reading(CustomDocument):
 class Alert(CustomDocument):
     reading: PydanticObjectId
     node: PydanticObjectId
-    sessionID: int
+    sessionID: int = Indexed(int, unique=True)
     isHandled: bool = False
     raisedAt: datetime
     isConfirmed: bool = False
