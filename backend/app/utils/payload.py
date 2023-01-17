@@ -21,7 +21,7 @@ async def handle_payload(node: Node, payload: ReadingPayload):
 
     elif payload.payloadType == "window":
         await handle_window_reading(node, payload)
-        await node.on_start_rec()
+        await node.on_window_reading()
         changed = True
 
     data = payload.data

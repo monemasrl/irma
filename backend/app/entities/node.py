@@ -128,6 +128,10 @@ class Node(CustomDocument):
 
         await self.save()
 
+    async def on_window_reading(self):
+        if self.state != NodeState.RUNNING:
+            self.stop_rec()
+
     async def has_pending_alert(self) -> bool:
         from ..services.database.models import Alert
 
