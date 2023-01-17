@@ -21,13 +21,17 @@ class Data(BaseModel):
     value: int
 
 
+def timestamp_millis() -> int:
+    return int(datetime.now().timestamp() * 1000)
+
+
 def insert(data: Data):
     requests.post(
         f"{config.mobius_uri}/{data.sessionID}",
         headers={
             "X-M2M-Origin": "MONEMA",
             "Content-Type": "application/json;ty=4",
-            "X-M2M-RI": str(int(datetime.now().timestamp() * 1000)),
+            "X-M2M-RI": str(timestamp_millis()),
         },
         json={
             "m2m:cin": {
@@ -44,12 +48,12 @@ def insert(data: Data):
     )
 
 
-def create_session(sessionID: int):
+def create_session_container(sessionID: int):
     requests.post(
         config.mobius_uri,
         headers={
             "Content-Type": "application/json;ty=3",
-            "X-M2M-RI": str(int(datetime.now().timestamp() * 1000)),
+            "X-M2M-RI": str(timestamp_millis()),
             "X-M2M-Origin": "MONEMA",
         },
         json={"m2m:cnt": {"rn": str(sessionID)}},

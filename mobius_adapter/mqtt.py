@@ -2,7 +2,7 @@ import json
 
 from paho.mqtt.client import Client, MQTTMessage
 
-from utils import Data, create_session, insert
+from utils import Data, create_session_container, insert
 
 
 def register_callbacks(client: Client):
@@ -43,7 +43,7 @@ def register_callbacks(client: Client):
 
         elif topic == "sessions":
             new_sessionID = int(payload)
-            create_session(new_sessionID)
+            create_session_container(new_sessionID)
         else:
             raise ValueError(f"Invalid topic '{topic}'")
 
