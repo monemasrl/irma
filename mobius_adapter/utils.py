@@ -40,7 +40,7 @@ def insert(data: Data):
                         "sensorId": data.sessionID,
                         "readingTimestamp": data.readingID,
                     },
-                    "sensorData": data.json(),
+                    "sensorData": data.dict(),
                     "cnf": "application/json:0",
                 }
             }
