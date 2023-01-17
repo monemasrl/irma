@@ -50,19 +50,17 @@ async def handle_total_reading(node: Node, payload: ReadingPayload):
     await reading.save()
 
     if data.value >= Config.app.ALERT_TRESHOLD:
-        alert: Alert | None = await Alert.find_one(
+        await Alert.find_one(
             And(Eq(Alert.sessionID, data.sessionID), Eq(Alert.isHandled, False))
-        )
-
-        if alert is None:
-            alert = Alert(
+        ).upsert(
+            on_insert=Alert(
                 reading=reading.id,
                 node=node.id,
                 sessionID=reading.sessionID,
                 isHandled=False,
                 raisedAt=datetime.now(),
             )
-            await alert.save()
+        )
 
 
 async def handle_window_reading(node: Node, payload: ReadingPayload):
