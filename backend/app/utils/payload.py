@@ -36,6 +36,8 @@ async def handle_payload(node: Node, payload: ReadingPayload):
 
 
 async def handle_total_reading(node: Node, payload: ReadingPayload):
+    from .. import socketManager
+
     data = payload.data
 
     reading = Reading(
@@ -67,6 +69,8 @@ async def handle_total_reading(node: Node, payload: ReadingPayload):
         # Dupliate Alert per sessions should not exist
         except DuplicateKeyError:
             pass
+
+        socketManager.emit("change-reading")
 
 
 async def handle_window_reading(node: Node, payload: ReadingPayload):
