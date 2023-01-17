@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-from beanie.operators import And, Eq
+from beanie.operators import And, Eq, Set
 
 from ..config import config as Config
 from ..models.payload import ReadingPayload
@@ -53,13 +53,14 @@ async def handle_total_reading(node: Node, payload: ReadingPayload):
         await Alert.find_one(
             And(Eq(Alert.sessionID, data.sessionID), Eq(Alert.isHandled, False))
         ).upsert(
+            Set({Alert.sessionID: data.sessionID}),
             on_insert=Alert(
                 reading=reading.id,
                 node=node.id,
                 sessionID=reading.sessionID,
                 isHandled=False,
                 raisedAt=datetime.now(),
-            )
+            ),
         )
 
 
