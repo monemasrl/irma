@@ -58,6 +58,7 @@ async def get_session(nodeID: int, sessionID: int | None) -> list[Reading.Aggreg
                     }
                 },
                 {"$addFields": {"nodeID": node.nodeID, "sessionID": sessionID}},
+                {"$sort": {"readingID": 1}},
             ],
             projection_model=Reading.Aggregated,
         )
