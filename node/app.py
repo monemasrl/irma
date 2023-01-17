@@ -38,10 +38,11 @@ class Node:
                 bitrate=bitrate,
                 filter_id=filter_id,
                 filter_mask=filter_mask,
+                interval_seconds=self.config["can"]["interval_seconds"],
             )
             print(f"Can type '{bustype}', on channel '{channel}' @{bitrate}")
         else:
-            self.bus = MockBus()
+            self.bus = MockBus(interval_seconds=self.config["can"]["interval_seconds"])
             print("Started MockBus")
 
         self.init_mqtt_client()

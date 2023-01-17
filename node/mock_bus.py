@@ -86,13 +86,13 @@ def gen_window_count(detector: Detector, window: Window, sipm: Sipm) -> Message:
 
 
 class MockBus:
-    def __init__(self, interval_minutes=2):
+    def __init__(self, interval_seconds=60):
         self._sessionID = None
         self._readingID = None
         self._scheduler = BackgroundScheduler()
         self._lock = Lock()
 
-        self._scheduler.add_job(self.loop, "interval", minutes=interval_minutes)
+        self._scheduler.add_job(self.loop, "interval", seconds=interval_seconds)
         self._scheduler.start(paused=True)
 
         self._msgqueue: Queue = Queue()

@@ -15,7 +15,7 @@ class IrmaBus:
         bustype,
         channel,
         bitrate,
-        interval_minutes=1,
+        interval_seconds=30,
         filter_id: Optional[int] = None,
         filter_mask: Optional[int] = None,
     ):
@@ -30,7 +30,7 @@ class IrmaBus:
         self._scheduler = BackgroundScheduler()
         self._lock = Lock()
 
-        self._scheduler.add_job(self.loop, "interval", minutes=interval_minutes)
+        self._scheduler.add_job(self.loop, "interval", seconds=interval_seconds)
         self._scheduler.start(paused=True)
 
     def loop(self):

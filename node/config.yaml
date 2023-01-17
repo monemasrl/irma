@@ -17,3 +17,4 @@ settings:
     bitrate: 20000
     filter_id: 96
     filter_mask: 248
+    interval_seconds: 15
